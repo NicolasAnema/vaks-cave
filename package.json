@@ -1,0 +1,7 @@
+{
+  "name": "vaks-cave",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vak's Cave - a finished 2D pixel platformer in two acts. No build step: npx serve .",
+  "type": "module"
+}
