@@ -24,13 +24,17 @@ export const CONFIG = {
     meowRadius: 84, meowCooldown: 1.4,
   },
 
-  irie: { duration: 4.0, slowFactor: 0.45, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7 },
+  irie: { duration: 4.0, slowFactor: 0.45, jumpMul: 1.35, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7 },
+
+  // babalas: bottle-hit hangover — slower and weaker until it wears off.
+  // jumpMul floor: 330*0.85 -> 40px apex, still >= MAX_UP(38) so no soft-lock.
+  babalas: { time: 2.8, speedMul: 0.6, jumpMul: 0.85 },
 
   catEyes: { radius: 82, darkness: 0.93, lanternRadius: 48 },
 
   mist: {
-    startGap: 240,                    // mist starts this far below spawn
-    rate: { 1: 16, 2: 24, 3: 30 },    // rise px/s per level (difficulty dial)
+    startGap: 150,                    // mist starts this far below spawn
+    rate: { 1: 20, 2: 24, 3: 26 },    // rise px/s per level (difficulty dial)
     resetGap: 215,                    // gap below checkpoint after a death
     catchPad: 6,
     dangerFracs: [0.5, 0.3, 0.16],    // gauge fractions firing danger_close_1/2/3
@@ -48,19 +52,43 @@ export const CONFIG = {
   },
 
   bottles: { speed: 62, interval: { 1: 4.8, 2: 3.4, 3: 2.8 }, maxActive: 6, spinHz: 6 },
-  rats:    { speed: 36, fleeSpeed: 115, fleeTime: 1.7 },
+  rats:    { speed: 52, fleeSpeed: 115, fleeTime: 1.7, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5] },
   tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34 },
-  crumble: { delay: 0.55, respawn: 4.0, shakeAmp: 1.4 },
+  crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 4.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
-  lives: { start: 3, max: 9, ceppiesPerLife: 25 },
+  // township tsotsis (W2): phone snatcher (knife), gunman, viceroy pusher.
+  // chaseSpeed stays below player.runSpeed — clean play always escapes.
+  tsotsi: {
+    walkSpeed: 34, chaseSpeed: 118,
+    aggroX: 120, aggroY: 42, calmX: 200,
+    stunTime: 2.6, scoreStomp: 200,
+    knife:   { steal: 10 },     // mano grabbed per successful phone-snatch attempt
+    gun:     { range: 190, fireEvery: 2.4, telegraph: 0.55, bulletSpeed: 150, bulletY: 14 },
+    viceroy: { lungeMul: 1.15 },
+  },
+
+  // mano = South African Rand. Denomination -> value:
+  // R2 kudu coin, R10 green note, R20 light-brown note, R50 red note,
+  // R100 blue note (the current one)
+  money: { values: { r2: 2, r10: 10, r20: 20, r50: 50, r100: 100 } },
+
+  lives: { start: 3, max: 9, manoPerLife: 200 }, // every R200 EARNED = extra life
 
   score: {
-    ceppy: 100, crystal: 50, ratStomp: 150, levelClear: 500, timeBonusPerSec: 8,
+    perRand: 5, ratStomp: 150, levelClear: 500, timeBonusPerSec: 8,
     parTime: { 1: 80, 2: 100, 3: 125, 4: 55, 5: 70, 6: 85 },
   },
 
-  shop: { prices: { life: 24, irie: 14, charm: 18 }, ceppyValue: 2 },
+  // priced to value: consumables cheap-ish, run-long upgrades premium
+  shop: { prices: { life: 100, irie: 50, charm: 80, rattex: 60 } },
+
+  // ability caps sold in the shop (own them for the rest of the run)
+  hats: {
+    propeller: { price: 120, jumpMul: 1.18 },   // jump higher
+    beanie:    { price: 90, smashUnder: 1.5 },  // stronger: run through rats smaller than this scale
+    chiefs:    { price: 150, speedMul: 1.22 },  // faster like a tikolosh (premium merch)
+  },
 
   boss: {
     rounds: [ { beats: 4, bpm: 58 }, { beats: 5, bpm: 70 }, { beats: 6, bpm: 82 } ],

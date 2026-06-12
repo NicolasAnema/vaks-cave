@@ -556,7 +556,7 @@ export class ClearScreen {
     drawText(ctx, this.name, View.w / 2, 86, { color: '#f4f0e0', align: 'center' });
     const rows = [
       ['TIME', this.stats.time.toFixed(1) + 'S'],
-      ['CEPPIES', String(this.stats.ceppies)],
+      ['MANO', 'R' + this.stats.mano],
       ['DEATHS', String(this.stats.deaths)],
       ['TIME BONUS', '+' + this.stats.timeBonus],
     ];

@@ -5,6 +5,9 @@
 // ============================================================
 
 import { drawText } from './font.js';
+import { queueHD } from './render.js';
+import { IMO_HEAD_URI } from '../data/imo_photo.js';
+import { VAKI_HEAD_URI } from '../data/vaki_photo.js';
 
 export const Sprites = {}; // name -> { img, fw, fh, n }
 
@@ -97,6 +100,7 @@ export const PAL = {
     dress: '#46355f', dressD: '#352847', scarf: '#ece6d2', scarfD: '#c9c2aa',
     skin: '#8a5a3a', apron: '#b5524c', shoe: '#26202e', eye: '#2a2030', white: '#ffffff',
   },
+  // original mist-creature tikolosh bodies (the head is Imo's photo)
   tiko: {
     h: '#43523f', b: '#243126', d: '#192219', e: '#aef2a8', m: '#101a10', g: '#7fe08a', w: '#3c5a40',
   },
@@ -313,9 +317,78 @@ function drawShorty(g, p = {}) {
 }
 
 // ============================================================
+// TSOTSIS — township gangsters (cell 20x28, face right; the call
+// site flips them toward Vaks). Three kinds: the phone snatcher
+// (knife), the gunman, and the viceroy pusher.
+// ============================================================
+
+const TSOTSI_PALS = {
+  knife:   { skin: '#7a5232', hat: '#a83a3a', hatD: '#7c2a2a', top: '#e8e4da', topD: '#b8b3a6',
+             pants: '#2c2c38', shoe: '#1c1c26', eye: '#22222c', prop: '#cfd6e2', propD: '#6b7390' },
+  gun:     { skin: '#8a5a3a', hat: '#23232e', hatD: '#16161e', top: '#3a3a4a', topD: '#2c2c38',
+             pants: '#32323f', shoe: '#1c1c26', eye: '#22222c', prop: '#23232e', propD: '#11111a' },
+  viceroy: { skin: '#9a6a42', hat: '#4a6a4a', hatD: '#3c573e', top: '#7c3a4a', topD: '#5e2c38',
+             pants: '#3f3f54', shoe: '#23232e', eye: '#c23a3a', prop: '#8a5a2a', propD: '#5e3c1c' },
+};
+
+function drawTsotsi(g, C, kind, p = {}) {
+  const bob = p.bob | 0;
+  if (p.stun) {
+    // sat down hard, seeing stars
+    R(g, 4, 20, 12, 6, C.pants);
+    R(g, 3, 24, 5, 2, C.shoe); R(g, 12, 24, 5, 2, C.shoe);
+    R(g, 5, 12, 10, 9, C.top);
+    R(g, 5, 12, 1, 9, C.topD);
+    R(g, 6, 5, 8, 7, C.skin);
+    R(g, 6, 3, 8, 3, C.hat);
+    R(g, 8, 8, 2, 1, C.eye); R(g, 11, 8, 2, 1, C.eye);
+    R(g, 9, 0, 2, 2, '#ffe49a'); R(g, 13, 2, 1, 1, '#ffe49a'); R(g, 5, 1, 1, 1, '#ffe49a');
+    return;
+  }
+  const L = p.legs || [{ dx: 0, lift: 0 }, { dx: 0, lift: 0 }];
+  // legs
+  R(g, 6 + L[0].dx, 19 + bob, 3, 7 - L[0].lift - bob, C.pants);
+  R(g, 11 + L[1].dx, 19 + bob, 3, 7 - L[1].lift - bob, C.pants);
+  R(g, 6 + L[0].dx, 26 - L[0].lift, 4, 2, C.shoe);
+  R(g, 11 + L[1].dx, 26 - L[1].lift, 4, 2, C.shoe);
+  // torso
+  R(g, 5, 11 + bob, 10, 9, C.top);
+  R(g, 5, 11 + bob, 1, 9, C.topD);
+  // back arm
+  R(g, 3, 13 + bob, 2, 6, C.topD);
+  // head + headgear (knife: bandana, gun: beanie, viceroy: bucket hat)
+  R(g, 6, 4 + bob, 8, 7, C.skin);
+  R(g, 6, 2 + bob, 8, 3, C.hat);
+  if (kind === 'viceroy') R(g, 5, 4 + bob, 10, 1, C.hatD);
+  else R(g, 6, 4 + bob, 8, 1, C.hatD);
+  R(g, 9, 7 + bob, 1, 1, C.eye); R(g, 12, 7 + bob, 1, 1, C.eye);
+  R(g, 10, 9 + bob, 3, 1, '#5e3c28'); // mouth
+  // front arm + the goods
+  const raise = p.arm === 'up' ? 4 : 0;
+  R(g, 15, 13 + bob - raise, 2, 5, C.topD);
+  R(g, 15, 18 + bob - raise, 2, 2, C.skin);
+  if (kind === 'knife') {
+    R(g, 17, 18 + bob - raise, 3, 1, C.prop);   // blade
+    R(g, 16, 19 + bob - raise, 2, 1, C.propD);  // hilt
+  } else if (kind === 'gun') {
+    R(g, 17, 18 + bob - raise, 3, 2, C.prop);   // barrel + slide
+    R(g, 17, 20 + bob - raise, 1, 2, C.propD);  // grip
+  } else {
+    R(g, 17, 15 + bob - raise, 2, 5, C.prop);   // viceroy bottle
+    R(g, 17, 13 + bob - raise, 1, 2, C.propD);  // bottle neck
+  }
+}
+
+export const TSOTSI = { idle: 0, walk: [1, 2], stun: 3, aim: 4 };
+
+// ============================================================
 // TIKOLOSH (string map, 2 float frames, palette variants)
 // ============================================================
 
+// The Tikolosh: the ORIGINAL horned mist-creature body (face rows
+// blanked) with the ACTUAL photo of Imo's head — embedded as a data
+// URI in src/data/imo_photo.js — drawn smoothly on top. Cell 20x26.
+// body keys: h horns, b body, d shade, g glow nubs, w feet
 const TIKO_A = `
 ..hh............hh..
 ..hhh..........hhh..
@@ -325,10 +398,10 @@ const TIKO_A = `
 ....bbbbbbbbbbbb....
 ...bbbbbbbbbbbbbb...
 ...bbbbbbbbbbbbbb...
-...beebbbbbbbbeeb...
-...beebbbbbbbbeeb...
 ...bbbbbbbbbbbbbb...
-...bbbbmmmmmmbbbb...
+...bbbbbbbbbbbbbb...
+...bbbbbbbbbbbbbb...
+...bbbbbbbbbbbbbb...
 ...dbbbbbbbbbbbbd...
 ..gbbbbbbbbbbbbbbg..
 ..gbbbbbbbbbbbbbbg..
@@ -354,10 +427,10 @@ const TIKO_B = `
 ....bbbbbbbbbbbb....
 ...bbbbbbbbbbbbbb...
 ...bbbbbbbbbbbbbb...
-...beebbbbbbbbeeb...
-...beebbbbbbbbeeb...
 ...bbbbbbbbbbbbbb...
-...bbbbbmmmmbbbbb...
+...bbbbbbbbbbbbbb...
+...bbbbbbbbbbbbbb...
+...bbbbbbbbbbbbbb...
 ..gdbbbbbbbbbbbbdg..
 .g.bbbbbbbbbbbbbb.g.
 .g.bbbbbbbbbbbbbb.g.
@@ -373,6 +446,68 @@ const TIKO_B = `
 ....w....ww.........
 .........w..........
 `;
+
+// the decoded photos + per-variant tinted masters (96px, built once in
+// initSprites; boss/shop draw these directly for a crisp large head)
+const ImoHeads = {};
+
+// variant heads: which photo + an optional tint painted source-atop.
+// Everyone is Imo; the shopkeeper is Vaki, as himself.
+const TIKO_TINTS = {
+  tiko: { who: 'imo', tint: null },                          // the photo, looming in the mist
+  tiko_irie: { who: 'imo', tint: 'rgba(176,127,224,0.45)' }, // irie ghost
+  tiko_shadow: { who: 'imo', tint: 'rgba(8,12,16,0.85)' },   // silhouette (glow eyes overlaid by entity)
+  tiko_shop: { who: 'vaki', tint: null },                    // Vaki keeps shop, actual photo
+  tiko_big: { who: 'imo', tint: null },                      // the boss IS the photo
+};
+
+function buildPhotoHeads(imgs) {
+  for (const [name, spec] of Object.entries(TIKO_TINTS)) {
+    const img = imgs[spec.who];
+    if (!spec.tint) {
+      // the NORMAL photo, byte-for-byte: drawn straight from the
+      // decoded original at native resolution, zero processing
+      ImoHeads[name] = img;
+      continue;
+    }
+    // gameplay-state tints (irie ghost, shadow silhouette) need one
+    // canvas pass; keep generous resolution so they stay sharp
+    const k = Math.min(1, 768 / Math.max(img.width, img.height));
+    const w = Math.round(img.width * k), h = Math.round(img.height * k);
+    const [c, g] = cv(w, h);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, w, h);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = spec.tint;
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'source-over';
+    ImoHeads[name] = c;
+  }
+}
+
+// draw the actual photo head in TRUE HD: queued past the pixel buffer
+// and rendered on the display canvas after the upscale, so it stays a
+// normal photograph at screen resolution. x/y/w/h is the target box in
+// buffer coords; the photo keeps its own aspect ratio (contained,
+// bottom-anchored so it sits on the body).
+export function drawImoHead(ctx, variant, x, y, w, h, flip, alpha) {
+  const img = ImoHeads[variant] || ImoHeads.tiko;
+  const k = Math.min(w / img.width, h / img.height);
+  const dw = img.width * k, dh = img.height * k;
+  queueHD(img, x + (w - dw) / 2, y + (h - dh), dw, dh, { flip, alpha });
+}
+
+// dialogue portraits that are photo heads (cutscenes draw these HD)
+export const PHOTO_FACES = { face_tiko: 'tiko_big', face_shop: 'tiko_shop' };
+
+// head placement on the 20x26 tiko cell. Imo's photo is drawn large and
+// looming: the box is grown ~1.6x around its old bottom-centre anchor
+// (centre x = x + w/2 = 10, baseline y = y + h = 16, both unchanged) so
+// the bigger head stays pinned to the same spot on the body — it now
+// overhangs the horns and crowns the mist body. Every call site scales
+// this by the sprite scale, so all tikoloshes enlarge together.
+export const TIKO_HEAD_RECT = { x: -1, y: -6, w: 22, h: 22 };
 
 // ============================================================
 // SMALL CREATURES & PICKUPS (string maps)
@@ -452,50 +587,110 @@ const CEPPY = `
 `;
 const CEPPY_PAL = { c: '#d04a4a', C: '#a83a3a', d: '#7c2a2a', b: '#5c1f1f' };
 
-const CRYSTAL_A = `
-...gg...
-..gLgg..
-.gLgggg.
-.gLggggg
-.ggggggg
-.gggggdg
-..gggdd.
-..gggd..
-...ggd..
-...gd...
-....d...
-....d...
-`;
-const CRYSTAL_B = `
-...gg...
-..gggg..
-.ggggLg.
-.gggggLg
-.ggggggg
-.gdggggg
-..ddggg.
-..dggg..
-..dgg...
-...dg...
-...d....
-....d...
-`;
-const CRYSTAL_PAL = { g: '#5ee0a0', L: '#c8f8dc', d: '#2e8f5e' };
-
+// cannabis leaf: SEVEN separate radiating spikes (not a filled blob) —
+// centre spike up, an upper pair, a side pair, and a lower pair, each a
+// tapered pointed leaflet with transparent gaps between them. Dark teal
+// outline (o), green body (g), bright mint vein highlights (l).
 const WEED = `
-.....g.....
-..g..g..g..
-..gg.G.gg..
-...gGGGg...
-.gggGGGggg.
-gggGGGGGggg
-...gGGGg...
-..gg.G.gg..
-..g..g..g..
-.....g.....
-.....g.....
+......ooo......
+......olo......
+.ooo..olo..ooo.
+.oloo.olo.oolo.
+.ollooolooollo.
+.oollooloolloo.
+..ooloolooloo..
+...ollolollo...
+ooooolglglooooo
+ollloglllgolllo
+ooolllllllllooo
+..oooollloooo..
+..ooollgllooo..
+.oollooooolloo.
+.olloo...oollo.
 `;
-const WEED_PAL = { g: '#4a9a3a', G: '#6ac24a' };
+const WEED_PAL = { o: '#15333c', g: '#46a043', l: '#93d568' };
+
+// Mano: the South African 100 Rand note — blue banknote, dark frame,
+// big "100" on the left field, Mandela portrait on the right, green
+// accent strip along the bottom. Rounded corners.
+const MANO = `
+.eeeeeeeeeeeeeeeeeeeeee.
+ebbbbbbbbbbbbbmmbbhhhbbe
+ebbbbbbbbbbbbbmsbhhhhhbe
+ebbbbbbbbbbbbbmmbhkkkhbe
+ebbnbbnnnbnnnbmmbkkkkkbe
+ebnnbbnbnbnbnbmsbkKkKkbe
+ebbnbbnbnbnbnbmmbkkkkkbe
+ebbnbbnbnbnbnbmsbkKKKkbe
+ebnnnbnnnbnnnbmmbwkkkwbe
+ebbbbbbbbbbbbbmmbswswsbe
+ebbgggggggggbbggbsssssbe
+.eeeeeeeeeeeeeeeeeeeeee.
+`;
+const MANO_PAL = {
+  e: '#26306e', b: '#aebfe0', m: '#8294c4', n: '#1d2660',
+  g: '#3f8a5b', k: '#b89066', K: '#8a6843', h: '#6f6a62',
+  s: '#33406b', w: '#e8eef8',
+};
+
+// the other denominations reuse the same note design, recolored:
+// R10 green, R20 light brown, R50 red (R100 keeps the blue above)
+const NOTE_PALS = {
+  r10: {
+    e: '#1f4a2a', b: '#b9d8b4', m: '#8cba8e', n: '#163a1e',
+    g: '#2e6b38', k: '#b89066', K: '#8a6843', h: '#6f6a62',
+    s: '#2c4a33', w: '#eef8ee',
+  },
+  r20: {
+    e: '#5e4426', b: '#dcc7a4', m: '#bfa37c', n: '#4a3318',
+    g: '#8a6a40', k: '#b89066', K: '#8a6843', h: '#6f6a62',
+    s: '#54422a', w: '#f8f0e0',
+  },
+  r50: {
+    e: '#6e1f1c', b: '#e3b3aa', m: '#c98a80', n: '#54110e',
+    g: '#a03c34', k: '#b89066', K: '#8a6843', h: '#6f6a62',
+    s: '#5c2622', w: '#f8e8e4',
+  },
+};
+
+// the R2 kudu coin (silver rounded square, kudu left, big 2 right)
+const COIN_R2 = `
+..ssssssss..
+.slllllllls.
+sllkdlll222s
+slkkllllll2s
+slkkklll222s
+slkkklll2lls
+sllkklll222s
+slllklllllls
+.slllllllls.
+..ssssssss..
+`;
+const COIN_R2_PAL = { s: '#8a8f96', l: '#c9ced6', k: '#6d737c', d: '#565b63', 2: '#5a5f68' };
+
+// Rattex box (from the photo): red DOOM band, yellow box, red RATTEX
+// lettering band, deadly pellets, grey rat
+const RATTEX = `
+rrrrrrrrrrrr
+rwrwrwrwrrrr
+yyyyyyyyyyyy
+yRRRRRRRRRRy
+yRRRRRRRRRRy
+yyyyyyyyyyyy
+yrryyyygGGyy
+yrryyyggggGy
+yyryyggggggy
+yrryygggggwy
+yrryyGgggggy
+yyyyyGGyGGyy
+yyyyyyyyyyyy
+YYYYYYYYYYYY
+`;
+const RATTEX_PAL = {
+  r: '#d61f1f', R: '#b01212', w: '#f4f4f0',
+  y: '#f2c91e', Y: '#c79f12',
+  g: '#9aa0a6', G: '#5d646b',
+};
 
 const LANTERN_A = `
 ....hh....
@@ -529,9 +724,15 @@ const LANTERN_PAL = { h: '#6b5436', f: '#3a3026', a: '#ffb84d', A: '#ffe49a' };
 
 let built = false;
 
-export function initSprites() {
+export async function initSprites() {
   if (built) return;
   built = true;
+
+  // decode the embedded photo heads first (data URIs, instant)
+  const imo = new Image(); imo.src = IMO_HEAD_URI;
+  const vaki = new Image(); vaki.src = VAKI_HEAD_URI;
+  await Promise.all([imo.decode(), vaki.decode()]);
+  buildPhotoHeads({ imo, vaki });
 
   // Vaks
   sheet('vaks', VAKS_POSES.map((fn) => frame(26, 32, fn)));
@@ -576,7 +777,24 @@ export function initSprites() {
   sheet('shorty', [frame(16, 26, (g) => drawShorty(g, {})),
                    frame(16, 26, (g) => drawShorty(g, { bob: 1 }))]);
 
-  // Tikolosh variants
+  // township tsotsis (W2 gangsters) + the gunman's bullet
+  for (const kind of ['knife', 'gun', 'viceroy']) {
+    const C = TSOTSI_PALS[kind];
+    sheet('tsotsi_' + kind, [
+      frame(20, 28, (g) => drawTsotsi(g, C, kind, {})),
+      frame(20, 28, (g) => drawTsotsi(g, C, kind, { legs: [{ dx: -2, lift: 1 }, { dx: 2, lift: 0 }] })),
+      frame(20, 28, (g) => drawTsotsi(g, C, kind, { bob: 1, legs: [{ dx: 2, lift: 0 }, { dx: -2, lift: 1 }] })),
+      frame(20, 28, (g) => drawTsotsi(g, C, kind, { stun: true })),
+      frame(20, 28, (g) => drawTsotsi(g, C, kind, { arm: 'up' })),
+    ]);
+  }
+  sheet('tsotsi_bullet', [frame(4, 3, (g) => {
+    R(g, 0, 0, 3, 3, '#2c2c38');
+    R(g, 3, 1, 1, 1, '#ffd84d'); // tracer tip (faces right, flipped in flight)
+  })]);
+
+  // Tikolosh variants: body-only sheets — the actual photo head is
+  // drawn over them in HD via drawImoHead at every call site
   for (const [name, pal] of [
     ['tiko', PAL.tiko], ['tiko_irie', PAL.tikoIrie], ['tiko_shadow', PAL.tikoShadow],
     ['tiko_shop', PAL.tikoShop], ['tiko_big', PAL.tikoBig],
@@ -591,20 +809,64 @@ export function initSprites() {
   sheet('bottle', [bottle, rot90(bottle, 1), rot90(bottle, 2), rot90(bottle, 3)]);
   sheet('sushi', [pix(SUSHI, SUSHI_PAL)]);
   sheet('ceppy', [pix(CEPPY, CEPPY_PAL)]);
-  sheet('crystal', [pix(CRYSTAL_A, CRYSTAL_PAL), pix(CRYSTAL_B, CRYSTAL_PAL)]);
+  // money: R2 kudu coin + the four notes (R100 = the hand-drawn MANO art).
+  // The art bakes "100" into the numeral block; lower notes clear it and
+  // stamp their own denomination with a 3x5 mini font.
+  const MINI_DIGITS = {
+    0: ['###', '#.#', '#.#', '#.#', '###'],
+    1: ['.#.', '##.', '.#.', '.#.', '###'],
+    2: ['###', '..#', '###', '#..', '###'],
+    5: ['###', '#..', '###', '..#', '###'],
+  };
+  const noteFrame = (pal, label) => {
+    const c = pix(MANO, pal);
+    if (label) {
+      const g = c.getContext('2d');
+      g.fillStyle = pal.b;
+      g.fillRect(2, 4, 12, 5);                  // clear the baked "100"
+      g.fillStyle = pal.n;
+      let dx = 3;
+      for (const ch of label) {
+        MINI_DIGITS[ch].forEach((row, yy) => [...row].forEach((cc, xx) => {
+          if (cc === '#') g.fillRect(dx + xx, 4 + yy, 1, 1);
+        }));
+        dx += 4;
+      }
+    }
+    return c;
+  };
+  sheet('r2', [pix(COIN_R2, COIN_R2_PAL)]);
+  sheet('note_r100', [noteFrame(MANO_PAL, null)]);
+  sheet('note_r10', [noteFrame(NOTE_PALS.r10, '10')]);
+  sheet('note_r20', [noteFrame(NOTE_PALS.r20, '20')]);
+  sheet('note_r50', [noteFrame(NOTE_PALS.r50, '50')]);
   sheet('weed', [pix(WEED, WEED_PAL)]);
+  sheet('rattex', [pix(RATTEX, RATTEX_PAL)]);
+  // ability caps sold in the shop
+  sheet('hat_propeller', [frame(12, 12, (g) => {
+    R(g, 5, 0, 2, 2, '#54545f');                 // stalk
+    R(g, 1, 1, 4, 2, '#d64545'); R(g, 7, 1, 4, 2, '#ffd84d'); // rotor blades
+    R(g, 2, 4, 8, 3, '#2e7fd6');                 // dome
+    R(g, 1, 7, 10, 2, '#d64545');                // band
+  })]);
+  sheet('hat_beanie', [frame(12, 12, (g) => {
+    R(g, 5, 0, 2, 2, '#ffd84d');                 // pom
+    R(g, 3, 2, 6, 2, '#8a3c3c');                 // crown
+    R(g, 2, 4, 8, 3, '#8a3c3c');
+    R(g, 1, 7, 10, 3, '#6d2e2e');                // fold band
+  })]);
+  sheet('hat_chiefs', [frame(12, 12, (g) => {
+    R(g, 2, 2, 8, 3, '#1c1c22');                 // black crown
+    R(g, 1, 5, 10, 3, '#ffb84d');                // amakhosi gold
+    R(g, 7, 8, 5, 2, '#1c1c22');                 // brim
+  })]);
   sheet('lantern', [pix(LANTERN_A, LANTERN_PAL), pix(LANTERN_B, LANTERN_PAL)]);
 
-  // Checkpoint flag: inactive, active x2 (waving)
-  sheet('flag', [0, 1, 2].map((i) => frame(14, 26, (g) => {
-    R(g, 2, 0, 2, 26, '#7a7a8a');
-    R(g, 1, 24, 6, 2, '#54545f');
-    const col = i === 0 ? '#6b6b76' : '#7ec8ff';
-    const wave = i === 2 ? 1 : 0;
-    R(g, 4, 1, 8, 3, col);
-    R(g, 4, 4, 7 - wave, 2, col);
-    R(g, 4, 6, 5 - wave, 1, i === 0 ? '#5a5a64' : '#549fdb');
-  })));
+  // Checkpoint lantern: the cave lantern, unlit until Vaks passes it,
+  // then it burns brighter (frames: 0 unlit, 1-2 lit flicker)
+  const CP_UNLIT = { h: '#6b5436', f: '#3a3026', a: '#4a4338', A: '#5a5244' };
+  const CP_LIT   = { h: '#6b5436', f: '#3a3026', a: '#ffcf6a', A: '#fff4c8' };
+  sheet('cp_lantern', [pix(LANTERN_A, CP_UNLIT), pix(LANTERN_A, CP_LIT), pix(LANTERN_B, CP_LIT)]);
 
   // Payphone (ringing variant shifts handset)
   sheet('payphone', [0, 1].map((i) => frame(16, 28, (g) => {
@@ -737,16 +999,15 @@ export function initSprites() {
     R(g, 1, 14, 3, 4, C.scarfD);
     R(g, 4, 21, 16, 3, C.dress);
   })]);
-  for (const [nm, pal] of [['face_tiko', PAL.tikoBig], ['face_shop', PAL.tikoShop]]) {
-    sheet(nm, [frame(24, 24, (g) => {
-      R(g, 2, 0, 3, 6, pal.h); R(g, 19, 0, 3, 6, pal.h);
-      R(g, 3, 1, 2, 2, pal.g); R(g, 19, 1, 2, 2, pal.g);
-      R(g, 4, 5, 16, 19, pal.b);
-      R(g, 4, 5, 16, 2, pal.d);
-      R(g, 7, 11, 3, 3, pal.e); R(g, 14, 11, 3, 3, pal.e);
-      if (nm === 'face_shop') { R(g, 9, 18, 6, 1, pal.m); R(g, 8, 17, 1, 1, pal.m); R(g, 15, 17, 1, 1, pal.m); }
-      else R(g, 9, 18, 6, 2, pal.m);
-    })]);
+  // Portraits: the baked photo head, graded to match each speaker
+  // Portraits: buffer-res fallback sheets (cutscenes overlay these in
+  // HD via PHOTO_FACES + drawImoHead)
+  for (const [nm, gname] of [['face_tiko', 'tiko_big'], ['face_shop', 'tiko_shop']]) {
+    const [c, g] = cv(24, 24);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(ImoHeads[gname], 0, 0, 24, 24);
+    sheet(nm, [c]);
   }
   sheet('face_tallman', [frame(24, 24, (g) => {
     R(g, 5, 8, 14, 14, '#9a6a42');

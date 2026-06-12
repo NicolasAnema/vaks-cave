@@ -8,7 +8,7 @@
 import { View, dimScreen, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText, wrapText, LINE_H } from '../engine/font.js';
-import { draw, spr, VAKS, GRANNY } from '../engine/sprites.js';
+import { draw, drawImoHead, spr, PHOTO_FACES, VAKS, GRANNY } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
@@ -271,7 +271,8 @@ export class CutsceneScreen {
     const bx = 64, by = 34, bw = View.w - 128, bh = 44;
     panel(ctx, bx, by, bw, bh);
     panel(ctx, bx + 5, by + 8, 28, 28, { bg: '#10131f' });
-    draw(ctx, d.face, 0, bx + 7, by + 10);
+    if (PHOTO_FACES[d.face]) drawImoHead(ctx, PHOTO_FACES[d.face], bx + 7, by + 10, 24, 24);
+    else draw(ctx, d.face, 0, bx + 7, by + 10);
     drawText(ctx, d.name, bx + 40, by + 5, { color: '#8ae08a' });
     const lines = wrapText(d.text, bw - 50);
     const shown = d.text.slice(0, Math.ceil(d.shown));

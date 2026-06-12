@@ -15,7 +15,7 @@ import { makeCaveLayers, makeTownLayers, drawLayers } from '../engine/bg.js';
 import { AudioManager, Barks } from '../systems/audio.js';
 import { Player } from './player.js';
 import { Mist, Granny } from './threats.js';
-import { Bottle, Rat, Tiko, Pickup, Checkpoint, NPC } from './entities.js';
+import { Bottle, Rat, Tiko, Tsotsi, TsotsiBullet, Pickup, Checkpoint, NPC } from './entities.js';
 
 const barkStartSafari = Barks.wire('m_irie_safari', 'level.js: W1 level start variant');
 const barkStartBaas = Barks.wire('m_baas_plaas', 'level.js: W2 level start variant');
@@ -38,13 +38,18 @@ const barkSushiHit = Barks.wire('m_sushi', 'level.js: first sushi hit');
 const barkIrie = Barks.wire('m_irie_feel', 'level.js: irie pickup');
 const barkIriePool = Barks.wire('m_irie_pool', 'level.js: irie pickup variants');
 const barkTooStrong = Barks.wire('m_too_strong', 'level.js: overstack');
-const barkCeppy = Barks.wire('m_ceppies', 'level.js: first ceppy of the level');
+const barkMano = Barks.wire('m_ceppies', 'level.js: first mano of the level');
 const barkCheckpoint = Barks.wire('m_wheres_boss', 'level.js: checkpoint reached');
+const barkRattexKill = Barks.wire('m_rattex_kill', 'level.js: rattex active, rat dies on touch');
+const barkTsotsiSpot = Barks.wire('m_tsotsi_spot', 'level.js: tsotsi first sighted');
+const barkTsotsiPhone = Barks.wire('m_tsotsi_phone', 'level.js: phone snatcher contact');
+const barkTsotsiViceroy = Barks.wire('m_tsotsi_viceroy', 'level.js: viceroy pusher forced sip');
+const barkTsotsiStomp = Barks.wire('m_tsotsi_stomp', 'level.js: tsotsi stomped');
 
 export class LevelScreen {
   constructor(level, run, cb) {
     this.level = level;
-    this.run = run;       // { lives, score, ceppies, crystals, irieStash, faintCharm }
+    this.run = run;       // { lives, score, mano, hats, irieStash, faintCharm }
     this.cb = cb;         // { onClear(stats), onGameOver(), onPause() }
     this.o = level.orientation;
     this.debug = { invincible: false };
@@ -65,6 +70,9 @@ export class LevelScreen {
     this.tikos = level.tikos.map((d) => new Tiko(d));
     this.checkpoints = level.checkpoints.map((d) => new Checkpoint(d));
     this.npcs = level.npcs.map((d) => new NPC(d));
+    this.tsotsis = (level.tsotsis || []).map((d) => new Tsotsi(d));
+    this.tsotsiBullets = [];
+    this.tsotsiSeen = false;
     this.bottles = [];
     this.sushi = level.sushi.map((s) => ({ ...s, hit: false }));
     this.props = level.props.map((p) => ({ ...p, fired: false, t: Math.random() * 5 }));
@@ -75,10 +83,11 @@ export class LevelScreen {
     this.crumbleState = new Map(); // platform -> { timer, gone, respawn }
 
     this.respawnPoint = { x: level.spawn.x, y: level.spawn.y };
+    this.ganjaUsed = false; // G: burn a life for an irie rush, once per level
     this.time = 0;
-    this.ceppiesCollected = 0;
+    this.manoCollected = 0;
     this.deaths = 0;
-    this.firstCeppy = false;
+    this.firstMano = false;
 
     this.introT = CONFIG.timers.introCard;
     this.deathT = 0;
@@ -99,6 +108,9 @@ export class LevelScreen {
 
     // irie stash from the shop: start the level holding one
     if (run.irieStash) { run.irieStash = false; this.player.irieT = CONFIG.irie.duration; }
+    // rattex from the shop: this level, rats die if they touch Vaks
+    this.rattex = false;
+    if (run.rattex) { run.rattex = false; this.rattex = true; }
   }
 
   // entry barks fire on the first update so screen transitions can't clear them
@@ -124,6 +136,20 @@ export class LevelScreen {
     return this.o === 'vertical' ? this.threat.topY + 40 : this.level.groundY + 70;
   }
 
+  // ---- tsotsi hooks (called by the entities) ----
+  tsotsiSpotted(ts) {
+    if (this.tsotsiSeen) return;
+    this.tsotsiSeen = true;
+    AudioManager.play('tsotsi_alert', ts.kind);
+    barkTsotsiSpot({ anchor: this.player, force: true });
+  }
+
+  tsotsiShoot(ts) {
+    AudioManager.play('tsotsi_shoot', 'L' + this.level.id);
+    this.tsotsiBullets.push(new TsotsiBullet(ts.x + ts.dir * 11, ts.y - CONFIG.tsotsi.gun.bulletY, ts.dir));
+    this.shake(0.8);
+  }
+
   solidPlatforms() {
     const out = [];
     for (const p of this.level.platforms) {
@@ -138,14 +164,17 @@ export class LevelScreen {
   standOn(p) {
     if (p.type === 'crumble') {
       let st = this.crumbleState.get(p);
-      if (!st) { st = { timer: CONFIG.crumble.delay, gone: false, respawn: 0 }; this.crumbleState.set(p, st); }
+      if (!st) {
+        const delay = CONFIG.crumble.delayByLevel?.[this.level.id] ?? CONFIG.crumble.delay;
+        st = { timer: delay, gone: false, respawn: 0 }; this.crumbleState.set(p, st);
+      }
     }
   }
 
   // ---- death / respawn / clear ----
 
   die() {
-    if (this.player.dead || this.cleared || this.debug.invincible) return;
+    if (this.player.dead || this.cleared || this.debug.invincible || this.player.irie) return;
     this.player.dead = true;
     this.deaths++;
     this.run.lives--;
@@ -198,7 +227,7 @@ export class LevelScreen {
       if (this.clearT <= 0) {
         const timeBonus = Math.max(0, Math.round((CONFIG.score.parTime[this.level.id] - this.time) * CONFIG.score.timeBonusPerSec));
         this.run.score += CONFIG.score.levelClear + timeBonus;
-        this.cb.onClear({ time: this.time, ceppies: this.ceppiesCollected, deaths: this.deaths, timeBonus });
+        this.cb.onClear({ time: this.time, mano: this.manoCollected, deaths: this.deaths, timeBonus });
       }
       return;
     }
@@ -215,6 +244,23 @@ export class LevelScreen {
     }
 
     this.time += dt;
+
+    // G: burn a life for an emergency ganja rush — once per level, and
+    // only when not already irie (spending a life to overstack is a trap).
+    if (Input.wasPressed('KeyG')) {
+      if (!this.ganjaUsed && !this.player.irie && this.run.lives > 0) {
+        this.ganjaUsed = true;
+        this.run.lives--;
+        this.player.startIrie();
+        AudioManager.play('powerup_irie', 'ganja_burn');
+        (Math.random() < 0.5 ? barkIrie : barkIriePool)({ anchor: this.player, force: true });
+        Particles.sparkle(this.player.x, this.player.y - 10, '#6ac24a', 10);
+        this.shake(1.5);
+      } else if (!this.player.irie) {
+        Barks.note(this.ganjaUsed ? 'ONE IRIE BURN PER LEVEL, BOSS' : 'NO LIVES TO BURN');
+      }
+    }
+
     const slow = this.player.worldScale();
 
     this.player.update(dt);
@@ -254,7 +300,11 @@ export class LevelScreen {
       if (b.dead) { this.bottles.splice(i, 1); continue; }
       if (this.hitEntity(b.x - 5, b.y - 12, 10, 12) && this.player.invuln <= 0) {
         b.shatter();
-        this.player.hurt(b.x);
+        if (this.player.hurt(b.x)) {
+          // beer = babalas: slower and weaker until it wears off
+          this.player.babalasT = CONFIG.babalas.time;
+          Barks.note('BABALAS! LEGS LIKE PAP.');
+        }
       }
     }
 
@@ -265,7 +315,17 @@ export class LevelScreen {
       if (r.squishT > 0) continue;
       const hb = r.hitbox();
       if (this.hitEntity(hb.x, hb.y, hb.w, hb.h)) {
-        if (this.player.vy > 50 && this.player.y - 8 < hb.y + 3) {
+        if (this.rattex) {
+          // deadly pellets in pocket: any touch kills the rat, not Vaks
+          r.stomp(this, true);
+          this.run.score += CONFIG.score.ratStomp;
+          barkRattexKill({ anchor: this.player });
+          Particles.shards(r.x, r.y - 4, ['#d61f1f', '#f2c91e'], 5);
+        } else if (this.run.hats?.beanie && r.scale < CONFIG.hats.beanie.smashUnder) {
+          // beanie strength: small rats get run straight through
+          r.stomp(this);
+          this.run.score += CONFIG.score.ratStomp;
+        } else if (this.player.vy > 50 && this.player.y - 8 < hb.y + 3) {
           r.stomp(this);
           this.run.score += CONFIG.score.ratStomp;
           this.player.vy = -210;
@@ -277,6 +337,50 @@ export class LevelScreen {
     }
     this.rats = this.rats.filter((r) => !r.dead);
 
+    // township tsotsis (W2): want the phone, push the viceroy
+    for (const ts of this.tsotsis) {
+      ts.update(dt, this, slow);
+      if (ts.stunT > 0 || ts.cd > 0) continue;
+      const hb = ts.hitbox();
+      if (this.hitEntity(hb.x, hb.y, hb.w, hb.h)) {
+        if (this.player.vy > 50 && this.player.y - 8 < hb.y + 6) {
+          // stomped: he sits down hard and rethinks his career
+          ts.stomp();
+          this.run.score += CONFIG.tsotsi.scoreStomp;
+          AudioManager.play('tsotsi_stomp', ts.kind);
+          barkTsotsiStomp({ anchor: this.player, force: true });
+          this.player.vy = -210;
+          this.player.sqX = 0.85; this.player.sqY = 1.15;
+        } else if (this.player.invuln <= 0 && !this.player.irie) {
+          ts.cd = 1.2;
+          if (ts.kind === 'viceroy') {
+            // forced sip of viceroy: instant babalas
+            if (this.player.hurt(ts.x)) {
+              this.player.babalasT = CONFIG.babalas.time;
+              AudioManager.play('tsotsi_drink', 'forced sip');
+              barkTsotsiViceroy({ anchor: this.player, force: true });
+            }
+          } else if (this.player.hurt(ts.x)) {
+            if (ts.kind === 'knife') {
+              const grab = Math.min(this.run.mano, CONFIG.tsotsi.knife.steal);
+              if (grab > 0) { this.run.mano -= grab; Barks.note('THE TSOTSI GRABBED ' + grab + ' MANO!'); }
+              barkTsotsiPhone({ anchor: this.player, force: true });
+            }
+          }
+        }
+      }
+    }
+    // the gunman's bullets: slow, straight, jumpable
+    for (let i = this.tsotsiBullets.length - 1; i >= 0; i--) {
+      const b = this.tsotsiBullets[i];
+      b.update(dt, this, slow);
+      if (b.dead) { this.tsotsiBullets.splice(i, 1); continue; }
+      if (this.hitEntity(b.x - 3, b.y - 2, 6, 4)) {
+        this.tsotsiBullets.splice(i, 1);
+        if (this.player.invuln <= 0) this.player.hurt(b.x);
+      }
+    }
+
     // tikolosh variants: contact = caught
     for (const t of this.tikos) {
       t.update(dt, this, slow);
@@ -286,7 +390,7 @@ export class LevelScreen {
 
     // sushi (W2): china's food
     for (const s of this.sushi) {
-      if (Math.abs(this.player.x - s.x) < 10 && Math.abs(this.player.y - s.y) < 14 && this.player.invuln <= 0) {
+      if (Math.abs(this.player.x - s.x) < 10 && Math.abs(this.player.y - s.y) < 14 && this.player.invuln <= 0 && !this.player.irie) {
         if (!s.hit) { s.hit = true; barkSushiHit({ anchor: this.player, force: true }); }
         this.player.hurt(s.x);
         this.player.stun = CONFIG.sushi.stunTime;
@@ -304,12 +408,18 @@ export class LevelScreen {
     // checkpoints
     for (const cp of this.checkpoints) {
       cp.update(dt);
-      if (!cp.active && Math.abs(this.player.x - cp.x) < 16 && Math.abs(this.player.y - cp.y) < 26) {
+      // a checkpoint counts as soon as Vaks PASSES it — touching the
+      // lantern or simply climbing above it / running beyond it
+      const near = Math.abs(this.player.x - cp.x) < 16 && Math.abs(this.player.y - cp.y) < 26;
+      const passed = this.o === 'vertical'
+        ? this.player.y < cp.y - 28
+        : this.player.x > cp.x + 24;
+      if (!cp.active && (near || passed)) {
         cp.active = true;
         this.respawnPoint = { x: cp.x, y: cp.y };
         AudioManager.play('checkpoint', 'L' + this.level.id);
         barkCheckpoint({ anchor: this.player, force: true });
-        Particles.sparkle(cp.x, cp.y - 18, '#7ec8ff');
+        Particles.sparkle(cp.x, cp.y - 8, '#ffcf6a');
         // the scripted Tallman & Shorty beat: they stall granny
         if (this.level.scriptedStallAt && !this.stallDone &&
             Math.abs(cp.x - this.level.scriptedStallAt.x) < 8) {
@@ -386,8 +496,9 @@ export class LevelScreen {
     }
     if (this.glitchT > 0) this.glitchT -= dt;
 
-    // threat catches
-    if (!this.debug.invincible) {
+    // threat catches (irie makes Vaks invincible, like debug invincibility)
+    const invincible = this.debug.invincible || this.player.irie;
+    if (!invincible) {
       if (this.threat.caught(this.player)) {
         if (this.o === 'horizontal') { AudioManager.play('granny_caught'); this.threat.onCaught(); }
         this.die();
@@ -417,20 +528,21 @@ export class LevelScreen {
 
   collect(pk) {
     pk.taken = true;
-    if (pk.kind === 'ceppy') {
-      this.run.ceppies++; this.ceppiesCollected++;
-      this.run.score += CONFIG.score.ceppy;
-      Particles.sparkle(pk.x, pk.y, '#ff8a8a', 4);
-      if (!this.firstCeppy) { this.firstCeppy = true; barkCeppy({ anchor: this.player }); }
-      if (this.run.ceppies % CONFIG.lives.ceppiesPerLife === 0 && this.run.lives < CONFIG.lives.max) {
+    const v = CONFIG.money.values[pk.kind];
+    if (v) {
+      this.run.mano += v; this.manoCollected += v;
+      this.run.earned = (this.run.earned || 0) + v;
+      this.run.score += v * CONFIG.score.perRand;
+      Particles.sparkle(pk.x, pk.y, v >= 50 ? '#ffe49a' : (v >= 10 ? '#8ae08a' : '#ff8a8a'), v >= 50 ? 8 : 4);
+      if (!this.firstMano) { this.firstMano = true; barkMano({ anchor: this.player }); }
+      // every R{manoPerLife} EARNED across the run = an extra life
+      const per = CONFIG.lives.manoPerLife;
+      if (Math.floor(this.run.earned / per) > Math.floor((this.run.earned - v) / per) &&
+          this.run.lives < CONFIG.lives.max) {
         this.run.lives++;
-        Barks.note(CONFIG.lives.ceppiesPerLife + ' CEPPIES! EXTRA LIFE, BOSS!');
+        Barks.note('R' + per + ' EARNED! EXTRA LIFE, BOSS!');
         Particles.confetti(pk.x, pk.y, 8);
       }
-    } else if (pk.kind === 'crystal') {
-      this.run.crystals++;
-      this.run.score += CONFIG.score.crystal;
-      Particles.sparkle(pk.x, pk.y, '#5ee0a0', 5);
     } else if (pk.kind === 'weed') {
       const result = this.player.startIrie();
       if (result === 'overstack') {
@@ -479,6 +591,8 @@ export class LevelScreen {
       if (alpha > 0.02) t.draw(ctx, cam, alpha);
     }
     for (const b of this.bottles) b.draw(ctx, cam);
+    for (const ts of this.tsotsis) ts.draw(ctx, cam);
+    for (const b of this.tsotsiBullets) b.draw(ctx, cam);
     for (const s of this.sushi) {
       if (cam.sees(s.x, s.y, 16)) draw(ctx, 'sushi', 0, s.x - 6, s.y - 7);
     }
@@ -551,11 +665,6 @@ export class LevelScreen {
         draw(ctx, 'ground_w2', 0, tx, g.y);
       }
     }
-    // lanterns
-    for (const ln of this.level.lanterns) {
-      if (!cam.sees(ln.x, ln.y, 24)) continue;
-      draw(ctx, 'lantern', Math.floor(performance.now() / 280) % 2, ln.x, ln.y - 16);
-    }
   }
 
   drawProps(ctx, cam) {
@@ -610,12 +719,14 @@ export class LevelScreen {
     g.addColorStop(1, 'rgba(0,0,0,0)');
     m.fillStyle = g;
     m.fillRect(px - r, py - r, r * 2, r * 2);
-    for (const ln of this.level.lanterns) {
-      const lx = ln.x + 5 - cam.ox(), ly = ln.y - 10 - cam.oy();
+    // checkpoint lanterns cut light pools: lit ones a full pool,
+    // unlit ones a faint glimmer so they can be found in the dark
+    for (const cp of this.checkpoints) {
+      const lx = cp.x - cam.ox(), ly = cp.y - 6 - cam.oy();
       if (lx < -60 || lx > View.w + 60 || ly < -60 || ly > View.h + 60) continue;
-      const lr = CONFIG.catEyes.lanternRadius;
+      const lr = cp.active ? CONFIG.catEyes.lanternRadius : 20;
       g = m.createRadialGradient(lx, ly, 4, lx, ly, lr);
-      g.addColorStop(0, 'rgba(0,0,0,0.95)');
+      g.addColorStop(0, `rgba(0,0,0,${cp.active ? 0.95 : 0.5})`);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       m.fillStyle = g;
       m.fillRect(lx - lr, ly - lr, lr * 2, lr * 2);
@@ -653,16 +764,20 @@ export class LevelScreen {
   }
 
   drawHUD(ctx) {
-    // lives as cap icons
+    // lives as weed icons
     for (let i = 0; i < Math.max(0, this.run.lives); i++) {
-      draw(ctx, 'ceppy', 0, 6 + i * 13, 6);
+      draw(ctx, 'weed', 0, 6 + i * 16, 4);
     }
-    // ceppy counter + score
-    draw(ctx, 'ceppy', 0, 6, 20);
-    drawText(ctx, 'x' + this.run.ceppies, 19, 20, { color: '#ffe49a' });
-    draw(ctx, 'crystal', 0, 8, 31);
-    drawText(ctx, 'x' + this.run.crystals, 19, 33, { color: '#8ae08a' });
+    // rattex armed: the box rides along next to the lives
+    if (this.rattex) draw(ctx, 'rattex', 0, 8 + Math.max(0, this.run.lives) * 16 + 4, 3);
+    // mano counter + score
+    draw(ctx, 'r2', 0, 6, 19);
+    drawText(ctx, 'R' + this.run.mano, 21, 22, { color: '#ffe49a' });
     drawText(ctx, 'SCORE ' + this.run.score, View.w - 6, 6, { color: '#f4f0e0', align: 'right' });
+    // ganja burn hint (G: spend a life for an irie rush, once per level)
+    if (!this.ganjaUsed && this.run.lives > 0 && !this.player.irie) {
+      drawText(ctx, 'G:BURN LIFE>IRIE', 6, 32, { color: '#6ac24a' });
+    }
 
     // irie meter
     if (this.player.irie || this.player.overstacked) {

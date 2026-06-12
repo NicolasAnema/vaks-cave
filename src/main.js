@@ -88,8 +88,9 @@ const FLOW = [
 
 function newRun() {
   return {
-    lives: CONFIG.lives.start, score: 0, ceppies: 0, crystals: 0,
-    irieStash: false, faintCharm: false,
+    lives: CONFIG.lives.start, score: 0, mano: 0, earned: 0,
+    irieStash: false, faintCharm: false, rattex: false,
+    hats: { propeller: false, beanie: false, chiefs: false },
   };
 }
 
@@ -270,10 +271,10 @@ function drawDebugOverlay(ctx) {
 
 // ---------------- boot ----------------
 
-function boot() {
+async function boot() {
   Save.load();
   initRender();
-  initSprites();
+  await initSprites(); // decodes the embedded photo heads
   Input.init();
 
   const { cov, ver } = bootReports();
@@ -294,14 +295,14 @@ function boot() {
     else if (jump === 'levelselect') { Save.data.unlockedLevel = 6; M.replace(new LevelSelectScreen({ onPick: (n) => startRunAt(flowIndexOfLevel(n), true), onBack: toMenu }), false); }
     else if (jump.startsWith('level')) startRunAt(flowIndexOfLevel(parseInt(jump.slice(5), 10) || 1), true);
     else if (jump === 'boss') { run = newRun(); goFlow(FLOW.findIndex((f) => f.t === 'boss')); }
-    else if (jump === 'shop') { run = newRun(); run.crystals = 40; M.replace(new ShopScreen(run, 4, { onDone: toMenu }), false); }
+    else if (jump === 'shop') { run = newRun(); run.mano = 500; M.replace(new ShopScreen(run, 4, { onDone: toMenu }), false); }
     else if (jump.startsWith('cutscene:')) M.replace(new CutsceneScreen(jump.split(':')[1], { onDone: toMenu }), false);
     else if (jump === 'jukebox') M.replace(new JukeboxScreen({ onBack: toMenu }), false);
     else if (jump === 'gallery') { Save.data.scenes = [...SCENE_ORDER]; openGallery(); }
     else if (jump === 'settings') M.replace(new SettingsScreen({ onBack: toMenu }), false);
     else if (jump === 'credits') M.replace(new CreditsScreen({ onDone: toMenu }), false);
     else if (jump === 'gameover') M.replace(new GameOverScreen({ onContinue: toMenu, onQuit: toMenu }), false);
-    else if (jump === 'clear') M.replace(new ClearScreen('SHALLOW SHAFT', { time: 61.2, ceppies: 14, deaths: 1, timeBonus: 150 }, { onDone: toMenu }), false);
+    else if (jump === 'clear') M.replace(new ClearScreen('SHALLOW SHAFT', { time: 61.2, mano: 14, deaths: 1, timeBonus: 150 }, { onDone: toMenu }), false);
   }
 
   // debug handle for automated smoke tests

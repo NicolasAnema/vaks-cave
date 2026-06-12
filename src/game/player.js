@@ -37,8 +37,20 @@ export class Player {
 
   get irie() { return this.irieT > 0; }
   get overstacked() { return this.overT > 0; }
+  get babalas() { return this.babalasT > 0; }
   // world time scale: irie slows the world around Vaks
   worldScale() { return this.irie ? CONFIG.irie.slowFactor : 1; }
+  hats() { return this.lr.run?.hats || {}; }
+  // irie powers the legs (ladders optional); babalas saps them;
+  // the propeller hat lifts every jump, the chiefs hat is tikolosh speed
+  jumpScale() {
+    const base = this.irie ? CONFIG.irie.jumpMul : (this.babalas ? CONFIG.babalas.jumpMul : 1);
+    return base * (this.hats().propeller ? CONFIG.hats.propeller.jumpMul : 1);
+  }
+  speedScale() {
+    const base = this.babalas ? CONFIG.babalas.speedMul : 1;
+    return base * (this.hats().chiefs ? CONFIG.hats.chiefs.speedMul : 1);
+  }
 
   hitbox() {
     const { hbW, hbH } = CONFIG.player;
@@ -55,7 +67,7 @@ export class Player {
   }
 
   hurt(fromX) {
-    if (this.invuln > 0 || this.dead) return false;
+    if (this.invuln > 0 || this.dead || this.irie) return false; // irie = invincible
     const P = CONFIG.player;
     const dir = this.x >= fromX ? 1 : -1;
     this.vx = dir * P.knockbackX;
@@ -151,7 +163,7 @@ export class Player {
       }
       if (this.jbuf > 0) { // jump off the ladder
         this.jbuf = 0; this.climbing = false;
-        this.vy = -P.jumpVel * 0.75;
+        this.vy = -P.jumpVel * 0.75 * this.jumpScale();
         this.vx = dir * (this.o === 'vertical' ? P.walkSpeed : P.runSpeed) * 0.6;
         this.onGround = false;
         this.sqX = 0.85; this.sqY = 1.18;
@@ -162,9 +174,9 @@ export class Player {
 
     // ---- horizontal movement ----
     if (this.o === 'vertical') {
-      this.vx = stunned ? this.vx * (1 - Math.min(1, 6 * dt)) : dir * P.walkSpeed;
+      this.vx = stunned ? this.vx * (1 - Math.min(1, 6 * dt)) : dir * P.walkSpeed * this.speedScale();
     } else {
-      const target = dir * P.runSpeed;
+      const target = dir * P.runSpeed * this.speedScale();
       const a = (dir !== 0 ? P.runAccel : P.runDecel) * dt;
       if (!stunned) {
         if (this.vx < target) this.vx = Math.min(target, this.vx + a);
@@ -181,7 +193,7 @@ export class Player {
     this.coyote = this.onGround ? P.coyoteTime : this.coyote - dt;
     if (this.jbuf > 0 && this.coyote > 0 && !stunned) {
       this.jbuf = 0; this.coyote = 0;
-      this.vy = -P.jumpVel;
+      this.vy = -P.jumpVel * this.jumpScale();
       this.onGround = false;
       this.sqX = 0.85; this.sqY = 1.18;
       this.lr.fxJump(this.x, this.y);
@@ -260,6 +272,27 @@ export class Player {
     ctx.translate(Math.round(this.x), Math.round(this.y));
     ctx.scale(sx, sy);
     draw(ctx, 'vaks', f, -fw / 2, -fh, { flip: this.facing < 0 });
+    this.drawHats(ctx);
     ctx.restore();
+  }
+
+  // ability caps from the shop, worn over the base cap
+  drawHats(ctx) {
+    const H = this.hats();
+    if (H.beanie) {
+      ctx.fillStyle = '#8a3c3c'; ctx.fillRect(-5, -29, 10, 4);
+      ctx.fillStyle = '#6d2e2e'; ctx.fillRect(-5, -26, 10, 1);
+      if (!H.propeller) { ctx.fillStyle = '#ffd84d'; ctx.fillRect(-1, -31, 2, 2); } // pom
+    }
+    if (H.chiefs) {
+      ctx.fillStyle = '#1c1c22'; ctx.fillRect(-5, -29, 10, 2);   // black crown
+      ctx.fillStyle = '#ffb84d'; ctx.fillRect(-5, -27, 10, 2);   // amakhosi gold
+    }
+    if (H.propeller) {
+      const ph = Math.floor(this.animT * 6) % 2;
+      ctx.fillStyle = '#54545f'; ctx.fillRect(-1, -31, 2, 2);    // stalk
+      ctx.fillStyle = ph ? '#d64545' : '#ffd84d'; ctx.fillRect(-6, -33, 6, 2);
+      ctx.fillStyle = ph ? '#ffd84d' : '#d64545'; ctx.fillRect(0, -33, 6, 2);
+    }
   }
 }

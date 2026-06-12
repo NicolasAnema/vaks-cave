@@ -8,7 +8,7 @@
 
 import { CONFIG } from '../config.js';
 import { View } from '../engine/render.js';
-import { draw, GRANNY } from '../engine/sprites.js';
+import { draw, drawImoHead, TIKO_HEAD_RECT, GRANNY } from '../engine/sprites.js';
 import { Particles } from '../engine/particles.js';
 import { Barks, AudioManager } from '../systems/audio.js';
 
@@ -90,10 +90,16 @@ export class Mist {
       const tx = this.level.width / 2 + Math.sin(this.t * 0.5) * 90;
       const ty = top + 26 + Math.sin(this.t * 0.9) * 8;
       draw(ctx, 'tiko', Math.floor(this.t * 2) % 2, tx - 20, ty, { alpha: 0.55, scale: 2 });
-      // glowing eyes punch through
+      // HD photo head draws in screen space (queueHD bypasses the ctx camera
+      // transform), so subtract the camera offset to keep it over the body
+      drawImoHead(ctx, 'tiko', tx - 20 + TIKO_HEAD_RECT.x * 2 - cam.ox(), ty + TIKO_HEAD_RECT.y * 2 - cam.oy(),
+        TIKO_HEAD_RECT.w * 2, TIKO_HEAD_RECT.h * 2, false, 0.55);
+      // glowing eyes punch through (photo head eye line, x2 scale).
+      // Tracks the enlarged head: same bottom-centre anchor, so the eyes
+      // ride higher and spread wider, and the glints grow with the face.
       ctx.fillStyle = 'rgba(174,242,168,0.9)';
-      ctx.fillRect(Math.round(tx - 20 + 6), Math.round(ty + 17), 4, 3);
-      ctx.fillRect(Math.round(tx - 20 + 28), Math.round(ty + 17), 4, 3);
+      ctx.fillRect(Math.round(tx - 20 + 11), Math.round(ty + 9), 6, 6);
+      ctx.fillRect(Math.round(tx - 20 + 25), Math.round(ty + 9), 6, 6);
     }
   }
 }

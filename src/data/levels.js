@@ -94,10 +94,12 @@ function buildVertical(o) {
 
     const frac = (floorY - y) / (floorY - topY);
 
-    // pickups on the main path
+    // pickups on the main path: R2 coin runs, sometimes a green R10
     if (r() < 0.42 && p.w >= 60) {
       const n = 2 + Math.floor(r() * 2);
-      for (let i = 0; i < n; i++) pickups.push({ x: p.x + 10 + i * 15 + r() * 4, y: p.y - 14, kind: 'ceppy' });
+      for (let i = 0; i < n; i++) pickups.push({ x: p.x + 10 + i * 15 + r() * 4, y: p.y - 14, kind: 'r2' });
+    } else if (r() < 0.16 && p.w >= 60) {
+      pickups.push({ x: p.x + p.w / 2, y: p.y - 14, kind: 'r10' });
     }
     // weed at planned fractions
     for (const wf of o.weedFracs) {
@@ -117,8 +119,9 @@ function buildVertical(o) {
         checkpoints.push({ x: p.x + p.w / 2, y: p.y });
       }
     }
-    // rats on wider ledges
+    // rats on wider ledges (host stays solid: a rat never rides a falling step)
     if (o.ratFracs.some((rf, i) => !placedFrac.has('r' + i) && frac >= rf && p.w >= 80 && placedFrac.add('r' + i))) {
+      p.type = 'solid';
       rats.push({ x: p.x + p.w / 2, y: p.y, minX: p.x + 6, maxX: p.x + p.w - 6 });
     }
     // shadow tikolosh patrols (L3)
@@ -128,10 +131,6 @@ function buildVertical(o) {
     // irie tikolosh drifters (L2)
     if (o.irieFracs.some((tf, i) => !placedFrac.has('t' + i) && frac >= tf && placedFrac.add('t' + i))) {
       tikos.push({ kind: 'irie', x: 240, y: p.y - 34, minX: 70, maxX: 410 });
-    }
-    // lanterns
-    if (o.lanternEvery && row % o.lanternEvery === 0) {
-      lanterns.push({ x: p.x + (r() < 0.5 ? 6 : p.w - 16), y: p.y });
     }
     // decoy platform beside the main path (hop-reachable) with goodies
     if (r() < o.decoyFrac) {
@@ -145,8 +144,15 @@ function buildVertical(o) {
       if (dx !== null) {
         const d = { x: Math.round(dx), y: y + Math.round(r() * 6 - 3), w: dw, type: r() < o.crumbleDecoy ? 'crumble' : 'solid', main: false };
         platforms.push(d);
-        const n = 1 + Math.floor(r() * 3);
-        for (let i = 0; i < n; i++) pickups.push({ x: d.x + 8 + i * 14, y: d.y - 14, kind: r() < 0.6 ? 'crystal' : 'ceppy' });
+        // decoys pay in notes: risk = reward. One R100 high up per level.
+        if (frac >= 0.8 && !placedFrac.has('r100')) {
+          placedFrac.add('r100');
+          pickups.push({ x: d.x + d.w / 2, y: d.y - 14, kind: 'r100' });
+        } else {
+          const roll = r();
+          pickups.push({ x: d.x + d.w / 2, y: d.y - 14, kind: roll < 0.5 ? 'r10' : (roll < 0.82 ? 'r20' : 'r50') });
+          if (r() < 0.5) pickups.push({ x: d.x + 9, y: d.y - 13, kind: 'r2' });
+        }
       }
     }
   }
@@ -185,10 +191,11 @@ function buildHorizontal(o) {
   const maxGap = Math.floor(J2.maxJumpDist * 0.72);
 
   const grounds = [], platforms = [], pickups = [], rats = [], sushi = [],
-        props = [], npcs = [], checkpoints = [], tutorials = [];
+        props = [], npcs = [], checkpoints = [], tutorials = [], tsotsis = [];
 
   let gx = 0;       // current ground segment start
   let x = 340;      // build cursor (first stretch is safe)
+  let placed100 = false; // one R100 note per level
   const placed = new Set();
 
   function endGround(atX) { grounds.push({ x: gx, w: atX - gx }); }
@@ -218,6 +225,16 @@ function buildHorizontal(o) {
       }
     }
     if (didPlace) continue;
+    // tsotsis at planned fractions: each works a fixed stretch of street
+    for (const tp of (o.tsotsiPlan || [])) {
+      const key = 't' + tp.frac;
+      if (!placed.has(key) && frac >= tp.frac) {
+        placed.add(key);
+        tsotsis.push({ kind: tp.kind, x: Math.round(x + 70), y: G, minX: Math.round(x + 16), maxX: Math.round(x + 150) });
+        x += 190; didPlace = true; break;
+      }
+    }
+    if (didPlace) continue;
 
     const roll = r();
     if (roll < o.gapFrac) {
@@ -228,10 +245,10 @@ function buildHorizontal(o) {
         const pw = Math.max(54, gw - 6);
         const px = Math.round(x + gw / 2 - pw / 2);
         platforms.push({ x: px, y: G - 42, w: pw, type: 'solid', main: false });
-        for (let i = 0; i < 3; i++) pickups.push({ x: px + 10 + i * 16, y: G - 58, kind: 'ceppy' });
+        for (let i = 0; i < 3; i++) pickups.push({ x: px + 10 + i * 16, y: G - 58, kind: 'r2' });
       } else {
-        // ceppy arc over the gap
-        for (let i = 0; i < 3; i++) pickups.push({ x: x + gw * (0.25 + 0.25 * i), y: G - 34 - 12 * Math.sin(Math.PI * (i + 1) / 4), kind: 'ceppy' });
+        // coin arc over the gap
+        for (let i = 0; i < 3; i++) pickups.push({ x: x + gw * (0.25 + 0.25 * i), y: G - 34 - 12 * Math.sin(Math.PI * (i + 1) / 4), kind: 'r2' });
       }
       x += gw; gx = x; x += 60 + Math.round(r() * 80);
     } else if (roll < o.gapFrac + o.sushiFrac) {
@@ -242,15 +259,22 @@ function buildHorizontal(o) {
       rats.push({ x: Math.round(x + 60), y: G, minX: Math.round(x + 14), maxX: Math.round(x + 130) });
       x += 160 + Math.round(r() * 40);
     } else if (roll < o.gapFrac + o.sushiFrac + o.ratFrac + 0.16) {
-      // raised platform run with ceppies
+      // raised platform run pays in notes (one R100 per level, late)
       const pw = 70 + Math.round(r() * 50);
       platforms.push({ x: Math.round(x + 20), y: G - 40, w: pw, type: 'solid', main: false });
-      for (let i = 0; i < 3; i++) pickups.push({ x: x + 32 + i * 18, y: G - 56, kind: 'ceppy' });
+      if (!placed100 && x > W * 0.62) {
+        placed100 = true;
+        pickups.push({ x: x + 20 + pw / 2, y: G - 56, kind: 'r100' });
+      } else {
+        pickups.push({ x: x + 36, y: G - 56, kind: 'r10' });
+        if (r() < 0.45) pickups.push({ x: x + 36 + 28, y: G - 56, kind: 'r20' });
+      }
       x += pw + 70;
     } else {
-      // breather with ceppies on the ground
+      // breather with coins on the ground, sometimes a stray note
       const n = 2 + Math.floor(r() * 3);
-      for (let i = 0; i < n; i++) pickups.push({ x: x + 20 + i * 18, y: G - 14, kind: 'ceppy' });
+      for (let i = 0; i < n; i++) pickups.push({ x: x + 20 + i * 18, y: G - 14, kind: 'r2' });
+      if (r() < 0.22) pickups.push({ x: x + 20 + n * 18, y: G - 14, kind: 'r20' });
       x += 110 + Math.round(r() * 70);
     }
   }
@@ -280,7 +304,7 @@ function buildHorizontal(o) {
     bottles: false, introTiko: false,
     music: 'world2',
     platforms, ladders: [], pickups, rats, tikos: [], lanterns: [], checkpoints, tutorials,
-    walls: [], grounds, sushi, props, npcs,
+    walls: [], grounds, sushi, props, npcs, tsotsis,
     scriptedStallAt: o.scriptedStallAt ? checkpoints[o.checkpointFracs.indexOf(o.scriptedStallAt)] : null,
     spawn, exit,
   };
@@ -294,40 +318,39 @@ export const LEVELS = [
   buildVertical({
     id: 1, seed: 1101, name: 'SHALLOW SHAFT', tagline: 'BABALAS YESTERDAY. BIG PARTY!',
     theme: 'plat_w1a', height: 1700,
-    gap: [32, 42], w: [110, 190], dx: [55, 95], ladderEvery: 3,
-    decoyFrac: 0.3, crumbleDecoy: 0, crumbleMain: 0,
-    weedFracs: [], checkpointFracs: [0.5], ratFracs: [], shadowFracs: [], irieFracs: [],
-    lanternEvery: 7, introTiko: true,
+    gap: [30, 38], w: [110, 190], dx: [55, 95], ladderEvery: 5,
+    decoyFrac: 0.36, crumbleDecoy: 0.45, crumbleMain: 0.6,
+    weedFracs: [], checkpointFracs: [0.25, 0.5, 0.75], ratFracs: [0.3, 0.55, 0.8], shadowFracs: [], irieFracs: [],
+    introTiko: true,
     tutorials: (spawn, ladders, floorY) => {
       const firstLadder = ladders[0];
       return [
         { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'ARROW KEYS TO MOVE. SPACE TO JUMP.' },
         firstLadder ? { x: firstLadder.x - 50, y: firstLadder.y + firstLadder.h - 60, w: 110, h: 80, text: 'PRESS UP / DOWN ON A LADDER TO CLIMB.' } : null,
         { x: 16, y: floorY - 260, w: 448, h: 60, text: 'THE MIST RISES. IF IT TOUCHES YOU, IT HAS YOU. CLIMB!' },
+        { x: 16, y: floorY - 460, w: 448, h: 60, text: 'CRACKED STEPS GIVE WAY. KEEP CLIMBING.' },
       ].filter(Boolean);
     },
   }),
   buildVertical({
     id: 2, seed: 2202, name: 'WEED BIOME', tagline: "IT'S GOOD TO BE FEEL IRIE",
     theme: 'plat_w1b', height: 2100,
-    gap: [34, 46], w: [95, 165], dx: [60, 105], ladderEvery: 3,
-    decoyFrac: 0.36, crumbleDecoy: 0.4, crumbleMain: 0,
-    weedFracs: [0.22, 0.55, 0.82], checkpointFracs: [0.5], ratFracs: [0.4, 0.7],
+    gap: [32, 38], w: [95, 165], dx: [60, 105], ladderEvery: 4,
+    decoyFrac: 0.36, crumbleDecoy: 0.4, crumbleMain: 0.3,
+    weedFracs: [0.22, 0.55, 0.82], checkpointFracs: [0.33, 0.66], ratFracs: [0.4, 0.7],
     shadowFracs: [], irieFracs: [0.3, 0.58, 0.8],
-    lanternEvery: 8,
     tutorials: (spawn, ladders, floorY) => [
-      { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'GANJA SLOWS THE WORLD DOWN. TWO AT ONCE IS TOO STRONG.' },
+      { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'GANJA SLOWS THE WORLD AND POWERS THE LEGS. TWO AT ONCE IS TOO STRONG.' },
     ],
   }),
   buildVertical({
     id: 3, seed: 3303, name: 'THE DEEP', tagline: 'YOUR CAT IS GONNA DIE',
     theme: 'plat_w1c', height: 2500, dark: true,
-    gap: [36, 48], w: [85, 150], dx: [65, 110], ladderEvery: 3,
-    decoyFrac: 0.4, crumbleDecoy: 0.5, crumbleMain: 0.16,
-    weedFracs: [0.35, 0.72], checkpointFracs: [0.42, 0.74],
+    gap: [33, 38], w: [85, 150], dx: [65, 110], ladderEvery: 4,
+    decoyFrac: 0.4, crumbleDecoy: 0.5, crumbleMain: 0.3,
+    weedFracs: [0.35, 0.72], checkpointFracs: [0.5],
     ratFracs: [0.2, 0.36, 0.55, 0.68, 0.86],
     shadowFracs: [0.26, 0.46, 0.62, 0.8], irieFracs: [],
-    lanternEvery: 5,
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'TOO DARK FOR PEOPLE EYES. GOOD THING VAKS HAS CAT EYES.' },
     ],
@@ -336,6 +359,7 @@ export const LEVELS = [
     id: 4, seed: 4404, name: 'TOWNSHIP OUTSKIRTS', tagline: "I'M COMING BOSS, I'M COMING BOSS",
     length: 3400,
     gap: [40, 62], gapFrac: 0.24, sushiFrac: 0.18, ratFrac: 0.12,
+    tsotsiPlan: [ { frac: 0.28, kind: 'knife' }, { frac: 0.58, kind: 'viceroy' } ],
     weedFracs: [0.5], checkpointFracs: [0.36, 0.68],
     propPlan: [
       { kind: 'school', frac: 0.22 }, { kind: 'washing', frac: 0.42 },
@@ -343,12 +367,17 @@ export const LEVELS = [
     ],
     tutorials: (spawn, G) => [
       { x: spawn.x - 40, y: G - 70, w: 240, h: 70, text: "RUN RIGHT! GRANNY IS COMING. DON'T STOP." },
+      { x: spawn.x + 320, y: G - 70, w: 260, h: 70, text: 'TSOTSIS AHEAD: THEY WANT THE PHONE AND PUSH VICEROY. JUMP ON THEM.' },
     ],
   }),
   buildHorizontal({
     id: 5, seed: 5505, name: 'KASI MAIN STREET', tagline: 'EVERY TUESDAY',
     length: 4200,
     gap: [50, 74], gapFrac: 0.28, sushiFrac: 0.22, ratFrac: 0.15,
+    tsotsiPlan: [
+      { frac: 0.18, kind: 'knife' }, { frac: 0.44, kind: 'gun' },
+      { frac: 0.56, kind: 'viceroy' }, { frac: 0.8, kind: 'knife' },
+    ],
     weedFracs: [0.3, 0.74], checkpointFracs: [0.34, 0.64],
     scriptedStallAt: 0.64,
     propPlan: [
@@ -361,6 +390,11 @@ export const LEVELS = [
     id: 6, seed: 6606, name: 'HOME STRETCH', tagline: 'EK IS DIE BAAS VAN DIE PLAAS',
     length: 5000,
     gap: [60, 84], gapFrac: 0.32, sushiFrac: 0.25, ratFrac: 0.17,
+    tsotsiPlan: [
+      { frac: 0.14, kind: 'knife' }, { frac: 0.3, kind: 'gun' },
+      { frac: 0.44, kind: 'viceroy' }, { frac: 0.58, kind: 'gun' },
+      { frac: 0.72, kind: 'knife' }, { frac: 0.88, kind: 'viceroy' },
+    ],
     weedFracs: [0.28, 0.6, 0.85], checkpointFracs: [0.34, 0.66],
     propPlan: [
       { kind: 'school', frac: 0.24 }, { kind: 'tv', frac: 0.48 },

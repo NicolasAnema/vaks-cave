@@ -63,7 +63,7 @@ A data-driven cutscene system: scripts are data, like levels. Staged character s
 
 ## The Tikolosh shop
 
-After each level clear, a calm shopkeeper Tikolosh waits in a lantern-lit nook. Spend green crystals and spare ceppies on: an extra life, an irie stash (start the next level holding one weed), and a faint charm (World 2 only: granny's next faint lasts longer). First-visit bark: "Hey Tikolosh, why you not told me when you're going to shop?" The shopkeeper is friendly from level 1 onward and quietly foreshadows the boss resolution.
+After each level clear, a calm shopkeeper Tikolosh waits in a lantern-lit nook. Spend ceppies on: an extra life, an irie stash (start the next level holding one weed), and a faint charm (World 2 only: granny's next faint lasts longer). First-visit bark: "Hey Tikolosh, why you not told me when you're going to shop?" The shopkeeper is friendly from level 1 onward and quietly foreshadows the boss resolution.
 
 ## Menus and UI
 
@@ -135,6 +135,10 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 | Yellow cat eyes | Night vision mechanic, level 3 |
 | Ceppies | Collectible caps |
 | "I'm spying on you boss" | Ending smash cut |
+| "Eita! Tsotsi ahead, boss!" / "These okes want my boss phone" | Tsotsi first sighted in a level |
+| "Hey! It's my boss's phone!" / "Not the phone, bra!" | Phone snatcher contact (steals mano) |
+| "Viceroy?! No ways, I'm on duty!" / "That stuff gives babalas, bra" | Viceroy pusher forces a sip |
+| "Sit down, tsotsi" / "I'm not scared of tsotsis, boss" | Tsotsi stomped and stunned |
 
 ## Player states
 
@@ -145,13 +149,13 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 
 ## Collectibles and hazards
 
-- **Ceppies (caps):** main collectible, score plus an extra life per N collected
-- **Green crystals:** minor score pickups and shop currency (World 1)
+- **Ceppies (caps):** main collectible and shop currency, score plus an extra life per N collected
 - **Weed:** the power-up (see player states)
 - **Bottles** (World 1): tumble down the zigzag, knock Vaks off platforms on contact
 - **Tikolosh mist** (World 1): rises steadily, instant catch on contact
 - **Sushi** (World 2): touch damage, "china's food"
 - **Rats:** small ground enemy, stompable, flee from meows, both worlds
+- **Tsotsis** (World 2): township gangsters working their stretch of street, three kinds — the **phone snatcher** (knife: chases when close, contact grabs mano), the **gunman** (holds his corner, telegraphs with a muzzle glint, fires a slow jumpable bullet), and the **viceroy pusher** (shuffles over to force a sip: instant babalas). All stompable — they sit down hard and see stars, never die. Chase speed sits below Vaks's run speed, so clean play always escapes.
 - **Granny** (World 2): the chaser, see granny system
 - Crumbling platforms, gaps, darkness (World 1)
 
@@ -201,7 +205,7 @@ Refined pixel art: modern indie warmth at a readable resolution.
 
 A central AudioManager. Every sound is a named event routed through it, and every voice event also drives a bark. In v1 nothing plays (optional: tiny synth blips for core feedback), but every event must fire at the correct moment and log when debug mode is on. A manifest (JSON) maps event name to bark text plus a future filename, so real voice notes drop in later with zero code changes.
 
-Required events: level_start, world_transition, powerup_irie, powerup_overstack, danger_close_1, danger_close_2, danger_close_3, bottle_spawn, rat_appear, rat_stomp, hazard_warning, respawn, level_clear, death, boss_vibe, boss_resolve, granny_chase_start, granny_faint, granny_caught, checkpoint, shop_enter, shop_buy, meow, idle_checkin, npc_tallman, npc_shorty, menu_idle, tutorial_prompt, jukebox_select, easter_egg_rare, glitch_gag, ending. Plus music slot hooks: title, loading, world1, world2, boss, ending.
+Required events: level_start, world_transition, powerup_irie, powerup_overstack, danger_close_1, danger_close_2, danger_close_3, bottle_spawn, rat_appear, rat_stomp, hazard_warning, respawn, level_clear, death, boss_vibe, boss_resolve, granny_chase_start, granny_faint, granny_caught, checkpoint, shop_enter, shop_buy, meow, idle_checkin, npc_tallman, npc_shorty, menu_idle, tutorial_prompt, jukebox_select, easter_egg_rare, glitch_gag, ending, tsotsi_alert, tsotsi_shoot, tsotsi_stomp, tsotsi_drink. Plus music slot hooks: title, loading, world1, world2, boss, ending.
 
 ## Screens and flow
 

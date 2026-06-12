@@ -10,7 +10,7 @@ const DEFAULTS = () => ({
   unlockedLevel: 1,          // highest level reachable in level select
   scenes: [],                // unlocked cutscene ids (gallery)
   flowNode: -1,              // -1 = no run in progress; else continue point
-  runSnapshot: null,         // { lives, score, ceppies, crystals, inv } at flow node
+  runSnapshot: null,         // { lives, score, mano, inv } at flow node
   bestScore: 0,
   shopVisited: false,
   settings: {

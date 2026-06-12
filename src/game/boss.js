@@ -9,7 +9,7 @@ import { CONFIG } from '../config.js';
 import { View, dimScreen, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText } from '../engine/font.js';
-import { draw, VAKS } from '../engine/sprites.js';
+import { draw, drawImoHead, TIKO_HEAD_RECT, VAKS } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
@@ -181,8 +181,11 @@ export class BossScreen {
     // Big Tikolosh (scale 3, swaying)
     const bob = Math.sin(this.swayT * 1.6) * 4;
     const lunge = this.lungeT > 0 ? 10 : 0;
-    draw(ctx, 'tiko_big', Math.floor(this.swayT * 2) % 2,
-      this.tikoX - 30 + lunge, this.floorY - 78 + bob - 26, { scale: 3, flip: true });
+    const bx = this.tikoX - 30 + lunge, by = this.floorY - 78 + bob - 26;
+    draw(ctx, 'tiko_big', Math.floor(this.swayT * 2) % 2, bx, by, { scale: 3, flip: true });
+    // the actual photo head, crisp at full resolution (not pixelised)
+    drawImoHead(ctx, 'tiko_big', bx + TIKO_HEAD_RECT.x * 3, by + TIKO_HEAD_RECT.y * 3,
+      TIKO_HEAD_RECT.w * 3, TIKO_HEAD_RECT.h * 3, true);
 
     // Vaks holds his ground
     const vf = this.phase === 'win' ? VAKS.celeb[Math.floor(this.t * 4) % 2]

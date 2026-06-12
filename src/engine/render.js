@@ -31,9 +31,40 @@ function resize() {
 
 export function getCtx() { return bctx; }
 
+// ---- HD overlay layer ----
+// Photo heads are queued in buffer coordinates during scene draws and
+// rendered AFTER the integer upscale, straight onto the display canvas
+// with smoothing — so they stay photographic instead of inheriting the
+// chunky pixel scale of the 480x270 buffer.
+const hdQueue = [];
+
+export function queueHD(img, x, y, w, h, opts = {}) {
+  hdQueue.push({ img, x, y, w, h, flip: !!opts.flip, alpha: opts.alpha === undefined ? 1 : opts.alpha });
+}
+
 export function present() {
   dctx.imageSmoothingEnabled = false;
   dctx.drawImage(buffer, 0, 0, View.w, View.h, 0, 0, display.width, display.height);
+  if (hdQueue.length) {
+    const s = display.width / View.w;
+    dctx.imageSmoothingEnabled = true;
+    dctx.imageSmoothingQuality = 'high';
+    for (const q of hdQueue) {
+      dctx.globalAlpha = q.alpha;
+      if (q.flip) {
+        dctx.save();
+        dctx.translate((q.x + q.w) * s, q.y * s);
+        dctx.scale(-1, 1);
+        dctx.drawImage(q.img, 0, 0, q.w * s, q.h * s);
+        dctx.restore();
+      } else {
+        dctx.drawImage(q.img, q.x * s, q.y * s, q.w * s, q.h * s);
+      }
+    }
+    dctx.globalAlpha = 1;
+    dctx.imageSmoothingEnabled = false;
+    hdQueue.length = 0;
+  }
 }
 
 // ---- shared draw helpers ----

@@ -43,6 +43,9 @@ export const MANIFEST = [
     lines: ['RRRATTAX!'], file: 'vo/rrattax.ogg' },
   { id: 'm_not_scared',    event: 'rat_stomp',        trigger: 'Rat stomped',
     lines: ["I'M NOT SCARED BOSS, I CAN KILL IT."], file: 'vo/not_scared.ogg' },
+  { id: 'm_rattex_kill',   event: 'rat_stomp',        trigger: 'Rattex active: rat dies on touch',
+    lines: ['GONNA DROWN THE RATS IN THE WATER.', 'I KILL HIIM.', 'BREAK HIS LEG.'],
+    file: 'vo/rattex_kill.ogg' },
   { id: 'm_fish',          event: 'hazard_warning',   trigger: 'Hazard warning near water or gaps',
     lines: ['YOU ARE A FISH! CAREFUL!'], file: 'vo/fish.ogg' },
   { id: 'm_coming_boss',   event: 'respawn',          trigger: 'Respawn, chase-begins cutscene',
@@ -99,6 +102,18 @@ export const MANIFEST = [
     lines: ['CEPPIES, BOSS! I COLLECT ALL THE CEPPIES.'], file: 'vo/ceppies.ogg' },
   { id: 'm_spying',        event: 'ending',           trigger: 'Ending smash cut',
     lines: ["I'M SPYING ON YOU BOSS."], file: 'vo/spying.ogg' },
+  { id: 'm_tsotsi_spot',   event: 'tsotsi_alert',     trigger: 'Tsotsi first sighted in a level',
+    lines: ['EITA! TSOTSI AHEAD, BOSS!', 'THESE OKES WANT MY BOSS PHONE.'],
+    file: 'vo/tsotsi_spot.ogg' },
+  { id: 'm_tsotsi_phone',  event: 'voice',            trigger: 'Phone snatcher contact (steals mano)',
+    lines: ["HEY! IT'S MY BOSS'S PHONE!", 'NOT THE PHONE, BRA!'],
+    file: 'vo/tsotsi_phone.ogg' },
+  { id: 'm_tsotsi_viceroy', event: 'tsotsi_drink',    trigger: 'Viceroy pusher forces a sip',
+    lines: ["VICEROY?! NO WAYS, I'M ON DUTY!", 'THAT STUFF GIVES BABALAS, BRA.'],
+    file: 'vo/tsotsi_viceroy.ogg' },
+  { id: 'm_tsotsi_stomp',  event: 'tsotsi_stomp',     trigger: 'Tsotsi stomped and stunned',
+    lines: ['SIT DOWN, TSOTSI.', "I'M NOT SCARED OF TSOTSIS, BOSS."],
+    file: 'vo/tsotsi_stomp.ogg' },
 ];
 
 // Required audio events from DESIGN.md — every one must exist and fire.
@@ -111,6 +126,7 @@ export const EVENTS = [
   'shop_enter', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
   'menu_idle', 'tutorial_prompt', 'jukebox_select', 'easter_egg_rare',
   'glitch_gag', 'ending',
+  'tsotsi_alert', 'tsotsi_shoot', 'tsotsi_stomp', 'tsotsi_drink',
 ];
 
 // Music slot hooks (silent in v1; jukebox lists these by name).
@@ -135,4 +151,6 @@ export const TIPS = [
   'TIP: CRUMBLING PLATFORMS COME BACK. EVENTUALLY.',
   'TIP: WHEN GRANNY STARES, SHE IS ABOUT TO SPRINT.',
   'TIP: SUSHI IS CHINA\'S FOOD. DO NOT TOUCH IT.',
+  'TIP: TSOTSIS WANT THE BOSS PHONE. JUMP ON THEIR HEADS.',
+  'TIP: NEVER DRINK VICEROY ON DUTY. NEVER.',
 ];
