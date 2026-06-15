@@ -13,7 +13,7 @@ Vak's Cave: a complete, finished 2D pixel-art platformer in two acts, a vertical
 
 ## Hard rules
 
-- No external asset files of any kind. All visuals are code-generated (pixel arrays, drawing routines, or runtime-generated sprite sheets). All audio routes through the AudioManager stub; never load or reference an audio file.
+- No external asset files of any kind for visuals: all visuals are code-generated (pixel arrays, drawing routines, or runtime-generated sprite sheets). All audio routes through the AudioManager. Real audio is an optional drop-in under assets/audio/ (discovered via index.json, regenerated with `node tools/audio_index.mjs`); the game must remain fully playable and console-clean with that folder empty.
 - Every voice line renders as a bark (on-screen text) wired to its audio event, so the comedy ships in the silent build.
 - The meme manifest in DESIGN.md lands in full: every row wired to a trigger. In debug mode, log a coverage report on boot; ship with zero unwired rows.
 - Gameplay controls are locked: arrow keys (including up/down for ladder climbing), spacebar, M to meow. Enter confirms and skips cutscenes, Esc pauses. Plus the debug keys.

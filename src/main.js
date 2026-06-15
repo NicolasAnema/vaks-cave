@@ -23,6 +23,7 @@ import { ShopScreen } from './game/shop.js';
 import {
   TitleScreen, MainMenuScreen, LevelSelectScreen, JukeboxScreen, GalleryScreen,
   SettingsScreen, CreditsScreen, LoadingScreen, PauseScreen, GameOverScreen, ClearScreen,
+  InventoryScreen,
 } from './ui/menus.js';
 
 // ---------------- screen manager ----------------
@@ -90,7 +91,8 @@ function newRun() {
   return {
     lives: CONFIG.lives.start, score: 0, mano: 0, earned: 0,
     irieStash: false, faintCharm: false, rattex: false,
-    hats: { propeller: false, beanie: false, chiefs: false },
+    hats: { propeller: false, beanie: false, chiefs: false },        // equipped (active abilities)
+    hatsOwned: { propeller: false, beanie: false, chiefs: false },   // purchased
   };
 }
 
@@ -115,6 +117,7 @@ function pushPause(under, restart) {
   M.push(new PauseScreen(under, {
     onResume: () => M.pop(),
     onRestart: () => { M.pop(); restart(); },
+    onInventory: () => M.push(new InventoryScreen(run, { onBack: () => M.pop() })),
     onSettings: () => M.push(new SettingsScreen({ onBack: () => M.pop() })),
     onQuit: () => { M.pop(); toMenu(); },
   }));
@@ -275,6 +278,7 @@ async function boot() {
   Save.load();
   initRender();
   await initSprites(); // decodes the embedded photo heads
+  await AudioManager.init(); // discovers uploaded voice notes / music
   Input.init();
 
   const { cov, ver } = bootReports();

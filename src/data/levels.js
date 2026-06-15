@@ -95,10 +95,11 @@ function buildVertical(o) {
     const frac = (floorY - y) / (floorY - topY);
 
     // pickups on the main path: R2 coin runs, sometimes a green R10
-    if (r() < 0.42 && p.w >= 60) {
-      const n = 2 + Math.floor(r() * 2);
+    const eco = CONFIG.economy;
+    if (r() < eco.w1CoinChance && p.w >= 60) {
+      const n = 1 + Math.floor(r() * eco.w1CoinMax);
       for (let i = 0; i < n; i++) pickups.push({ x: p.x + 10 + i * 15 + r() * 4, y: p.y - 14, kind: 'r2' });
-    } else if (r() < 0.16 && p.w >= 60) {
+    } else if (r() < eco.w1NoteChance && p.w >= 60) {
       pickups.push({ x: p.x + p.w / 2, y: p.y - 14, kind: 'r10' });
     }
     // weed at planned fractions
@@ -151,7 +152,7 @@ function buildVertical(o) {
         } else {
           const roll = r();
           pickups.push({ x: d.x + d.w / 2, y: d.y - 14, kind: roll < 0.5 ? 'r10' : (roll < 0.82 ? 'r20' : 'r50') });
-          if (r() < 0.5) pickups.push({ x: d.x + 9, y: d.y - 13, kind: 'r2' });
+          if (r() < eco.w1DecoyBonus) pickups.push({ x: d.x + 9, y: d.y - 13, kind: 'r2' });
         }
       }
     }
@@ -267,14 +268,14 @@ function buildHorizontal(o) {
         pickups.push({ x: x + 20 + pw / 2, y: G - 56, kind: 'r100' });
       } else {
         pickups.push({ x: x + 36, y: G - 56, kind: 'r10' });
-        if (r() < 0.45) pickups.push({ x: x + 36 + 28, y: G - 56, kind: 'r20' });
+        if (r() < CONFIG.economy.w2RaisedNote) pickups.push({ x: x + 36 + 28, y: G - 56, kind: 'r20' });
       }
       x += pw + 70;
     } else {
       // breather with coins on the ground, sometimes a stray note
-      const n = 2 + Math.floor(r() * 3);
+      const n = 1 + Math.floor(r() * CONFIG.economy.w2BreatherMax);
       for (let i = 0; i < n; i++) pickups.push({ x: x + 20 + i * 18, y: G - 14, kind: 'r2' });
-      if (r() < 0.22) pickups.push({ x: x + 20 + n * 18, y: G - 14, kind: 'r20' });
+      if (r() < CONFIG.economy.w2BreatherNote) pickups.push({ x: x + 20 + n * 18, y: G - 14, kind: 'r20' });
       x += 110 + Math.round(r() * 70);
     }
   }
@@ -367,7 +368,7 @@ export const LEVELS = [
     ],
     tutorials: (spawn, G) => [
       { x: spawn.x - 40, y: G - 70, w: 240, h: 70, text: "RUN RIGHT! GRANNY IS COMING. DON'T STOP." },
-      { x: spawn.x + 320, y: G - 70, w: 260, h: 70, text: 'TSOTSIS AHEAD: THEY WANT THE PHONE AND PUSH VICEROY. JUMP ON THEM.' },
+      { x: spawn.x + 320, y: G - 70, w: 260, h: 70, text: 'TSOTSIS AHEAD: IF ONE GRABS YOU, MASH ARROWS TO BREAK FREE. OR JUMP ON THEM.' },
     ],
   }),
   buildHorizontal({

@@ -45,6 +45,7 @@ const barkTsotsiSpot = Barks.wire('m_tsotsi_spot', 'level.js: tsotsi first sight
 const barkTsotsiPhone = Barks.wire('m_tsotsi_phone', 'level.js: phone snatcher contact');
 const barkTsotsiViceroy = Barks.wire('m_tsotsi_viceroy', 'level.js: viceroy pusher forced sip');
 const barkTsotsiStomp = Barks.wire('m_tsotsi_stomp', 'level.js: tsotsi stomped');
+const barkTsotsiGrab = Barks.wire('m_tsotsi_grab', 'level.js: tsotsi grabs Vaks');
 
 export class LevelScreen {
   constructor(level, run, cb) {
@@ -150,6 +151,28 @@ export class LevelScreen {
     this.shake(0.8);
   }
 
+  // Vaks wrestles free (escaped) or the grip slips after holdMax
+  tsotsiRelease(ts, escaped) {
+    if (this.player.grabbedBy !== ts) return;
+    const GR = CONFIG.tsotsi.grab;
+    this.player.grabbedBy = null;
+    ts.holding = false;
+    ts.cd = GR.regrabCd;
+    // hop away from the grabber with a moment of grace
+    this.player.invuln = 1.2;
+    this.player.vx = ts.dir * GR.breakHopX;
+    this.player.vy = -GR.breakHopY;
+    this.player.onGround = false;
+    AudioManager.play('tsotsi_grab', escaped ? 'break' : 'slip');
+    if (ts.kind === 'viceroy') {
+      // he got a sip down regardless: babalas
+      this.player.babalasT = CONFIG.babalas.time;
+      AudioManager.play('tsotsi_drink', 'forced sip');
+      Barks.note('VICEROY BABALAS! LEGS LIKE PAP.');
+    }
+    Particles.dust(this.player.x, this.player.y, 6);
+  }
+
   solidPlatforms() {
     const out = [];
     for (const p of this.level.platforms) {
@@ -175,6 +198,8 @@ export class LevelScreen {
 
   die() {
     if (this.player.dead || this.cleared || this.debug.invincible || this.player.irie) return;
+    // a grabbing tsotsi lets go of a caught Vaks
+    if (this.player.grabbedBy) { this.player.grabbedBy.holding = false; this.player.grabbedBy = null; }
     this.player.dead = true;
     this.deaths++;
     this.run.lives--;
@@ -337,9 +362,18 @@ export class LevelScreen {
     }
     this.rats = this.rats.filter((r) => !r.dead);
 
-    // township tsotsis (W2): want the phone, push the viceroy
+    // township tsotsis (W2): contact = GRABBED. Vaks is pinned to the
+    // tsotsi until he mashes free — and granny keeps coming the whole time.
     for (const ts of this.tsotsis) {
       ts.update(dt, this, slow);
+      if (ts.holding) {
+        // the knife guy picks the pocket for as long as he holds on
+        if (ts.kind === 'knife' && this.run.mano > 0) {
+          ts.drainAcc += dt * CONFIG.tsotsi.knife.stealPerSec;
+          while (ts.drainAcc >= 1 && this.run.mano > 0) { ts.drainAcc -= 1; this.run.mano--; }
+        }
+        continue;
+      }
       if (ts.stunT > 0 || ts.cd > 0) continue;
       const hb = ts.hitbox();
       if (this.hitEntity(hb.x, hb.y, hb.w, hb.h)) {
@@ -351,22 +385,23 @@ export class LevelScreen {
           barkTsotsiStomp({ anchor: this.player, force: true });
           this.player.vy = -210;
           this.player.sqX = 0.85; this.player.sqY = 1.15;
-        } else if (this.player.invuln <= 0 && !this.player.irie) {
-          ts.cd = 1.2;
-          if (ts.kind === 'viceroy') {
-            // forced sip of viceroy: instant babalas
-            if (this.player.hurt(ts.x)) {
-              this.player.babalasT = CONFIG.babalas.time;
-              AudioManager.play('tsotsi_drink', 'forced sip');
-              barkTsotsiViceroy({ anchor: this.player, force: true });
-            }
-          } else if (this.player.hurt(ts.x)) {
-            if (ts.kind === 'knife') {
-              const grab = Math.min(this.run.mano, CONFIG.tsotsi.knife.steal);
-              if (grab > 0) { this.run.mano -= grab; Barks.note('THE TSOTSI GRABBED ' + grab + ' MANO!'); }
-              barkTsotsiPhone({ anchor: this.player, force: true });
-            }
-          }
+        } else if (this.player.invuln <= 0 && !this.player.irie &&
+                   !this.player.grabbedBy && !this.player.dead) {
+          // GOT HIM — grip starts, mash to wrestle free
+          ts.holding = true;
+          ts.dir = this.player.x >= ts.x ? 1 : -1;
+          ts.drainAcc = 0;
+          this.player.grabbedBy = ts;
+          this.player.grabGrip = CONFIG.tsotsi.grab.mash;
+          this.player.grabHoldT = 0;
+          this.player.vx = 0; this.player.vy = 0;
+          this.player.climbing = false;
+          AudioManager.play('tsotsi_grab', ts.kind);
+          barkTsotsiGrab({ anchor: this.player, force: true });
+          if (ts.kind === 'knife') barkTsotsiPhone({ subtitle: true, speaker: 'VAKS', force: true });
+          if (ts.kind === 'viceroy') barkTsotsiViceroy({ subtitle: true, speaker: 'VAKS', force: true });
+          this.hitStop();
+          this.shake(CONFIG.fx.shakeImpact);
         }
       }
     }
@@ -597,6 +632,10 @@ export class LevelScreen {
       if (cam.sees(s.x, s.y, 16)) draw(ctx, 'sushi', 0, s.x - 6, s.y - 7);
     }
     this.player.draw(ctx);
+    // grabbed: flashing mash prompt over the struggle
+    if (this.player.grabbedBy && Math.floor(this.time * 6) % 2 === 0) {
+      drawText(ctx, 'MASH!', this.player.x, this.player.y - 46, { color: '#ffd84d', align: 'center' });
+    }
     this.threat.draw(ctx, cam);
     Particles.draw(ctx, false);
 

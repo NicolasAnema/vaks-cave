@@ -33,6 +33,9 @@ export class Player {
     this.bubbleH = 36;
     this.dead = false;
     this.celebrating = false;
+    this.grabbedBy = null;   // tsotsi holding Vaks (W2)
+    this.grabGrip = 0;       // mash presses left to break free
+    this.grabHoldT = 0;
   }
 
   get irie() { return this.irieT > 0; }
@@ -67,7 +70,8 @@ export class Player {
   }
 
   hurt(fromX) {
-    if (this.invuln > 0 || this.dead || this.irie) return false; // irie = invincible
+    // irie = invincible; while grabbed the hold IS the punishment
+    if (this.invuln > 0 || this.dead || this.irie || this.grabbedBy) return false;
     const P = CONFIG.player;
     const dir = this.x >= fromX ? 1 : -1;
     this.vx = dir * P.knockbackX;
@@ -86,6 +90,7 @@ export class Player {
     this.dead = false; this.climbing = false; this.onGround = true;
     this.stun = 0; this.invuln = 1.6; this.irieT = 0; this.overT = 0;
     this.babalasT = 1.4;
+    this.grabbedBy = null;
   }
 
   findLadder() {
@@ -101,6 +106,33 @@ export class Player {
     const P = CONFIG.player;
     const G = CONFIG.physics;
     if (this.dead) return;
+
+    // ---- grabbed by a tsotsi: pinned to him, mash to wrestle free ----
+    if (this.grabbedBy) {
+      const ts = this.grabbedBy;
+      const GR = CONFIG.tsotsi.grab;
+      this.grabHoldT += dt;
+      this.meowFlash -= dt; this.landT -= dt;
+      // every press chips his grip
+      for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']) {
+        if (Input.wasPressed(k)) {
+          this.grabGrip--;
+          this.sqX = 1.15; this.sqY = 0.88; // struggle jolt
+        }
+      }
+      this.sqX += (1 - this.sqX) * Math.min(1, 12 * dt);
+      this.sqY += (1 - this.sqY) * Math.min(1, 12 * dt);
+      // pinned in front of the grabber, facing him
+      this.x = ts.x + ts.dir * 10;
+      this.y = ts.y;
+      this.vx = 0; this.vy = 0;
+      this.facing = -ts.dir;
+      this.onGround = true; this.climbing = false;
+      if (this.grabGrip <= 0 || this.grabHoldT >= GR.holdMax) {
+        this.lr.tsotsiRelease(ts, this.grabGrip <= 0);
+      }
+      return;
+    }
 
     this.meowCd -= dt; this.invuln -= dt; this.landT -= dt;
     this.irieT = Math.max(0, this.irieT - dt);
@@ -252,6 +284,7 @@ export class Player {
 
   currentFrame() {
     if (this.celebrating) return VAKS.celeb[Math.floor(this.animT * 0.6) % 2];
+    if (this.grabbedBy) return VAKS.hurt; // wriggling in the grip
     if (this.stun > 0) return VAKS.hurt;
     if (this.meowFlash > 0) return VAKS.meow;
     if (this.climbing) return VAKS.climb[Math.floor(this.animT) % 2];

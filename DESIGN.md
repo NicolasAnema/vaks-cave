@@ -113,6 +113,8 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 | "Chao" | Death stinger, scene transitions |
 | "Where's my boss?" | Checkpoint reached |
 | "Hey Tikolosh, why you not told me when you're going to shop?" | First shop visit |
+| Per-item shop quips ("Where's my ten rand ganja?", "Kaizer Chiefs hat!", etc.) + general muttering | Browsing a shop item |
+| "Eish, I'm broke, boss. Tallman still owes me money." | Tried to buy without enough mano |
 | "Granny faints because she works too hard, she needs to rest" | Granny faint |
 | "Tell your gogo she must not disturb me" | Granny caught / chase bark |
 | Granny spy lines | Chase start, granny stare telegraph |
@@ -139,6 +141,7 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 | "Hey! It's my boss's phone!" / "Not the phone, bra!" | Phone snatcher contact (steals mano) |
 | "Viceroy?! No ways, I'm on duty!" / "That stuff gives babalas, bra" | Viceroy pusher forces a sip |
 | "Sit down, tsotsi" / "I'm not scared of tsotsis, boss" | Tsotsi stomped and stunned |
+| "He's got me, boss! He's got me!" / "Let go, bra! My boss needs me!" | Tsotsi grabs Vaks (mash to break free) |
 
 ## Player states
 
@@ -155,7 +158,7 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 - **Tikolosh mist** (World 1): rises steadily, instant catch on contact
 - **Sushi** (World 2): touch damage, "china's food"
 - **Rats:** small ground enemy, stompable, flee from meows, both worlds
-- **Tsotsis** (World 2): township gangsters working their stretch of street, three kinds — the **phone snatcher** (knife: chases when close, contact grabs mano), the **gunman** (holds his corner, telegraphs with a muzzle glint, fires a slow jumpable bullet), and the **viceroy pusher** (shuffles over to force a sip: instant babalas). All stompable — they sit down hard and see stars, never die. Chase speed sits below Vaks's run speed, so clean play always escapes.
+- **Tsotsis** (World 2): township gangsters working their stretch of street. Contact = **grabbed**: Vaks is pinned to the tsotsi and must mash arrows/space to wrestle free while granny keeps coming — the hold is the punishment. Three kinds: the **phone snatcher** (knife: chases when close, drains mano the whole time he holds you), the **gunman** (holds his corner, telegraphs with a muzzle glint, fires a slow jumpable bullet that hurts; his grab is a hold-up), and the **viceroy pusher** (shuffles over; wriggle free of him and you're babalas anyway — he got a sip down). The grip auto-slips after a few seconds so there is no soft-lock; granny is the cost. All stompable — they sit down hard and see stars, never die. Chase speed sits below Vaks's run speed, so clean play always escapes.
 - **Granny** (World 2): the chaser, see granny system
 - Crumbling platforms, gaps, darkness (World 1)
 
@@ -205,7 +208,7 @@ Refined pixel art: modern indie warmth at a readable resolution.
 
 A central AudioManager. Every sound is a named event routed through it, and every voice event also drives a bark. In v1 nothing plays (optional: tiny synth blips for core feedback), but every event must fire at the correct moment and log when debug mode is on. A manifest (JSON) maps event name to bark text plus a future filename, so real voice notes drop in later with zero code changes.
 
-Required events: level_start, world_transition, powerup_irie, powerup_overstack, danger_close_1, danger_close_2, danger_close_3, bottle_spawn, rat_appear, rat_stomp, hazard_warning, respawn, level_clear, death, boss_vibe, boss_resolve, granny_chase_start, granny_faint, granny_caught, checkpoint, shop_enter, shop_buy, meow, idle_checkin, npc_tallman, npc_shorty, menu_idle, tutorial_prompt, jukebox_select, easter_egg_rare, glitch_gag, ending, tsotsi_alert, tsotsi_shoot, tsotsi_stomp, tsotsi_drink. Plus music slot hooks: title, loading, world1, world2, boss, ending.
+Required events: level_start, world_transition, powerup_irie, powerup_overstack, danger_close_1, danger_close_2, danger_close_3, bottle_spawn, rat_appear, rat_stomp, hazard_warning, respawn, level_clear, death, boss_vibe, boss_resolve, granny_chase_start, granny_faint, granny_caught, checkpoint, shop_enter, shop_browse, shop_buy, meow, idle_checkin, npc_tallman, npc_shorty, menu_idle, tutorial_prompt, jukebox_select, easter_egg_rare, glitch_gag, ending, tsotsi_alert, tsotsi_shoot, tsotsi_stomp, tsotsi_drink, tsotsi_grab. Plus music slot hooks: title, loading, world1, world2, boss, ending.
 
 ## Screens and flow
 

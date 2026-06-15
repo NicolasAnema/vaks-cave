@@ -16,6 +16,14 @@ import { AudioManager, Barks } from '../systems/audio.js';
 import { Save } from '../systems/save.js';
 
 const barkShopFirst = Barks.wire('m_shop_first', 'shop.js: first shop visit');
+const barkShopBrowse = Barks.wire('m_shop_browse', 'shop.js: browsing the wares');
+const barkShopBroke = Barks.wire('m_shop_broke', 'shop.js: cannot afford an item');
+
+// Vaks mutters a quip as you browse. Maps item id -> its line in the
+// m_shop_browse pool; keep in sync with the manifest line order. Lines
+// from SHOP_GENERAL_FIRST on are item-agnostic (fired on the LEAVE slot).
+const SHOP_QUIP_LINE = { life: 0, irie: 1, rattex: 2, propeller: 3, beanie: 4, chiefs: 5, charm: 6 };
+const SHOP_GENERAL_FIRST = 7, SHOP_GENERAL_COUNT = 3;
 
 const FORESHADOW = [
   'THE BIG ONE UPSTAIRS? HE JUST WANTS TO VIBE.',
@@ -32,6 +40,8 @@ const SHELF_Y = [104, 158];               // plank tops (items sit here)
 export class ShopScreen {
   constructor(run, afterLevel, cb) {
     this.run = run;
+    // older run snapshots predate the owned/equipped split
+    if (!this.run.hatsOwned) this.run.hatsOwned = { ...this.run.hats };
     this.cb = cb; // { onDone() }
     this.t = 0;
     this.items = [
@@ -78,7 +88,7 @@ export class ShopScreen {
   balance() { return this.run.mano; }
 
   owned(item) {
-    if (item.hat) return !!this.run.hats[item.id];
+    if (item.hat) return !!this.run.hatsOwned[item.id];
     if (item.id === 'irie') return this.run.irieStash;
     if (item.id === 'rattex') return this.run.rattex;
     if (item.id === 'charm') return this.run.faintCharm;
@@ -87,19 +97,34 @@ export class ShopScreen {
   }
 
   buy(item) {
+    // owned caps toggle on/off for free instead of re-buying
+    if (item.hat && this.run.hatsOwned[item.id]) {
+      const on = !this.run.hats[item.id];
+      this.run.hats[item.id] = on;
+      AudioManager.play('shop_buy', (on ? 'equip:' : 'unequip:') + item.id);
+      this.flashText = on ? 'EQUIPPED!' : 'TAKEN OFF';
+      this.boughtFlash = 0.6;
+      this.keeperLine = on
+        ? (item.id === 'chiefs' ? 'AMAKHOSI FOR LIFE, BOSS.' : 'LOOKING SHARP, BOSS.')
+        : 'OFF IT GOES. SAFE ON THE SHELF.';
+      this.keeperDelay = 0;
+      const s = this.slots[this.sel];
+      if (on) Particles.sparkle(s.cx, s.cy - 6, '#ffe49a', 8);
+      return;
+    }
     if (item.id === 'life' && this.run.lives >= CONFIG.lives.max) { this.deny('LIVES ARE FULL, BOSS'); return; }
     if (item.id === 'irie' && this.run.irieStash) { this.deny('ALREADY HOLDING, BOSS'); return; }
     if (item.id === 'rattex' && this.run.rattex) { this.deny('POISON ALREADY IN POCKET'); return; }
     if (item.id === 'charm' && this.run.faintCharm) { this.deny('CHARM ALREADY GLOWING'); return; }
-    if (item.hat && this.run.hats[item.id]) { this.deny('ALREADY WEARING IT, BOSS'); return; }
-    if (this.balance() < item.price) { this.deny('NOT ENOUGH MANO'); return; }
+    if (this.balance() < item.price) { this.deny('NOT ENOUGH MANO'); barkShopBroke({ subtitle: true, speaker: 'VAKS' }); return; }
     this.run.mano -= item.price;
     if (item.id === 'life') this.run.lives++;
     if (item.id === 'irie') this.run.irieStash = true;
     if (item.id === 'rattex') this.run.rattex = true;
     if (item.id === 'charm') this.run.faintCharm = true;
-    if (item.hat) this.run.hats[item.id] = true;
+    if (item.hat) { this.run.hatsOwned[item.id] = true; this.run.hats[item.id] = true; }
     AudioManager.play('shop_buy', item.id);
+    this.flashText = 'BOUGHT!';
     this.boughtFlash = 0.6;
     this.keeperLine = item.id === 'chiefs' ? 'AMAKHOSI FOR LIFE, BOSS.' : 'GOOD CHOICE. THE WIND APPROVES.';
     this.keeperDelay = 0;
@@ -111,6 +136,16 @@ export class ShopScreen {
     this.denyFlash = 0.5;
     this.keeperLine = msg;
     this.keeperDelay = 0;
+  }
+
+  // Vaks mutters about whatever he's looking at (bark cooldown keeps it
+  // from spamming as you scroll). LEAVE gets a general line.
+  quip() {
+    const slot = this.slots[this.sel];
+    const line = slot.leave
+      ? SHOP_GENERAL_FIRST + Math.floor(Math.random() * SHOP_GENERAL_COUNT)
+      : SHOP_QUIP_LINE[slot.item.id];
+    if (line !== undefined) barkShopBrowse({ subtitle: true, speaker: 'VAKS', line });
   }
 
   // spatial navigation: move to the nearest slot in the pressed direction
@@ -140,10 +175,12 @@ export class ShopScreen {
     this.denyFlash = Math.max(0, this.denyFlash - dt);
     if (this.keeperDelay !== undefined && this.keeperDelay > 0) this.keeperDelay -= dt;
 
+    const prevSel = this.sel;
     if (Input.wasPressed('ArrowLeft')) this.nav(-1, 0);
     if (Input.wasPressed('ArrowRight')) this.nav(1, 0);
     if (Input.wasPressed('ArrowUp')) this.nav(0, -1);
     if (Input.wasPressed('ArrowDown')) this.nav(0, 1);
+    if (this.sel !== prevSel) this.quip();
     if (Input.wasPressed('Enter')) {
       if (this.sel === this.leaveIndex) { this.cb.onDone(); return; }
       this.buy(this.items[this.sel]);
@@ -194,11 +231,13 @@ export class ShopScreen {
       const sel = this.sel === i;
       const owned = this.owned(it);
       const bob = sel ? Math.sin(this.t * 4) * 2 : 0;
+      const worn = it.hat && this.run.hats[it.id];
       if (sel) panel(ctx, slot.cx - 13, slot.cy - 22, 26, 22, { bg: 'rgba(255,228,154,0.10)', border: '#ffe49a' });
-      draw(ctx, it.sprite, 0, slot.cx - (it.sprite === 'mano' ? 12 : 6), slot.cy - 14 + bob, { alpha: owned ? 0.45 : 1 });
+      draw(ctx, it.sprite, 0, slot.cx - (it.sprite === 'mano' ? 12 : 6), slot.cy - 14 + bob, { alpha: owned && !worn ? 0.45 : 1 });
       const afford = owned || this.balance() >= it.price;
-      drawText(ctx, owned ? 'OWNED' : 'R' + it.price, slot.cx, slot.cy + 8,
-        { color: owned ? '#8a93b8' : (afford ? '#8ae08a' : '#ff8a8a'), align: 'center' });
+      const label = worn ? 'WEARING' : owned ? 'OWNED' : 'R' + it.price;
+      drawText(ctx, label, slot.cx, slot.cy + 8,
+        { color: worn ? '#ffe49a' : owned ? '#8a93b8' : (afford ? '#8ae08a' : '#ff8a8a'), align: 'center' });
     });
 
     // ---- LEAVE SHOP button ----
@@ -224,8 +263,11 @@ export class ShopScreen {
       const it = cur.item, owned = this.owned(it);
       drawText(ctx, it.name, 20, 216, { color: '#ffe49a' });
       drawText(ctx, it.desc, 20, 228, { color: '#cfd6ff' });
-      drawText(ctx, owned ? 'ALREADY OWNED' : ('PRICE: R' + it.price), 20, 242,
-        { color: owned ? '#8a93b8' : (this.balance() >= it.price ? '#8ae08a' : '#ff8a8a') });
+      const line = it.hat && owned
+        ? (this.run.hats[it.id] ? 'WEARING IT. ENTER: TAKE OFF' : 'ON THE SHELF. ENTER: PUT ON')
+        : owned ? 'ALREADY OWNED' : ('PRICE: R' + it.price);
+      drawText(ctx, line, 20, 242,
+        { color: it.hat && owned ? '#ffe49a' : owned ? '#8a93b8' : (this.balance() >= it.price ? '#8ae08a' : '#ff8a8a') });
     }
 
     // ---- balances (top-left) ----
@@ -236,12 +278,14 @@ export class ShopScreen {
     if (this.run.irieStash) { drawText(ctx, 'HOLDING: 1 GANJA', 8, hy, { color: '#6ac24a' }); hy += 10; }
     if (this.run.rattex) { drawText(ctx, 'RATTEX: IN POCKET', 8, hy, { color: '#f2c91e' }); hy += 10; }
     if (this.run.faintCharm) { drawText(ctx, 'CHARM: READY', 8, hy, { color: '#e08aff' }); hy += 10; }
+    const worn = this.items.filter((it) => it.hat && this.run.hats[it.id]).map((it) => it.name.replace(' HAT', ''));
+    if (worn.length) { drawText(ctx, 'WEARING: ' + worn.join(' + '), 8, hy, { color: '#ffe49a' }); hy += 10; }
 
-    if (this.boughtFlash > 0) drawText(ctx, 'BOUGHT!', View.w / 2, 62, { color: '#8ae08a', scale: 2, align: 'center' });
+    if (this.boughtFlash > 0) drawText(ctx, this.flashText || 'BOUGHT!', View.w / 2, 62, { color: '#8ae08a', scale: 2, align: 'center' });
     if (this.denyFlash > 0 && Math.floor(this.t * 10) % 2 === 0) drawText(ctx, 'EISH...', View.w / 2, 62, { color: '#ff8a8a', scale: 2, align: 'center' });
 
     Particles.draw(ctx, false);
-    drawText(ctx, 'ARROWS: BROWSE   ENTER: BUY   ESC OR LEAVE SHOP: EXIT', View.w / 2, View.h - 9, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'ARROWS: BROWSE   ENTER: BUY / EQUIP   ESC OR LEAVE SHOP: EXIT', View.w / 2, View.h - 9, { color: '#5a6280', align: 'center' });
 
     Barks.draw(ctx, null);
   }

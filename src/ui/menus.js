@@ -76,7 +76,7 @@ export class TitleScreen {
     if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER', View.w / 2, 150, { color: '#fff', scale: 2, align: 'center' });
     }
-    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - AUDIO COMING SOON', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
 }
@@ -151,7 +151,7 @@ export class MainMenuScreen extends ListScreen {
     items.push({ label: 'CREDITS', run: () => cb.onCredits() });
     super('MAIN MENU', items, cb);
     this.hintText = 'ARROWS: MOVE   ENTER: SELECT';
-    AudioManager.playMusic('title');
+    AudioManager.playMusic('title'); // same track as the title screen: carries over, no restart
   }
 }
 
@@ -228,7 +228,7 @@ export class JukeboxScreen {
     drawScene(ctx, 'shop_nook', this.t);
     dimScreen(ctx, 0.35);
     drawText(ctx, 'JUKEBOX', View.w / 2, 22, { color: '#ffe49a', scale: 2, align: 'center' });
-    drawText(ctx, 'SILENT UNTIL THE TRACKS LAND. THE SLOTS ARE READY.', View.w / 2, 44, { color: '#8a93b8', align: 'center' });
+    drawText(ctx, 'ENTER TO SPIN A TRACK. UPLOAD MORE UNDER ASSETS/AUDIO/MUSIC.', View.w / 2, 44, { color: '#8a93b8', align: 'center' });
     MUSIC_SLOTS.forEach((s, i) => {
       const y = 70 + i * 18;
       const seld = this.sel === i;
@@ -301,7 +301,7 @@ export class SettingsScreen {
     this.rows = [
       { name: 'MASTER VOLUME', get: () => Save.data.settings.master, adj: (d) => this.vol('master', d) },
       { name: 'MUSIC VOLUME', get: () => Save.data.settings.music, adj: (d) => this.vol('music', d) },
-      { name: 'VOICE VOLUME', get: () => Save.data.settings.voice, adj: (d) => this.vol('voice', d) },
+      { name: 'SFX VOLUME', get: () => Save.data.settings.voice, adj: (d) => this.vol('voice', d) },
       { name: 'SCREEN SHAKE', get: () => (Save.data.settings.shake ? 'ON' : 'OFF'), adj: () => { Save.data.settings.shake = !Save.data.settings.shake; Save.save(); } },
       { name: 'BARK TEXT SPEED', get: () => Save.data.settings.textSpeed.toUpperCase(), adj: (d) => this.speed(d) },
     ];
@@ -310,6 +310,7 @@ export class SettingsScreen {
   vol(k, d) {
     Save.data.settings[k] = Math.max(0, Math.min(10, Save.data.settings[k] + d));
     Save.save();
+    AudioManager.applyVolumes(); // settings apply within the session
   }
 
   speed(d) {
@@ -349,7 +350,7 @@ export class SettingsScreen {
       }
       if (seld) drawText(ctx, '>', 98, y, { color: '#ffe49a' });
     });
-    drawText(ctx, 'AUDIO IS STUBBED IN V1: SLIDERS SAVE AND APPLY WHEN TRACKS LAND', View.w / 2, 200, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'MUSIC = THE THEME / BACKGROUND TRACKS.   SFX = VAKS VOICE NOTES.', View.w / 2, 200, { color: '#5a6280', align: 'center' });
     hint(ctx, 'ARROWS: ADJUST   ESC: BACK');
     Barks.draw(ctx, null);
   }
@@ -458,17 +459,89 @@ export class LoadingScreen {
   }
 }
 
+// ---------------- inventory / catalogue ----------------
+
+// A read-only catalogue of everything Vaks is carrying this run: lives and
+// mano up top, then consumables (spent on the next level) and the ability
+// caps that stick for the whole run. Reachable from the pause menu.
+const INV_CONS = [
+  { name: 'IRIE STASH', sprite: 'weed', key: 'irieStash', note: 'HOLD ONE GANJA INTO NEXT LEVEL' },
+  { name: 'RATTEX', sprite: 'rattex', key: 'rattex', note: 'RATS DIE ON TOUCH NEXT LEVEL' },
+  { name: 'FAINT CHARM', sprite: 'lantern', key: 'faintCharm', note: 'GRANNY RESTS LONGER NEXT TIME' },
+];
+const INV_HATS = [
+  { name: 'PROPELLER HAT', sprite: 'hat_propeller', id: 'propeller', note: 'JUMP HIGHER' },
+  { name: 'BEANIE', sprite: 'hat_beanie', id: 'beanie', note: 'RUN THROUGH SMALL RATS' },
+  { name: 'CHIEFS HAT', sprite: 'hat_chiefs', id: 'chiefs', note: 'FASTER, LIKE A TIKOLOSH' },
+];
+
+export class InventoryScreen {
+  constructor(run, cb) {
+    this.run = run;
+    this.cb = cb; // { onBack }
+    this.t = 0;
+    if (!this.run.hatsOwned) this.run.hatsOwned = { ...this.run.hats };
+  }
+
+  update(dt) {
+    this.t += dt;
+    Particles.update(dt);
+    Barks.update(dt);
+    if (Input.wasPressed('Escape') || Input.wasPressed('Enter')) this.cb.onBack();
+  }
+
+  draw(ctx) {
+    drawScene(ctx, 'shop_nook', this.t);
+    dimScreen(ctx, 0.5);
+    drawText(ctx, 'YOUR STASH', View.w / 2, 16, { color: '#ffe49a', scale: 2, align: 'center' });
+
+    // top line: lives + current mano + total earned across the run
+    drawText(ctx, 'LIVES: ' + this.run.lives, 28, 40, { color: '#f4f0e0' });
+    draw(ctx, 'r2', 0, 138, 38);
+    drawText(ctx, 'R' + this.run.mano, 154, 40, { color: '#ffe49a' });
+    drawText(ctx, 'EARNED THIS RUN: R' + (this.run.earned || 0), 250, 40, { color: '#8a93b8' });
+
+    // consumables — one level's worth, marked READY or empty
+    drawText(ctx, 'CONSUMABLES', 28, 62, { color: '#8ae08a' });
+    INV_CONS.forEach((it, i) => {
+      const y = 78 + i * 20;
+      const have = !!this.run[it.key];
+      draw(ctx, it.sprite, 0, 30, y - 8, { alpha: have ? 1 : 0.28 });
+      drawText(ctx, it.name, 56, y, { color: have ? '#f4f0e0' : '#5a6280' });
+      drawText(ctx, have ? 'READY' : 'EMPTY', 196, y, { color: have ? '#8ae08a' : '#4a4f63' });
+      drawText(ctx, it.note, 250, y, { color: '#5a6280' });
+    });
+
+    // ability caps — owned for the rest of the run, equip in the shop
+    drawText(ctx, 'CAPS (KEPT ALL RUN)', 28, 148, { color: '#8ae08a' });
+    INV_HATS.forEach((it, i) => {
+      const y = 164 + i * 20;
+      const owned = !!this.run.hatsOwned[it.id];
+      const worn = !!this.run.hats[it.id];
+      draw(ctx, it.sprite, 0, 30, y - 8, { alpha: owned ? 1 : 0.28 });
+      drawText(ctx, it.name, 56, y, { color: owned ? '#f4f0e0' : '#5a6280' });
+      drawText(ctx, worn ? 'WEARING' : owned ? 'OWNED' : 'LOCKED', 196, y,
+        { color: worn ? '#ffe49a' : owned ? '#8a93b8' : '#4a4f63' });
+      drawText(ctx, it.note, 280, y, { color: '#5a6280' });
+    });
+
+    hint(ctx, 'ESC OR ENTER: BACK');
+    Barks.draw(ctx, null);
+  }
+}
+
 // ---------------- pause ----------------
 
 export class PauseScreen {
   constructor(under, cb) {
     this.under = under; // frozen gameplay screen, drawn beneath
-    this.cb = cb; // { onResume, onRestart, onSettings, onQuit }
+    this.cb = cb; // { onResume, onRestart, onInventory, onSettings, onQuit }
     this.sel = 0;
     this.t = 0;
     this.items = [
       ['RESUME', () => cb.onResume()],
       ['RESTART LEVEL', () => cb.onRestart()],
+      ['INVENTORY', () => cb.onInventory()],
       ['SETTINGS', () => cb.onSettings()],
       ['QUIT TO MENU', () => cb.onQuit()],
     ];
@@ -476,19 +549,21 @@ export class PauseScreen {
 
   update(dt) {
     this.t += dt;
+    const n = this.items.length;
     if (Input.wasPressed('Escape')) { this.cb.onResume(); return; }
-    if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + 3) % 4;
-    if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + 1) % 4;
+    if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + n - 1) % n;
+    if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + 1) % n;
     if (Input.wasPressed('Enter')) this.items[this.sel][1]();
   }
 
   draw(ctx) {
     this.under.draw(ctx);
     dimScreen(ctx, 0.7);
-    panel(ctx, View.w / 2 - 80, 70, 160, 110);
-    drawText(ctx, 'PAUSED', View.w / 2, 80, { color: '#ffe49a', scale: 2, align: 'center' });
+    const h = 46 + this.items.length * 16;
+    panel(ctx, View.w / 2 - 80, 66, 160, h);
+    drawText(ctx, 'PAUSED', View.w / 2, 76, { color: '#ffe49a', scale: 2, align: 'center' });
     this.items.forEach(([label], i) => {
-      const y = 106 + i * 16;
+      const y = 102 + i * 16;
       drawText(ctx, label, View.w / 2, y, { color: i === this.sel ? '#fff' : '#9aa3c0', align: 'center' });
       if (i === this.sel) drawText(ctx, '>', View.w / 2 - 66, y, { color: '#ffe49a' });
     });

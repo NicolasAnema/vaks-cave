@@ -145,10 +145,12 @@ export class Tsotsi {
     this.dir = Math.random() < 0.5 ? -1 : 1;
     this.t = Math.random() * 5;
     this.stunT = 0;
-    this.cd = 0; // post-contact grace so grabs can't spam
+    this.cd = 0; // post-release grace so he can't re-grab instantly
     this.fireT = CONFIG.tsotsi.gun.fireEvery * (0.5 + Math.random() * 0.5);
     this.telegraphT = 0;
     this.chasing = false;
+    this.holding = false; // got Vaks in his grip
+    this.drainAcc = 0;    // knife: fractional mano drained while holding
     this.seen = false;
     this.bubbleH = 30;
   }
@@ -166,6 +168,7 @@ export class Tsotsi {
     this.t += dt;
     const T = CONFIG.tsotsi;
     if (this.stunT > 0) { this.stunT -= dt; return; }
+    if (this.holding) { this.telegraphT = 0; this.chasing = false; return; } // busy gripping Vaks
     if (this.cd > 0) this.cd -= dt;
     const d = dt * slow;
     const p = lr.player;
@@ -215,6 +218,7 @@ export class Tsotsi {
     if (!cam.sees(this.x, this.y - 14, 30)) return;
     let f;
     if (this.stunT > 0) f = TSOTSI.stun;
+    else if (this.holding) f = TSOTSI.aim; // arm up: got him by the jersey
     else if (this.kind === 'gun' && this.telegraphT > 0) f = TSOTSI.aim;
     else f = TSOTSI.walk[Math.floor(this.t * (this.chasing ? 9 : 4)) % 2];
     draw(ctx, 'tsotsi_' + this.kind, f, this.x - 10, this.y - 28, { flip: this.dir < 0 });

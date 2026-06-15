@@ -58,6 +58,25 @@ export const MANIFEST = [
     lines: ["WHERE'S MY BOSS?"], file: 'vo/wheres_boss.ogg' },
   { id: 'm_shop_first',    event: 'shop_enter',       trigger: 'First shop visit',
     lines: ["HEY TIKOLOSH, WHY YOU NOT TOLD ME WHEN YOU'RE GOING TO SHOP?"], file: 'vo/shop_first.ogg' },
+  // Browsing quips. Line ORDER MATTERS: shop.js indexes lines 0-6 by item id
+  // (life, irie, rattex, propeller, beanie, chiefs, charm); 7+ are general.
+  { id: 'm_shop_browse',   event: 'shop_browse',      trigger: 'Browsing a shop item (per-item + general quips)',
+    lines: [
+      "ONE MORE LIFE, BOSS? GIVE ME NINE, I'M GOING DEEP TODAY.",
+      "WHERE'S MY TEN RAND GANJA? THIS LUCKY STICK COSTS TOO MUCH NOW.",
+      "RATTEX! I'M GONNA DROWN THE RATS IN THE WATER, BOSS.",
+      'THIS PROPELLER HAT MAKE ME FLY LIKE A TIKOLOSH.',
+      'A BEANIE FOR THE COLD. AND FOR SMASHING THE SMALL RATS.',
+      'KAIZER CHIEFS HAT! AMAKHOSI FOR LIFE, BOSS!',
+      'THE CHARM MAKE GRANNY SLEEP LONGER. SHE WORKS TOO HARD.',
+      'EYTA TIKOLOSH, WHY EVERYTHING SO EXPENSIVE NOW?',
+      "I'M JUST LOOKING, BOSS. I'M JUST LOOKING.",
+      'PUT IT ON MY ACCOUNT. TALLMAN STILL OWES ME MONEY.',
+    ], file: 'vo/shop_browse.ogg' },
+  { id: 'm_shop_broke',    event: 'shop_buy',         trigger: 'Tried to buy without enough mano',
+    lines: ["EISH, I'M BROKE, BOSS. TALLMAN STILL OWES ME MONEY.",
+      'NO MANO? THE WIND TOOK IT, BOSS.', 'I NEED MORE CEPPIES FIRST. CHAO.'],
+    file: 'vo/shop_broke.ogg' },
   { id: 'm_granny_faints', event: 'granny_faint',     trigger: 'Granny faint',
     lines: ['GRANNY FAINTS BECAUSE SHE WORKS TOO HARD, SHE NEEDS TO REST.'], file: 'vo/granny_faints.ogg' },
   { id: 'm_gogo',          event: 'granny_caught',    trigger: 'Granny caught / chase bark',
@@ -114,6 +133,9 @@ export const MANIFEST = [
   { id: 'm_tsotsi_stomp',  event: 'tsotsi_stomp',     trigger: 'Tsotsi stomped and stunned',
     lines: ['SIT DOWN, TSOTSI.', "I'M NOT SCARED OF TSOTSIS, BOSS."],
     file: 'vo/tsotsi_stomp.ogg' },
+  { id: 'm_tsotsi_grab',   event: 'tsotsi_grab',      trigger: 'Tsotsi grabs Vaks (mash to break free)',
+    lines: ["HE'S GOT ME, BOSS! HE'S GOT ME!", 'LET GO, BRA! MY BOSS NEEDS ME!'],
+    file: 'vo/tsotsi_grab.ogg' },
 ];
 
 // Required audio events from DESIGN.md — every one must exist and fire.
@@ -123,10 +145,10 @@ export const EVENTS = [
   'bottle_spawn', 'rat_appear', 'rat_stomp', 'hazard_warning',
   'respawn', 'level_clear', 'death', 'boss_vibe', 'boss_resolve',
   'granny_chase_start', 'granny_faint', 'granny_caught', 'checkpoint',
-  'shop_enter', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
+  'shop_enter', 'shop_browse', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
   'menu_idle', 'tutorial_prompt', 'jukebox_select', 'easter_egg_rare',
   'glitch_gag', 'ending',
-  'tsotsi_alert', 'tsotsi_shoot', 'tsotsi_stomp', 'tsotsi_drink',
+  'tsotsi_alert', 'tsotsi_shoot', 'tsotsi_stomp', 'tsotsi_drink', 'tsotsi_grab',
 ];
 
 // Music slot hooks (silent in v1; jukebox lists these by name).
@@ -151,6 +173,6 @@ export const TIPS = [
   'TIP: CRUMBLING PLATFORMS COME BACK. EVENTUALLY.',
   'TIP: WHEN GRANNY STARES, SHE IS ABOUT TO SPRINT.',
   'TIP: SUSHI IS CHINA\'S FOOD. DO NOT TOUCH IT.',
-  'TIP: TSOTSIS WANT THE BOSS PHONE. JUMP ON THEIR HEADS.',
+  'TIP: IF A TSOTSI GRABS YOU, MASH ARROWS. GRANNY IS COMING.',
   'TIP: NEVER DRINK VICEROY ON DUTY. NEVER.',
 ];

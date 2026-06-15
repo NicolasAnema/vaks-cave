@@ -44,15 +44,22 @@ const check = (name, ok, detail) => { results.push([name, ok, detail]); console.
 // ---- Level 1: mist gap, checkpoints, HUD ----
 await send('Page.navigate', { url: url + '?jump=level1&ff=1' });
 await sleep(2500);
-const l1 = await evalJs(`(() => {
+const l1 = await evalJs(`(async () => {
+  const { CONFIG } = await import('./src/config.js');
   const s = window.__vaks.M.top();
   return {
-    gap: s.threat.topY - s.level.spawn.y, // can only be <= startGap (mist rises)
+    gap: s.threat.topY - s.level.spawn.y, // startGap minus what has already risen
+    t: s.threat.t,                        // seconds the mist has been live
+    rate: s.threat.rate,
+    startGap: CONFIG.mist.startGap,
     cps: s.checkpoints.length,
     lives: s.run.lives,
   };
 })()`);
-check('mist starts 150 below spawn', l1.gap <= 150.5 && l1.gap > 90, `gap ${l1.gap?.toFixed(0)}px (startGap 150)`);
+// time-aware: gap should equal startGap - rate*t (idle player, worldScale 1)
+const expGap = l1.startGap - l1.rate * l1.t;
+check(`mist starts ${l1.startGap} below spawn`, Math.abs(l1.gap - expGap) < 15 && l1.gap <= l1.startGap + 0.5,
+  `gap ${l1.gap?.toFixed(0)}px after ${l1.t?.toFixed(1)}s at ${l1.rate}px/s (expected ~${expGap.toFixed(0)})`);
 check('L1 has 3 checkpoints', l1.cps === 3, `${l1.cps} checkpoint lights`);
 check('3 lives shown as weed icons', l1.lives === 3, `run.lives = ${l1.lives} (icon = weed sprite)`);
 await shot('v2_l1_spawn');
@@ -186,6 +193,19 @@ const buyHats = await evalJs(`(() => {
 })()`);
 check('shop sells ability caps for mano', buyHats.propeller && buyHats.beanie && buyHats.chiefs,
   `all 3 hats bought, ${buyHats.mano} mano left`);
+// owned caps toggle equipped state for free on re-select
+const toggle = await evalJs(`(() => {
+  const sh = window.__vaks.M.top();
+  const it = sh.items.find((i) => i.id === 'beanie');
+  const manoBefore = sh.run.mano;
+  sh.buy(it); // owned -> unequip, no charge
+  const off = sh.run.hats.beanie === false && sh.run.hatsOwned.beanie === true && sh.run.mano === manoBefore;
+  sh.buy(it); // -> re-equip
+  const on = sh.run.hats.beanie === true && sh.run.mano === manoBefore;
+  return { off, on, mano: sh.run.mano };
+})()`);
+check('owned caps equip/unequip for free', toggle.off === true && toggle.on === true,
+  `beanie off then back on, balance untouched at R${toggle.mano}`);
 // LEAVE SHOP is selectable and exits via Enter; Esc also exits
 const leaveNav = await evalJs(`(() => {
   const sh = window.__vaks.M.top();
