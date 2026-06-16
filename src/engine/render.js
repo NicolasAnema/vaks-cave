@@ -1,6 +1,10 @@
 // ============================================================
-// Renderer: fixed 480x270 internal buffer, integer-scaled to the
-// window, crisp pixels. Plus small shared draw helpers.
+// Renderer: fixed 480x270 internal buffer scaled to fill the
+// window (F toggles browser fullscreen). At integer scales the
+// blit is pure nearest-neighbor; at fractional scales it goes
+// through a nearest-neighbor integer upscale first, then one
+// smooth downscale, so pixels stay even instead of shimmering.
+// Plus small shared draw helpers.
 // ============================================================
 
 import { CONFIG } from '../config.js';
@@ -8,6 +12,7 @@ import { CONFIG } from '../config.js';
 export const View = { w: CONFIG.view.w, h: CONFIG.view.h };
 
 let buffer = null, bctx = null, display = null, dctx = null;
+let mid = null, mctx = null;
 
 export function initRender() {
   display = document.getElementById('game');
@@ -16,16 +21,36 @@ export function initRender() {
   buffer.width = View.w; buffer.height = View.h;
   bctx = buffer.getContext('2d');
   bctx.imageSmoothingEnabled = false;
+  mid = document.createElement('canvas');
+  mctx = mid.getContext('2d');
   resize();
   window.addEventListener('resize', resize);
+  document.addEventListener('fullscreenchange', resize);
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyF' && !e.repeat) toggleFullscreen();
+  });
   return bctx;
 }
 
+export function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  } else {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+}
+
 function resize() {
-  const scale = Math.max(1, Math.floor(Math.min(
-    window.innerWidth / View.w, window.innerHeight / View.h)));
-  display.width = View.w * scale;
-  display.height = View.h * scale;
+  const dpr = window.devicePixelRatio || 1;
+  const fit = Math.max(1, Math.min(window.innerWidth / View.w, window.innerHeight / View.h));
+  display.style.width = Math.round(View.w * fit) + 'px';
+  display.style.height = Math.round(View.h * fit) + 'px';
+  display.width = Math.round(View.w * fit * dpr);
+  display.height = Math.round(View.h * fit * dpr);
+  const int = Math.max(1, Math.ceil(fit * dpr));
+  mid.width = View.w * int;
+  mid.height = View.h * int;
+  mctx.imageSmoothingEnabled = false;
   dctx.imageSmoothingEnabled = false;
 }
 
@@ -43,8 +68,20 @@ export function queueHD(img, x, y, w, h, opts = {}) {
 }
 
 export function present() {
-  dctx.imageSmoothingEnabled = false;
-  dctx.drawImage(buffer, 0, 0, View.w, View.h, 0, 0, display.width, display.height);
+  // main buffer blit: crisp single blit at exact integer scale, otherwise a
+  // nearest-neighbor integer upscale followed by one smooth downscale so the
+  // pixels stay even at fractional (fullscreen) sizes instead of shimmering.
+  if (display.width === mid.width && display.height === mid.height) {
+    dctx.imageSmoothingEnabled = false;
+    dctx.drawImage(buffer, 0, 0, View.w, View.h, 0, 0, display.width, display.height);
+  } else {
+    mctx.imageSmoothingEnabled = false;
+    mctx.drawImage(buffer, 0, 0, View.w, View.h, 0, 0, mid.width, mid.height);
+    dctx.imageSmoothingEnabled = true;
+    dctx.drawImage(mid, 0, 0, mid.width, mid.height, 0, 0, display.width, display.height);
+  }
+  // HD photo heads: rendered AFTER the upscale, straight onto the display with
+  // smoothing, so they stay photographic instead of inheriting the pixel scale.
   if (hdQueue.length) {
     const s = display.width / View.w;
     dctx.imageSmoothingEnabled = true;

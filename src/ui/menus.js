@@ -76,7 +76,7 @@ export class TitleScreen {
     if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER', View.w / 2, 150, { color: '#fff', scale: 2, align: 'center' });
     }
-    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS - F: FULLSCREEN', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
 }

@@ -27,6 +27,7 @@ Open the printed URL. That's it.
 | M | Meow (rats hate it) |
 | Enter | Confirm / skip cutscene |
 | Esc | Pause |
+| F | Toggle fullscreen |
 
 ## Debug mode (on by default, `CONFIG.debug` in src/config.js)
 
