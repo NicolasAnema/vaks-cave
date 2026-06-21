@@ -136,14 +136,6 @@ export class HowToPlayScreen {
       drawText(ctx, d, 122, y, { color: '#cfd6ff' });
     });
 
-    drawText(ctx, 'THE GOAL', 28, 152, { color: '#8ae08a' });
-    const rules = [
-      'ESCAPE THE CAVE.',
-      'MAKE IT THROUGH THE TOWNSHIPS.',
-      'GET TO WORK ON TIME.',
-      'GOOD LUCK.',
-    ];
-    rules.forEach((r, i) => drawText(ctx, r, 28, 166 + i * 12, { color: '#cfd6ff' }));
 
     if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER TO BEGIN', View.w / 2, 230, { color: '#fff', align: 'center' });

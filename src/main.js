@@ -34,6 +34,7 @@ const M = {
   trans: null,
   replace(s, wipe = true) {
     Barks.clear();
+    AudioManager.stopVoice();
     Particles.clear();
     if (!wipe || this.stack.length === 0) { this.stack = [s]; return; }
     this.trans = { t: 0, phase: 'out', next: s };
