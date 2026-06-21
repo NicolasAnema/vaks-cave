@@ -340,7 +340,7 @@ export class CutsceneScreen {
     // locked voice_note: 'voice memo' tag in the box's top-right — EQ bars + LISTEN
     if (this.dialogue && this.dialogue.locked) {
       const bx = 64, by = 34, bw = View.w - 128;
-      const tagY = by + 6;
+      const tagY = by + 2; // sit high in the box so there's clear space below
       // 'LISTEN' anchored to the right edge of the box
       const label = 'LISTEN';
       const labelRight = bx + bw - 10;
