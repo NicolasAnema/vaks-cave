@@ -20,7 +20,7 @@ import { LevelScreen } from './game/level.js';
 import { BossScreen } from './game/boss.js';
 import { GardenBossScreen } from './game/garden_boss.js';
 import { CutsceneScreen } from './game/cutscene.js';
-import { ShopScreen } from './game/shop.js';
+import { ShopScreen } from './game/shop.js?v=2';
 import {
   TitleScreen, MainMenuScreen, LevelSelectScreen, JukeboxScreen, GalleryScreen,
   SettingsScreen, CreditsScreen, LoadingScreen, PauseScreen, GameOverScreen, ClearScreen,
