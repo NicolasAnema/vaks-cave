@@ -89,7 +89,6 @@ export class TitleScreen {
     }
 
     drawText(ctx, 'F: FULLSCREEN', 6, 7, { color: '#7480a0' });
-    drawText(ctx, Save.data.settings.master === 0 ? 'M: UNMUTE' : 'M: MUTE', 6, 16, { color: '#7480a0' });
     drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
