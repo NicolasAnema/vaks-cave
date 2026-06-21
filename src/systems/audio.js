@@ -46,6 +46,12 @@ export const AudioManager = {
       const r = await fetch('assets/audio/index.json');
       if (r.ok) this.files = new Set((await r.json()).files || []);
     } catch (e) { /* no audio shipped: stay silent */ }
+    // warm the cache for event one-shots (sfx/<event>) so the first hit —
+    // e.g. the death sting — fires instantly instead of fetching on play.
+    for (const ev of EVENTS) {
+      const p = this.resolve('sfx/' + ev);
+      if (p) this.prepare(p, false).load();
+    }
     // browsers gate audio behind a user gesture: resume the graph and
     // (re)start music on the first key.
     window.addEventListener('keydown', () => {
@@ -106,6 +112,7 @@ export const AudioManager = {
     let el = this.cache.get(path);
     if (!el) {
       el = new Audio(encodeURI(path)); // names have spaces / ! / '
+      el.preload = 'auto';             // start buffering before first play
       this.cache.set(path, el);
       this.route(el, path);
     }
@@ -169,6 +176,14 @@ export const AudioManager = {
     this.setLevel(p, el, 'music');
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
     el.play().catch(() => { /* unlocked on first keypress */ });
+  },
+
+  // stop the current track (death/level-clear cut the music so the
+  // sting lands in silence). Music resumes when a slot is played again.
+  stopMusic() {
+    if (this.musicEl) this.musicEl.pause();
+    this.musicEl = null;
+    this.musicPath = null;
   },
 
   // live re-apply when the settings sliders move

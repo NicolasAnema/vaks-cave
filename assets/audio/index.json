@@ -64,8 +64,10 @@
     "sfx/You forget to buy your cat.opus",
     "sfx/You've got a new car.opus",
     "sfx/Your cat.opus",
+    "sfx/death.mp3",
     "sfx/good to be feel irie.opus",
     "sfx/jump.mp3",
+    "sfx/level_clear.mp3",
     "sfx/live for faam.opus"
   ]
 }

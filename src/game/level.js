@@ -204,6 +204,7 @@ export class LevelScreen {
     this.deaths++;
     this.run.lives--;
     this.deathT = 1.5;
+    AudioManager.stopMusic();          // cut the level music so the death sting lands clean
     AudioManager.play('death', 'L' + this.level.id);
     barkChao({ subtitle: true, speaker: 'VAKS', force: true });
     this.shake(CONFIG.fx.shakeImpact);
@@ -215,6 +216,7 @@ export class LevelScreen {
     if (this.o === 'vertical') this.threat.resetTo(this.respawnPoint.y);
     else this.threat.resetTo(this.respawnPoint.x);
     this.cam.snapTo(this.player.x, this.player.y);
+    AudioManager.playMusic(this.level.music);  // bring the level music back after the death sting
     AudioManager.play('respawn', 'L' + this.level.id);
     barkRespawn({ anchor: this.player, force: true });
   }
@@ -224,6 +226,7 @@ export class LevelScreen {
     this.cleared = true;
     this.clearT = 2.0;
     this.player.celebrating = true;
+    AudioManager.stopMusic();          // cut the level music so the mission-pass jingle plays clean
     AudioManager.play('level_clear', 'L' + this.level.id);
     barkClear({ anchor: this.player, force: true });
     Particles.confetti(this.player.x, this.player.y - 20);
