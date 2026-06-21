@@ -812,7 +812,8 @@ export class LevelScreen {
     // mano counter + score
     draw(ctx, 'r2', 0, 6, 19);
     drawText(ctx, 'R' + this.run.mano, 21, 22, { color: '#ffe49a' });
-    drawText(ctx, 'SCORE ' + this.run.score, View.w - 6, 6, { color: '#f4f0e0', align: 'right' });
+    // y=30 keeps clear of the persistent mute button pinned to the top-right corner
+    drawText(ctx, 'SCORE ' + this.run.score, View.w - 6, 30, { color: '#f4f0e0', align: 'right' });
     // ganja burn hint (G: spend a life for an irie rush, once per level)
     if (!this.ganjaUsed && this.run.lives > 0 && !this.player.irie) {
       drawText(ctx, 'G:BURN LIFE>IRIE', 6, 32, { color: '#6ac24a' });

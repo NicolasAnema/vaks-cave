@@ -25,6 +25,7 @@ import {
   SettingsScreen, CreditsScreen, LoadingScreen, PauseScreen, GameOverScreen, ClearScreen,
   InventoryScreen, HowToPlayScreen,
 } from './ui/menus.js';
+import { MuteButton } from './ui/mute_button.js';
 
 // ---------------- screen manager ----------------
 
@@ -346,12 +347,14 @@ async function boot() {
     while (acc >= STEP && steps < 4) {
       handleDebugKeys();
       M.update(STEP);
+      MuteButton.update(STEP); // read clicks before endFrame clears them
       Input.endFrame();
       acc -= STEP;
       steps++;
     }
     const ctx = getCtx();
     M.draw(ctx);
+    MuteButton.draw(ctx); // pinned on top of every screen
     present();
   }
   requestAnimationFrame(frame);

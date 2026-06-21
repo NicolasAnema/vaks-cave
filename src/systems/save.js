@@ -15,6 +15,7 @@ const DEFAULTS = () => ({
   shopVisited: false,
   settings: {
     master: 8, music: 8, voice: 8,
+    muted: false,
     shake: true,
     textSpeed: 'normal',     // slow | normal | fast
   },

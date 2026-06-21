@@ -69,6 +69,7 @@ export const AudioManager = {
   // settings dials are 0-10; kind is 'music' | 'voice' | null (master only)
   vol(kind) {
     const s = Save.data.settings;
+    if (s.muted) return 0;
     return Math.max(0, Math.min(1, (s.master / 10) * (kind ? s[kind] / 10 : 1)));
   },
 
