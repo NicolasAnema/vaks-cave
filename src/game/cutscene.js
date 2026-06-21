@@ -14,6 +14,8 @@ import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
 import { CUTSCENES, SPEAKERS } from '../data/cutscenes.js';
 
+function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+
 function resolveFrames(sheet, anim) {
   if (sheet === 'vaks') {
     const m = { idle: [VAKS.idle, 3], run: [VAKS.run, 10], babalas: [VAKS.babalas, 3], celeb: [VAKS.celeb, 5], climb: [VAKS.climb, 6] };
@@ -50,6 +52,7 @@ export class CutsceneScreen {
     this.shakeT = 0; this.shakeMag = 0;
     this.dialogue = null;
     this.fx = null;
+    this.sushiPs = [];
     this.dawnT = 0;
     this.flashback = false;
     this.done = false;
@@ -211,9 +214,23 @@ export class CutsceneScreen {
         Particles.sparkle(v.x, v.y - 16, '#ffe98a', 2);
       } else if (n === 'confetti' && Math.random() < 0.3) {
         Particles.confetti(100 + Math.random() * 280, 80, 6);
+      } else if (n === 'sushi' && Math.random() < 0.5) {
+        this.sushiPs.push({
+          x: Math.random() * View.w, y: -10,
+          type: Math.floor(Math.random() * 3),
+          speed: 38 + Math.random() * 44,
+          wobbleT: Math.random() * 6.28,
+        });
       }
       if (this.fx.t <= 0) this.fx = null;
     }
+
+    this.sushiPs = this.sushiPs.filter((p) => {
+      p.y += p.speed * dt;
+      p.wobbleT += dt * 2.4;
+      p.x += Math.sin(p.wobbleT) * 0.6;
+      return p.y < View.h + 16;
+    });
 
     Particles.update(dt);
     Barks.update(dt);
@@ -230,6 +247,23 @@ export class CutsceneScreen {
 
     drawScene(ctx, this.bg, this.t);
 
+    // sushi rain (dream FX)
+    for (const p of this.sushiPs) {
+      const x = Math.round(p.x), y = Math.round(p.y);
+      if (p.type === 2) {
+        // maki roll
+        R(ctx, x, y, 5, 5, '#1a1414');
+        R(ctx, x + 1, y + 1, 3, 3, '#f0ece0');
+        R(ctx, x + 2, y + 2, 1, 1, '#e05a5a');
+      } else {
+        // nigiri — salmon (0) or tuna (1)
+        const top = p.type === 0 ? '#f0a070' : '#c84040';
+        R(ctx, x, y, 6, 3, '#f0ece0');
+        R(ctx, x + 1, y - 2, 4, 2, top);
+        R(ctx, x, y + 2, 6, 1, '#1a1414');
+      }
+    }
+
     // actors
     for (const a of Object.values(this.actors)) {
       if (!a.visible) continue;
@@ -238,6 +272,11 @@ export class CutsceneScreen {
       const s = spr(a.sheet);
       if (!s) continue;
       draw(ctx, a.sheet, f, a.x - (s.fw * a.scale) / 2, a.y - s.fh * a.scale, { flip: a.flip, scale: a.scale });
+      // dream face-swap overlay (doubt2: tikolosh wears Vaks's face)
+      if (a.faceOverlay && PHOTO_FACES[a.faceOverlay]) {
+        const ow = Math.round(16 * a.scale), oh = Math.round(16 * a.scale);
+        drawImoHead(ctx, PHOTO_FACES[a.faceOverlay], Math.round(a.x - ow / 2), Math.round(a.y - s.fh * a.scale), ow, oh);
+      }
     }
 
     Particles.draw(ctx, false);
