@@ -7,7 +7,7 @@
 // honors live for music, voice and SFX.
 // ============================================================
 
-import { View, roundedRect } from '../engine/render.js';
+import { View } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { Save } from '../systems/save.js';
 import { AudioManager } from '../systems/audio.js';
@@ -56,10 +56,8 @@ export const MuteButton = {
     const muted = Save.data.settings.muted;
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
 
-    // cartoon chip: dark (or red-tinted when muted) with a bright hover ring
-    const border = this.hover > 0.5 ? '#ffe49a' : '#2a2438';
-    roundedRect(ctx, r.x - 1, r.y - 1, r.w + 2, r.h + 2, border);
-    roundedRect(ctx, r.x, r.y, r.w, r.h, muted ? 'rgba(46,16,18,0.86)' : 'rgba(12,14,26,0.82)');
+    // no background chip — just the speaker. The dark outline + cream fill
+    // keeps it readable on both light and dark screens.
 
     // hover pop + click squash
     const sc = 1 + this.hover * 0.12 - this.pop * 0.18;
