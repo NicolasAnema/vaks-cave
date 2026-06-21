@@ -23,7 +23,7 @@ import { ShopScreen } from './game/shop.js';
 import {
   TitleScreen, MainMenuScreen, LevelSelectScreen, JukeboxScreen, GalleryScreen,
   SettingsScreen, CreditsScreen, LoadingScreen, PauseScreen, GameOverScreen, ClearScreen,
-  InventoryScreen,
+  InventoryScreen, HowToPlayScreen,
 } from './ui/menus.js';
 
 // ---------------- screen manager ----------------
@@ -208,7 +208,10 @@ function menuCbs() {
       run = { ...newRun(), ...(Save.data.runSnapshot || {}) };
       startRunAt(Math.max(0, Save.data.flowNode), false);
     },
-    onNewGame: () => startRunAt(0, true),
+    onNewGame: () => M.replace(new HowToPlayScreen({
+      onStart: () => startRunAt(0, true),
+      onBack: toMenu,
+    })),
     onLevelSelect: () => M.replace(new LevelSelectScreen({
       onPick: (n) => startRunAt(flowIndexOfLevel(n), true),
       onBack: toMenu,
@@ -242,7 +245,6 @@ export function bootReports() {
 // ---------------- debug ----------------
 
 let debugCutsceneIdx = -1;
-let fps = 60;
 
 function handleDebugKeys() {
   if (!CONFIG.debug) return;
@@ -262,14 +264,6 @@ function handleDebugKeys() {
     const id = SCENE_ORDER[debugCutsceneIdx];
     M.replace(new CutsceneScreen(id, { onDone: () => { Save.unlockScene(id); toMenu(); } }), false);
   }
-}
-
-function drawDebugOverlay(ctx) {
-  if (!CONFIG.debug) return;
-  ctx.fillStyle = 'rgba(5,6,12,0.6)';
-  ctx.fillRect(0, View.h - 9, View.w, 9);
-  drawText(ctx, 'FPS ' + Math.round(fps) + '  EV: ' + AudioManager.lastEvent + '  MUS: ' + (AudioManager.music || '-'),
-    2, View.h - 8, { color: '#5fd08a' });
 }
 
 // ---------------- boot ----------------
@@ -330,7 +324,6 @@ async function boot() {
     requestAnimationFrame(frame);
     let dt = (now - last) / 1000;
     last = now;
-    if (dt > 0) fps += ((1 / dt) - fps) * 0.05;
     acc += Math.min(dt, 0.1);
     let steps = 0;
     while (acc >= STEP && steps < 4) {
@@ -342,7 +335,6 @@ async function boot() {
     }
     const ctx = getCtx();
     M.draw(ctx);
-    drawDebugOverlay(ctx);
     present();
   }
   requestAnimationFrame(frame);

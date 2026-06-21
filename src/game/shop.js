@@ -61,7 +61,7 @@ export class ShopScreen {
       item, cx: COL_X[i % COLS], cy: SHELF_Y[Math.floor(i / COLS)],
     }));
     this.leaveIndex = this.items.length;
-    this.slots.push({ leave: true, cx: 396, cy: 232 });
+    this.slots.push({ leave: true, cx: 396, cy: 216 });
 
     this.sel = 0;
     this.boughtFlash = 0;
@@ -210,7 +210,8 @@ export class ShopScreen {
       TIKO_HEAD_RECT.w * 2, TIKO_HEAD_RECT.h * 2, false);
     draw(ctx, 'lantern', Math.floor(this.t * 4) % 2, 426, 170);
 
-    drawText(ctx, 'THE TIKOLOSH SHOP', View.w / 2, 12, { color: '#e0a85a', scale: 2, align: 'center' });
+    drawText(ctx, 'THE TIKOLOSH SHOP', View.w / 2, 10, { color: '#e0a85a', scale: 2, align: 'center' });
+    drawText(ctx, 'ARROWS: BROWSE   ENTER: BUY / EQUIP   ESC: EXIT', View.w / 2, 28, { color: '#7480a0', align: 'center' });
 
     // keeper speech bubble, above the shopkeeper
     if (this.keeperLine && (this.keeperDelay === undefined || this.keeperDelay <= 0)) {
@@ -252,21 +253,22 @@ export class ShopScreen {
     drawText(ctx, 'LEAVE SHOP', bx + 62, by + 8, { color: lsel ? '#ffe49a' : '#cbb892', align: 'center' });
     if (lsel) drawText(ctx, '>', bx - 8, by + 8, { color: '#ffe49a' });
 
-    // ---- info panel for the current selection (bottom-left) ----
-    panel(ctx, 12, 210, 300, 44);
+    // ---- info panel for the current selection (lifted clear of the
+    // bottom bark subtitle bar) ----
+    panel(ctx, 12, 192, 300, 44);
     const cur = this.slots[this.sel];
     if (cur.leave) {
-      drawText(ctx, 'LEAVE SHOP', 20, 216, { color: '#ffe49a' });
-      drawText(ctx, 'BACK TO THE ADVENTURE.', 20, 228, { color: '#cfd6ff' });
-      drawText(ctx, 'PRESS ENTER OR ESC.', 20, 242, { color: '#8ae08a' });
+      drawText(ctx, 'LEAVE SHOP', 20, 198, { color: '#ffe49a' });
+      drawText(ctx, 'BACK TO THE ADVENTURE.', 20, 210, { color: '#cfd6ff' });
+      drawText(ctx, 'PRESS ENTER OR ESC.', 20, 224, { color: '#8ae08a' });
     } else {
       const it = cur.item, owned = this.owned(it);
-      drawText(ctx, it.name, 20, 216, { color: '#ffe49a' });
-      drawText(ctx, it.desc, 20, 228, { color: '#cfd6ff' });
+      drawText(ctx, it.name, 20, 198, { color: '#ffe49a' });
+      drawText(ctx, it.desc, 20, 210, { color: '#cfd6ff' });
       const line = it.hat && owned
         ? (this.run.hats[it.id] ? 'WEARING IT. ENTER: TAKE OFF' : 'ON THE SHELF. ENTER: PUT ON')
         : owned ? 'ALREADY OWNED' : ('PRICE: R' + it.price);
-      drawText(ctx, line, 20, 242,
+      drawText(ctx, line, 20, 224,
         { color: it.hat && owned ? '#ffe49a' : owned ? '#8a93b8' : (this.balance() >= it.price ? '#8ae08a' : '#ff8a8a') });
     }
 
@@ -285,7 +287,6 @@ export class ShopScreen {
     if (this.denyFlash > 0 && Math.floor(this.t * 10) % 2 === 0) drawText(ctx, 'EISH...', View.w / 2, 62, { color: '#ff8a8a', scale: 2, align: 'center' });
 
     Particles.draw(ctx, false);
-    drawText(ctx, 'ARROWS: BROWSE   ENTER: BUY / EQUIP   ESC OR LEAVE SHOP: EXIT', View.w / 2, View.h - 9, { color: '#5a6280', align: 'center' });
 
     Barks.draw(ctx, null);
   }

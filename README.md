@@ -25,6 +25,7 @@ Open the printed URL. That's it.
 | Arrow keys | Move (up/down climbs ladders in the cave) |
 | Space | Jump |
 | M | Meow (rats hate it) |
+| G | Burn a life for an irie rush (once per level) |
 | Enter | Confirm / skip cutscene |
 | Esc | Pause |
 | F | Toggle fullscreen |
@@ -33,14 +34,13 @@ Open the printed URL. That's it.
 
 - **1-6** jump to level, **B** boss, **C** cycle cutscenes
 - **I** invincibility, **T** freeze the active threat
-- Overlay: fps + last audio event
 - Boot logs the manifest coverage report and the completability verifier
 - URL params for automation: `?jump=level3|boss|shop|menu|jukebox|gallery|settings|credits|levelselect|gameover|clear|cutscene:<id>` and `?ff=<seconds>` (fast-forward)
 
 ## Dev verification (not needed to play)
 
 - `node tools/check.mjs` — imports the full module graph headlessly, prints
-  the manifest wiring table (44/44 rows) and re-proves every level beatable
+  the manifest wiring table (52/52 rows) and re-proves every level beatable
   from CONFIG physics (reachability graph + mist/granny timing margins).
 - `tools/drive*.mjs` — CDP drivers that play the served game with real key
   events and assert a clean console.

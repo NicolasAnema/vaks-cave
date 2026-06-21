@@ -356,7 +356,7 @@ export class LevelScreen {
           this.player.vy = -210;
           this.player.sqX = 0.85; this.player.sqY = 1.15;
         } else if (this.player.invuln <= 0) {
-          this.player.hurt(r.x);
+          this.player.hurt(r.x, CONFIG.rats.knockMul);
         }
       }
     }

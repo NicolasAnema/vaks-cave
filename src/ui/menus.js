@@ -76,7 +76,66 @@ export class TitleScreen {
     if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER', View.w / 2, 150, { color: '#fff', scale: 2, align: 'center' });
     }
-    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS - F: FULLSCREEN', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'F: FULLSCREEN', 6, 7, { color: '#7480a0' });
+    Barks.draw(ctx, null);
+  }
+}
+
+// ---------------- how to play ----------------
+
+// A one-card primer shown before a fresh run: every control (including
+// the G life-burn) and the two-act goal. ENTER drops into the cold open,
+// ESC backs out to the menu.
+export class HowToPlayScreen {
+  constructor(cb) {
+    this.cb = cb; // { onStart(), onBack() }
+    this.t = 0;
+  }
+
+  update(dt) {
+    this.t += dt;
+    if (Math.random() < 0.05) Particles.leaf(120 + Math.random() * 80, 200);
+    Particles.update(dt);
+    Barks.update(dt);
+    if (Input.wasPressed('Enter')) { this.cb.onStart(); return; }
+    if (Input.wasPressed('Escape')) { this.cb.onBack(); return; }
+  }
+
+  draw(ctx) {
+    drawScene(ctx, 'garden', this.t);
+    dimScreen(ctx, 0.74);
+    Particles.draw(ctx, false);
+    drawText(ctx, 'HOW TO PLAY', View.w / 2, 14, { color: '#ffe49a', scale: 2, align: 'center' });
+
+    drawText(ctx, 'CONTROLS', 28, 42, { color: '#8ae08a' });
+    const controls = [
+      ['ARROWS', 'MOVE  (UP / DOWN CLIMB LADDERS)'],
+      ['SPACE', 'JUMP  (HOLD FOR A HIGHER JUMP)'],
+      ['M', 'MEOW - SCATTERS THE RATS'],
+      ['G', 'BURN A LIFE FOR AN IRIE RUSH (ONCE A LEVEL)'],
+      ['ENTER', 'CONFIRM / SKIP A SCENE'],
+      ['ESC', 'PAUSE'],
+      ['F', 'FULLSCREEN'],
+    ];
+    controls.forEach(([k, d], i) => {
+      const y = 56 + i * 12;
+      drawText(ctx, k, 34, y, { color: '#ffe49a' });
+      drawText(ctx, d, 122, y, { color: '#cfd6ff' });
+    });
+
+    drawText(ctx, 'THE GOAL', 28, 152, { color: '#8ae08a' });
+    const rules = [
+      'ACT 1 - THE CAVE: CLIMB OUT BEFORE THE MIST RISES OVER YOU.',
+      "ACT 2 - THE STREETS: OUTRUN GRANNY. SHE'S SLOWER, CLEAN PLAY ESCAPES.",
+      'STOMP RATS FROM ABOVE; A BUMP KNOCKS YOU BACK AND COSTS TIME.',
+      'GRAB MANO (R), SPEND IT AT THE SHOP. OUT OF LIVES = GAME OVER.',
+    ];
+    rules.forEach((r, i) => drawText(ctx, r, 28, 166 + i * 12, { color: '#cfd6ff' }));
+
+    if (Math.floor(this.t * 1.6) % 2 === 0) {
+      drawText(ctx, 'PRESS ENTER TO BEGIN', View.w / 2, 230, { color: '#fff', align: 'center' });
+    }
+    drawText(ctx, 'ESC: BACK', View.w / 2, 246, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
 }

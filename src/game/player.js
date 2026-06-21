@@ -69,14 +69,15 @@ export class Player {
     return 'irie';
   }
 
-  hurt(fromX) {
-    // irie = invincible; while grabbed the hold IS the punishment
+  hurt(fromX, power = 1) {
+    // irie = invincible; while grabbed the hold IS the punishment.
+    // power scales the bounce (rats hit harder than a stray bottle).
     if (this.invuln > 0 || this.dead || this.irie || this.grabbedBy) return false;
     const P = CONFIG.player;
     const dir = this.x >= fromX ? 1 : -1;
-    this.vx = dir * P.knockbackX;
-    this.vy = -P.knockbackY * 0.7;
-    this.stun = P.stunTime;
+    this.vx = dir * P.knockbackX * power;
+    this.vy = -P.knockbackY * 0.7 * power;
+    this.stun = P.stunTime * Math.min(power, 1.3);
     this.invuln = P.invulnTime;
     this.onGround = false; this.climbing = false;
     this.lr.hitStop();

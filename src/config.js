@@ -39,7 +39,7 @@ export const CONFIG = {
 
   mist: {
     startGap: 70,                     // mist starts this far below spawn (close — it's on you early)
-    rate: { 1: 20, 2: 24, 3: 26 },    // rise px/s per level (difficulty dial)
+    rate: { 1: 23, 2: 24, 3: 26 },    // rise px/s per level (difficulty dial)
     resetGap: 150,                    // gap below checkpoint after a death
     catchPad: 6,
     dangerFracs: [0.5, 0.3, 0.16],    // gauge fractions firing danger_close_1/2/3
@@ -57,7 +57,7 @@ export const CONFIG = {
   },
 
   bottles: { speed: 62, interval: { 1: 4.8, 2: 3.4, 3: 2.8 }, maxActive: 6, spinHz: 6 },
-  rats:    { speed: 52, fleeSpeed: 115, fleeTime: 1.7, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5] },
+  rats:    { speed: 52, fleeSpeed: 115, fleeTime: 1.7, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 1.6 },
   tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34 },
   crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 4.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
