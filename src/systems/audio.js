@@ -333,7 +333,7 @@ export const Barks = {
     const full = (s.speaker ? s.speaker + ': ' : '') + s.text;
     const lines = wrapText(full, View.w - 60);
     const h = lines.length * LINE_H + 8;
-    const y = View.h - h - 8;
+    const y = View.h - h;
     ctx.fillStyle = 'rgba(8,8,16,0.82)';
     ctx.fillRect(0, y, View.w, h);
     ctx.fillStyle = '#8ae08a';

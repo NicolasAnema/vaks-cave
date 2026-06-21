@@ -45,7 +45,7 @@ export class ShopScreen {
     this.cb = cb; // { onDone() }
     this.t = 0;
     this.items = [
-      { id: 'life', name: 'EXTRA LIFE', desc: 'ONE MORE CHANCE, BOSS', price: CONFIG.shop.prices.life, sprite: 'note_r100' },
+      { id: 'life', name: 'EXTRA LIFE', desc: 'ONE MORE CHANCE, BOSS', price: CONFIG.shop.prices.life, sprite: 'weed' },
       { id: 'irie', name: 'IRIE STASH', desc: 'START NEXT LEVEL HOLDING ONE', price: CONFIG.shop.prices.irie, sprite: 'weed' },
       { id: 'rattex', name: 'RATTEX', desc: 'RATS DIE IF THEY TOUCH VAKS', price: CONFIG.shop.prices.rattex, sprite: 'rattex' },
       { id: 'propeller', name: 'PROPELLER HAT', desc: 'MAKES HIM JUMP HIGHER', price: CONFIG.hats.propeller.price, sprite: 'hat_propeller', hat: true },

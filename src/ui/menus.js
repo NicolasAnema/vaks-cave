@@ -43,8 +43,9 @@ class MenuIdle {
 
 export class TitleScreen {
   constructor(cb) {
-    this.cb = cb; // { onStart() }
+    this.cb = cb; // { onStart(), onShop() }
     this.t = 0;
+    this.sel = 0; // 0=start, 1=shop
     this.idle = new MenuIdle();
     this.started = false;
     AudioManager.playMusic('title');
@@ -60,7 +61,11 @@ export class TitleScreen {
     if (Math.random() < 0.06) Particles.leaf(120 + Math.random() * 80, 200);
     Particles.update(dt);
     Barks.update(dt);
-    if (Input.wasPressed('Enter')) this.cb.onStart();
+    if (Input.wasPressed('ArrowUp') || Input.wasPressed('ArrowDown')) this.sel = 1 - this.sel;
+    if (Input.wasPressed('Enter')) {
+      if (this.sel === 0) this.cb.onStart();
+      else this.cb.onShop();
+    }
   }
 
   draw(ctx) {
@@ -73,10 +78,19 @@ export class TitleScreen {
     drawText(ctx, "VAK'S CAVE", View.w / 2, 48 + bob, { color: '#ffe49a', scale: 4, align: 'center' });
     drawText(ctx, 'A BABALAS LEGEND IN TWO ACTS', View.w / 2, 86 + bob, { color: '#f4f0e0', align: 'center' });
 
-    if (Math.floor(this.t * 1.6) % 2 === 0) {
-      drawText(ctx, 'PRESS ENTER', View.w / 2, 150, { color: '#fff', scale: 2, align: 'center' });
-    }
+    const OPTS = ['START GAME', 'SHOP'];
+    OPTS.forEach((label, i) => {
+      const active = i === this.sel;
+      drawText(ctx, label, View.w / 2, 148 + i * 16, { color: active ? '#fff' : '#9aa3c0', align: 'center' });
+      if (active) {
+        const wob = Math.sin(this.t * 6) * 2;
+        drawText(ctx, '>', View.w / 2 - 90 + wob, 148 + i * 16, { color: '#ffe49a' });
+        drawText(ctx, '<', View.w / 2 + 86 - wob, 148 + i * 16, { color: '#ffe49a' });
+      }
+    });
+
     drawText(ctx, 'F: FULLSCREEN', 6, 7, { color: '#7480a0' });
+    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
 }

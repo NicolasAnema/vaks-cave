@@ -113,6 +113,22 @@ function toMenu() {
   M.replace(new MainMenuScreen(menuCbs()));
 }
 
+function toTitle() {
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())), onShop: goTitleShop }));
+}
+
+function goTitleShop() {
+  const shopRun = Save.data.runSnapshot
+    ? { ...newRun(), ...Save.data.runSnapshot }
+    : Object.assign(newRun(), { mano: 200 });
+  M.replace(new ShopScreen(shopRun, 0, {
+    onDone: () => {
+      if (Save.data.runSnapshot) { Save.data.runSnapshot = { ...shopRun }; Save.save(); }
+      toTitle();
+    },
+  }));
+}
+
 function pushPause(under, restart) {
   M.push(new PauseScreen(under, {
     onResume: () => M.pop(),
@@ -286,7 +302,7 @@ async function boot() {
   // query-param jump for automated checks: ?jump=menu|level3|boss|shop|cutscene:ending
   const jump = new URLSearchParams(location.search).get('jump');
 
-  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())) }), false);
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())), onShop: goTitleShop }), false);
 
   if (jump) {
     if (jump === 'menu') M.replace(new MainMenuScreen(menuCbs()), false);
