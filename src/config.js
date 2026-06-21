@@ -90,6 +90,12 @@ export const CONFIG = {
   // mano, so the shop is a real choice instead of a guaranteed sweep.
   // (difficulty dial — read by the level builders in data/levels.js)
   economy: {
+    // The chances below only shape WHERE pickups appear. The actual mano
+    // total per level is governed authoritatively by levelBudget: a level
+    // that overshoots is trimmed (biggest notes drop first), one that
+    // undershoots is topped up (coins upgrade up the denomination ladder).
+    // See normalizeMoney() in data/levels.js.
+    levelBudget: { 1: 50, 2: 60, 3: 70, 4: 80, 5: 90, 6: 100 }, // max mano collectable per level (rises so a R140-180 hat lands around the L4 shop)
     w1CoinChance: 0.26,   // vertical: chance a wide plank carries an R2 run (was 0.42)
     w1CoinMax: 2,         // vertical: ...of 1..this coins per run (was up to 3)
     w1NoteChance: 0.10,   // vertical: chance a plank carries a lone R10 (was 0.16)

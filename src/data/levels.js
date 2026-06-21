@@ -312,6 +312,62 @@ function buildHorizontal(o) {
 }
 
 // ============================================================
+// MONEY NORMALIZER
+// The builders place pickup POSITIONS; this sets the mano TOTAL per
+// level to CONFIG.economy.levelBudget. Over budget -> drop the biggest
+// notes first (keeps small coins spread out, kills the easy big notes).
+// Under budget -> upgrade coins up the denomination ladder. Deterministic
+// (seeded by id), so the per-level max is fixed and rises with the level.
+// ============================================================
+
+const MONEY_LADDER = ['r2', 'r10', 'r20', 'r50', 'r100'];
+
+function normalizeMoney(level) {
+  const budget = CONFIG.economy.levelBudget && CONFIG.economy.levelBudget[level.id];
+  if (budget == null) return;
+  const V = CONFIG.money.values;
+  const idxs = [];
+  level.pickups.forEach((p, i) => { if (V[p.kind] != null) idxs.push(i); });
+  let total = idxs.reduce((s, i) => s + V[level.pickups[i].kind], 0);
+
+  // 1) Over budget: drop the highest-value pickups first (kills easy big
+  //    notes, leaves small coins spread out) until within budget.
+  if (total > budget) {
+    const order = idxs.slice().sort((a, b) => V[level.pickups[b].kind] - V[level.pickups[a].kind] || a - b);
+    const remove = new Set();
+    for (const i of order) {
+      if (total <= budget) break;
+      total -= V[level.pickups[i].kind];
+      remove.add(i);
+    }
+    level.pickups = level.pickups.filter((p, i) => !remove.has(i));
+  }
+
+  // 2) Under budget (originally, or after trimming): upgrade coins up the
+  //    denomination ladder, seeded order, to climb as close to budget as
+  //    the denominations allow without exceeding it.
+  const money = [];
+  level.pickups.forEach((p, i) => { if (V[p.kind] != null) money.push(i); });
+  const r = rng(9000 + level.id);
+  for (let i = money.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [money[i], money[j]] = [money[j], money[i]]; }
+  let progress = true;
+  while (total < budget && progress) {
+    progress = false;
+    for (const i of money) {
+      const li = MONEY_LADDER.indexOf(level.pickups[i].kind);
+      if (li < 0 || li === MONEY_LADDER.length - 1) continue;
+      const delta = V[MONEY_LADDER[li + 1]] - V[MONEY_LADDER[li]];
+      if (total + delta <= budget) {
+        level.pickups[i].kind = MONEY_LADDER[li + 1];
+        total += delta;
+        progress = true;
+        if (total >= budget) break;
+      }
+    }
+  }
+}
+
+// ============================================================
 // THE SIX LEVELS
 // ============================================================
 
@@ -404,6 +460,8 @@ export const LEVELS = [
     ],
   }),
 ];
+
+LEVELS.forEach(normalizeMoney);
 
 export function getLevel(n) { return LEVELS[n - 1]; }
 
