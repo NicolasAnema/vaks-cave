@@ -21,7 +21,7 @@ export const CUTSCENES = {
       ['wait', 1.2],
       ['sprite', 'vaks', 'vaks', 'babalas'],
       ['move', 'vaks', 230, 218, 0.9],
-      ['wire', 'm_big_days'],
+      ['say', 'vaks', 'm_big_days'],
       ['say', 'vaks', 'GRANNY GOING TO KILL ME. I AM SO LATE. HAIBO.'],
       ['flash', '#fff8e0', 0.4],
       ['fx', 'flashback', 0.1],
