@@ -144,7 +144,7 @@ export const EVENTS = [
   'danger_close_1', 'danger_close_2', 'danger_close_3',
   'bottle_spawn', 'rat_appear', 'rat_stomp', 'hazard_warning',
   'respawn', 'level_clear', 'death', 'boss_vibe', 'boss_resolve',
-  'granny_chase_start', 'granny_faint', 'granny_caught', 'checkpoint',
+  'granny_chase_start', 'granny_faint', 'granny_caught', 'checkpoint', 'jump',
   'shop_enter', 'shop_browse', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
   'menu_idle', 'tutorial_prompt', 'jukebox_select', 'easter_egg_rare',
   'glitch_gag', 'ending',

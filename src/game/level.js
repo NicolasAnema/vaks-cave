@@ -125,7 +125,7 @@ export class LevelScreen {
   // ---- hooks used by player/entities ----
   shake(m) { this.cam.addShake(m); }
   hitStop() { this.hitStopT = CONFIG.fx.hitStop; }
-  fxJump() {}
+  fxJump() { AudioManager.play('jump'); }
   fxLand() { this.cam.addShake(0.4); }
   meow(x, y) {
     for (const r of this.rats) {
