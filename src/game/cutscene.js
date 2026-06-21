@@ -56,13 +56,27 @@ export class CutsceneScreen {
     this.dawnT = 0;
     this.flashback = false;
     this.done = false;
+    this.voiceNote = null;
+    this._clicked = false;
+    if (typeof document !== 'undefined') {
+      this._clickHandler = () => { if (!this.done) this._clicked = true; };
+      document.addEventListener('pointerdown', this._clickHandler);
+    }
     AudioManager.playMusic(this.scene.music);
     this.nextStep();
+  }
+
+  _removeClickHandler() {
+    if (this._clickHandler && typeof document !== 'undefined') {
+      document.removeEventListener('pointerdown', this._clickHandler);
+      this._clickHandler = null;
+    }
   }
 
   skip() {
     if (this.done) return;
     this.done = true;
+    this._removeClickHandler();
     // fire any unfired manifest 'say' rows so the beat still registers
     const steps = this.scene.steps;
     for (let i = this.stepIdx + 1; i < steps.length; i++) {
@@ -76,7 +90,7 @@ export class CutsceneScreen {
     this.stepIdx++;
     this.stepT = 0;
     const s = this.scene.steps[this.stepIdx];
-    if (!s) { this.done = true; this.cb.onDone(); return; }
+    if (!s) { this.done = true; this._removeClickHandler(); this.cb.onDone(); return; }
     const [cmd, a, b, c, d] = s;
     switch (cmd) {
       case 'letterbox': this.letterTarget = a ? 1 : 0; this.nextStep(); break;
@@ -121,6 +135,13 @@ export class CutsceneScreen {
       case 'face': this.actors[a].flip = b < 0; this.nextStep(); break;
       case 'show': this.actors[a].visible = b; this.nextStep(); break;
       case 'wire': this.nextStep(); break; // wires a manifest row without playing it
+      case 'voice_note': {
+        // plays audio, shows caption + skip hint, no dialogue box
+        Barks.quote(a);
+        this.voiceNote = { voiceEl: AudioManager.voiceEl, caption: b || null, waitT: 0 };
+        this.waitFor = Infinity;
+        break;
+      }
       case 'bgset': this.bg = a; this.nextStep(); break;
       case 'flash': this.flashA = 1; this.flashColor = a; this.waitFor = b || 0.3; break;
       case 'shake': this.shakeT = 0.45; this.shakeMag = a; this.nextStep(); break;
@@ -146,6 +167,33 @@ export class CutsceneScreen {
     this.stepT += dt;
 
     if (Input.wasPressed('Enter')) { this.skip(); return; }
+
+    const clicked = this._clicked;
+    this._clicked = false;
+    if (clicked) {
+      if (this.voiceNote) {
+        this.voiceNote = null; this.nextStep(); return;
+      }
+      if (this.dialogue) {
+        const d = this.dialogue;
+        if (d.shown < d.text.length) {
+          d.shown = d.text.length; d.holdT = 0;
+        } else {
+          this.dialogue = null; this.nextStep(); return;
+        }
+      }
+    }
+
+    // voice_note step: wait for clip to end (click above already handles skip)
+    if (this.voiceNote) {
+      const vn = this.voiceNote;
+      vn.waitT += dt;
+      const el = vn.voiceEl;
+      // advance when clip ends, or if it never started (pre-gesture) after grace
+      if ((el && el.ended) || (vn.waitT > 0.5 && (!el || el.paused))) {
+        this.voiceNote = null; this.nextStep(); return;
+      }
+    }
 
     // ambient state
     this.letterbox += (this.letterTarget - this.letterbox) * Math.min(1, 6 * dt);
@@ -314,6 +362,12 @@ export class CutsceneScreen {
       ctx.globalAlpha = 1;
     }
 
+    if (this.voiceNote) {
+      if (this.voiceNote.caption) {
+        drawText(ctx, this.voiceNote.caption, View.w / 2, View.h - 46, { color: '#c8bc90', align: 'center' });
+      }
+      drawText(ctx, 'CLICK TO SKIP', View.w / 2, View.h - 34, { color: '#5a6280', align: 'center' });
+    }
     drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
   }
 
