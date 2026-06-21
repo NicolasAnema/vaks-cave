@@ -155,6 +155,7 @@ export const EVENTS = [
 export const MUSIC_SLOTS = [
   { id: 'title',   name: 'GARDEN OF VAKS',     file: 'music/title.ogg' },
   { id: 'loading', name: 'BABALAS SHUFFLE',    file: 'music/loading.ogg' },
+  { id: 'level1',  name: 'TIKOLOSH SAY SHORTY', file: 'music/level1.ogg' },
   { id: 'world1',  name: 'DEEP CAVE RIDDIM',   file: 'music/world1.ogg' },
   { id: 'world2',  name: 'KASI SPRINT',        file: 'music/world2.ogg' },
   { id: 'boss',    name: 'FELINE FREQUENCY',    file: 'music/feline_frequency.ogg' },

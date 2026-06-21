@@ -174,7 +174,7 @@ function buildVertical(o) {
     id: o.id, name: o.name, tagline: o.tagline, world: 1, orientation: 'vertical',
     width: W, height: o.height, theme: o.theme, dark: !!o.dark,
     introTiko: !!o.introTiko, bottles: o.bottles !== false,
-    music: 'world1',
+    music: o.music || 'world1',
     platforms, ladders, pickups, rats, tikos, lanterns, checkpoints, tutorials,
     walls: [{ x: 0, y: 0, w: 16, h: o.height }, { x: W - 16, y: 0, w: 16, h: o.height }],
     spawn, exit, props: [], grounds: [], sushi: [], npcs: [],
@@ -318,6 +318,7 @@ function buildHorizontal(o) {
 export const LEVELS = [
   buildVertical({
     id: 1, seed: 1101, name: 'SHALLOW SHAFT', tagline: 'BABALAS YESTERDAY. BIG PARTY!',
+    music: 'level1',
     theme: 'plat_w1a', height: 1700,
     gap: [30, 38], w: [110, 190], dx: [55, 95], ladderEvery: 5,
     decoyFrac: 0.36, crumbleDecoy: 0.45, crumbleMain: 0.6,

@@ -50,5 +50,6 @@ export const VOICE_ALIASES = {
 
 export const MUSIC_ALIASES = {
   title: 'music/Theme Song.mp3',
+  level1: 'music/Tikolosh Say Shorty.mp3',
   // lobby: 'music/Lobby.mp3',  // removed for now — Lobby.mp3 stays on disk, unwired
 };
