@@ -113,7 +113,7 @@ export const CONFIG = {
   },
 
   // priced to value: consumables cheap-ish, run-long upgrades premium
-  shop: { prices: { life: 100, irie: 50, charm: 80, rattex: 60 } },
+  shop: { prices: { life: 100, charm: 80, rattex: 60 } },
 
   // ability caps sold in the shop (own them for the rest of the run).
   // Priced as aspirational: with mano now scarcer, a cap is a real goal.

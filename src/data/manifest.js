@@ -58,12 +58,11 @@ export const MANIFEST = [
     lines: ["WHERE'S MY BOSS?"], file: 'vo/wheres_boss.ogg' },
   { id: 'm_shop_first',    event: 'shop_enter',       trigger: 'First shop visit',
     lines: ["HEY TIKOLOSH, WHY YOU NOT TOLD ME WHEN YOU'RE GOING TO SHOP?"], file: 'vo/shop_first.ogg' },
-  // Browsing quips. Line ORDER MATTERS: shop.js indexes lines 0-6 by item id
-  // (life, irie, rattex, propeller, beanie, chiefs, charm); 7+ are general.
+  // Browsing quips. Line ORDER MATTERS: shop.js indexes lines 0-5 by item id
+  // (life, rattex, propeller, beanie, chiefs, charm); 6+ are general.
   { id: 'm_shop_browse',   event: 'shop_browse',      trigger: 'Browsing a shop item (per-item + general quips)',
     lines: [
       "ONE MORE LIFE, BOSS? GIVE ME NINE, I'M GOING DEEP TODAY.",
-      "WHERE'S MY TEN RAND GANJA? THIS LUCKY STICK COSTS TOO MUCH NOW.",
       "RATTEX! I'M GONNA DROWN THE RATS IN THE WATER, BOSS.",
       'THIS PROPELLER HAT MAKE ME FLY LIKE A TIKOLOSH.',
       'A BEANIE FOR THE COLD. AND FOR SMASHING THE SMALL RATS.',

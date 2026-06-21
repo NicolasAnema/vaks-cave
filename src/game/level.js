@@ -50,7 +50,7 @@ const barkTsotsiGrab = Barks.wire('m_tsotsi_grab', 'level.js: tsotsi grabs Vaks'
 export class LevelScreen {
   constructor(level, run, cb) {
     this.level = level;
-    this.run = run;       // { lives, score, mano, hats, irieStash, faintCharm }
+    this.run = run;       // { lives, score, mano, hats, faintCharm }
     this.cb = cb;         // { onClear(stats), onGameOver(), onPause() }
     this.o = level.orientation;
     this.debug = { invincible: false };
@@ -107,8 +107,6 @@ export class LevelScreen {
     AudioManager.playMusic(level.music);
     this.started = false;
 
-    // irie stash from the shop: start the level holding one
-    if (run.irieStash) { run.irieStash = false; this.player.irieT = CONFIG.irie.duration; }
     // rattex from the shop: this level, rats die if they touch Vaks
     this.rattex = false;
     if (run.rattex) { run.rattex = false; this.rattex = true; }

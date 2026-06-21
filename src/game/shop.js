@@ -1,8 +1,8 @@
 // ============================================================
 // THE TIKOLOSH SHOP — a calm shopkeeper in a lantern-lit nook
 // after every level clear. Wares sit on two wooden shelves; spend
-// mano on lives, an irie stash, rat poison, ability caps, or a
-// faint charm. Leave with the LEAVE SHOP button or the Esc key.
+// mano on lives, rat poison, ability caps, or a faint charm.
+// Leave with the LEAVE SHOP button or the Esc key.
 // ============================================================
 
 import { CONFIG } from '../config.js';
@@ -22,8 +22,8 @@ const barkShopBroke = Barks.wire('m_shop_broke', 'shop.js: cannot afford an item
 // Vaks mutters a quip as you browse. Maps item id -> its line in the
 // m_shop_browse pool; keep in sync with the manifest line order. Lines
 // from SHOP_GENERAL_FIRST on are item-agnostic (fired on the LEAVE slot).
-const SHOP_QUIP_LINE = { life: 0, irie: 1, rattex: 2, propeller: 3, beanie: 4, chiefs: 5, charm: 6 };
-const SHOP_GENERAL_FIRST = 7, SHOP_GENERAL_COUNT = 3;
+const SHOP_QUIP_LINE = { life: 0, rattex: 1, propeller: 2, beanie: 3, chiefs: 4, charm: 5 };
+const SHOP_GENERAL_FIRST = 6, SHOP_GENERAL_COUNT = 3;
 
 const FORESHADOW = [
   'THE BIG ONE UPSTAIRS? HE JUST WANTS TO VIBE.',
@@ -46,7 +46,6 @@ export class ShopScreen {
     this.t = 0;
     this.items = [
       { id: 'life', name: 'EXTRA LIFE', desc: 'ONE MORE CHANCE, BOSS', price: CONFIG.shop.prices.life, sprite: 'weed' },
-      { id: 'irie', name: 'IRIE STASH', desc: 'START NEXT LEVEL HOLDING ONE', price: CONFIG.shop.prices.irie, sprite: 'weed' },
       { id: 'rattex', name: 'RATTEX', desc: 'RATS DIE IF THEY TOUCH VAKS', price: CONFIG.shop.prices.rattex, sprite: 'rattex' },
       { id: 'propeller', name: 'PROPELLER HAT', desc: 'MAKES HIM JUMP HIGHER', price: CONFIG.hats.propeller.price, sprite: 'hat_propeller', hat: true },
       { id: 'beanie', name: 'BEANIE', desc: 'STRONGER: RUN THROUGH SMALL RATS', price: CONFIG.hats.beanie.price, sprite: 'hat_beanie', hat: true },
@@ -89,7 +88,6 @@ export class ShopScreen {
 
   owned(item) {
     if (item.hat) return !!this.run.hatsOwned[item.id];
-    if (item.id === 'irie') return this.run.irieStash;
     if (item.id === 'rattex') return this.run.rattex;
     if (item.id === 'charm') return this.run.faintCharm;
     if (item.id === 'life') return this.run.lives >= CONFIG.lives.max;
@@ -113,13 +111,11 @@ export class ShopScreen {
       return;
     }
     if (item.id === 'life' && this.run.lives >= CONFIG.lives.max) { this.deny('LIVES ARE FULL, BOSS'); return; }
-    if (item.id === 'irie' && this.run.irieStash) { this.deny('ALREADY HOLDING, BOSS'); return; }
     if (item.id === 'rattex' && this.run.rattex) { this.deny('POISON ALREADY IN POCKET'); return; }
     if (item.id === 'charm' && this.run.faintCharm) { this.deny('CHARM ALREADY GLOWING'); return; }
     if (this.balance() < item.price) { this.deny('NOT ENOUGH MANO'); barkShopBroke({ subtitle: true, speaker: 'VAKS' }); return; }
     this.run.mano -= item.price;
     if (item.id === 'life') this.run.lives++;
-    if (item.id === 'irie') this.run.irieStash = true;
     if (item.id === 'rattex') this.run.rattex = true;
     if (item.id === 'charm') this.run.faintCharm = true;
     if (item.hat) { this.run.hatsOwned[item.id] = true; this.run.hats[item.id] = true; }
@@ -275,7 +271,6 @@ export class ShopScreen {
     drawText(ctx, 'R' + this.run.mano, 22, 27, { color: '#ffe49a' });
     drawText(ctx, 'LIVES: ' + this.run.lives, 8, 40, { color: '#f4f0e0' });
     let hy = 50;
-    if (this.run.irieStash) { drawText(ctx, 'HOLDING: 1 GANJA', 8, hy, { color: '#6ac24a' }); hy += 10; }
     if (this.run.rattex) { drawText(ctx, 'RATTEX: IN POCKET', 8, hy, { color: '#f2c91e' }); hy += 10; }
     if (this.run.faintCharm) { drawText(ctx, 'CHARM: READY', 8, hy, { color: '#e08aff' }); hy += 10; }
     const worn = this.items.filter((it) => it.hat && this.run.hats[it.id]).map((it) => it.name.replace(' HAT', ''));

@@ -91,7 +91,7 @@ const FLOW = [
 function newRun() {
   return {
     lives: CONFIG.lives.start, score: 0, mano: 0, earned: 0,
-    irieStash: false, faintCharm: false, rattex: false,
+    faintCharm: false, rattex: false,
     hats: { propeller: false, beanie: false, chiefs: false },        // equipped (active abilities)
     hatsOwned: { propeller: false, beanie: false, chiefs: false },   // purchased
   };

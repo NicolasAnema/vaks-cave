@@ -538,7 +538,6 @@ export class LoadingScreen {
 // mano up top, then consumables (spent on the next level) and the ability
 // caps that stick for the whole run. Reachable from the pause menu.
 const INV_CONS = [
-  { name: 'IRIE STASH', sprite: 'weed', key: 'irieStash', note: 'HOLD ONE GANJA INTO NEXT LEVEL' },
   { name: 'RATTEX', sprite: 'rattex', key: 'rattex', note: 'RATS DIE ON TOUCH NEXT LEVEL' },
   { name: 'FAINT CHARM', sprite: 'lantern', key: 'faintCharm', note: 'GRANNY RESTS LONGER NEXT TIME' },
 ];
