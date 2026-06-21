@@ -336,6 +336,23 @@ export class CutsceneScreen {
 
     // dialogue box
     if (this.dialogue) this.drawDialogue(ctx);
+
+    // locked voice_note: EQ bars + LISTEN indicator below the box
+    if (this.dialogue && this.dialogue.locked) {
+      const cx = Math.round(64 + (View.w - 128) / 2);
+      const cy = 83;
+      const freqs = [3.1, 4.7, 3.8, 5.2, 2.9];
+      const phases = [0, 1.2, 2.4, 0.6, 1.8];
+      for (let i = 0; i < 5; i++) {
+        const h = 2 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 6);
+        R(ctx, cx - 13 + i * 5, cy - h, 3, h, '#e04040');
+      }
+      if (Math.floor(this.t * 1.6) % 2 === 0) {
+        R(ctx, cx - 24, cy - 3, 3, 3, '#e04040');
+      }
+      drawText(ctx, 'LISTEN', cx + 2, cy + 3, { color: '#e04040' });
+    }
+
     Barks.draw(ctx, null);
 
     if (this.flashA > 0) {
