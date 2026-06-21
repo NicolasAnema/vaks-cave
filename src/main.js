@@ -249,8 +249,11 @@ function wireDataRows() {
       if ((s[0] === 'say' || s[0] === 'bark') && typeof s[2] === 'string' && s[2].startsWith('m_')) {
         Barks.wireData(s[2], `cutscene:${sc.id} step ${i}`);
       }
-      if ((s[0] === 'wire' || s[0] === 'voice_note') && typeof s[1] === 'string' && s[1].startsWith('m_')) {
+      if (s[0] === 'wire' && typeof s[1] === 'string' && s[1].startsWith('m_')) {
         Barks.wireData(s[1], `cutscene:${sc.id} step ${i}`);
+      }
+      if (s[0] === 'voice_note' && typeof s[2] === 'string' && s[2].startsWith('m_')) {
+        Barks.wireData(s[2], `cutscene:${sc.id} step ${i}`);
       }
     });
   }

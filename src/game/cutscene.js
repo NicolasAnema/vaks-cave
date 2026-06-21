@@ -56,7 +56,6 @@ export class CutsceneScreen {
     this.dawnT = 0;
     this.flashback = false;
     this.done = false;
-    this.voiceNote = null;
     this._clicked = false;
     if (typeof document !== 'undefined') {
       this._clickHandler = () => { if (!this.done) this._clicked = true; };
@@ -82,6 +81,7 @@ export class CutsceneScreen {
     for (let i = this.stepIdx + 1; i < steps.length; i++) {
       const s = steps[i];
       if (s[0] === 'say' && typeof s[2] === 'string' && s[2].startsWith('m_')) Barks.quote(s[2]);
+      if (s[0] === 'voice_note' && typeof s[2] === 'string' && s[2].startsWith('m_')) Barks.quote(s[2]);
     }
     this.cb.onDone();
   }
@@ -136,9 +136,13 @@ export class CutsceneScreen {
       case 'show': this.actors[a].visible = b; this.nextStep(); break;
       case 'wire': this.nextStep(); break; // wires a manifest row without playing it
       case 'voice_note': {
-        // plays audio, shows caption + skip hint, no dialogue box
-        Barks.quote(a);
-        this.voiceNote = { voiceEl: AudioManager.voiceEl, caption: b || null, waitT: 0 };
+        // like 'say' but locked — speech bubble shows, voice plays to completion,
+        // neither click nor Enter can advance until the clip ends
+        const vnActor = this.actors[a];
+        const vnSp = SPEAKERS[a] || { face: 'face_vaks', name: a.toUpperCase() };
+        const vnText = Barks.quote(b); // fires audio, returns display text
+        this.dialogue = { name: vnSp.name, face: vnSp.face, text: vnText, shown: 0, holdT: 0, voiceEl: AudioManager.voiceEl, locked: true };
+        if (vnActor) vnActor.talkT = 0.6;
         this.waitFor = Infinity;
         break;
       }
@@ -166,32 +170,17 @@ export class CutsceneScreen {
     this.t += dt;
     this.stepT += dt;
 
-    if (Input.wasPressed('Enter')) { this.skip(); return; }
+    // locked dialogue (voice_note step) blocks all skipping until clip ends
+    if (Input.wasPressed('Enter') && !(this.dialogue && this.dialogue.locked)) { this.skip(); return; }
 
     const clicked = this._clicked;
     this._clicked = false;
-    if (clicked) {
-      if (this.voiceNote) {
-        this.voiceNote = null; this.nextStep(); return;
-      }
-      if (this.dialogue) {
-        const d = this.dialogue;
-        if (d.shown < d.text.length) {
-          d.shown = d.text.length; d.holdT = 0;
-        } else {
-          this.dialogue = null; this.nextStep(); return;
-        }
-      }
-    }
-
-    // voice_note step: wait for clip to end (click above already handles skip)
-    if (this.voiceNote) {
-      const vn = this.voiceNote;
-      vn.waitT += dt;
-      const el = vn.voiceEl;
-      // advance when clip ends, or if it never started (pre-gesture) after grace
-      if ((el && el.ended) || (vn.waitT > 0.5 && (!el || el.paused))) {
-        this.voiceNote = null; this.nextStep(); return;
+    if (clicked && this.dialogue && !this.dialogue.locked) {
+      const d = this.dialogue;
+      if (d.shown < d.text.length) {
+        d.shown = d.text.length; d.holdT = 0;
+      } else {
+        this.dialogue = null; this.nextStep(); return;
       }
     }
 
@@ -362,21 +351,6 @@ export class CutsceneScreen {
       ctx.globalAlpha = 1;
     }
 
-    if (this.voiceNote) {
-      // animated EQ bars inside the bottom letterbox — red "something is playing" signal
-      const cx = Math.round(View.w / 2);
-      const cy = View.h - 13;
-      const freqs = [3.1, 4.7, 3.8, 5.2, 2.9];
-      const phases = [0, 1.2, 2.4, 0.6, 1.8];
-      for (let i = 0; i < 5; i++) {
-        const h = 2 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 7);
-        R(ctx, cx - 11 + i * 5, cy - h, 3, h, '#e04040');
-      }
-      // blinking REC dot to the left of the bars
-      if (Math.floor(this.t * 1.6) % 2 === 0) {
-        R(ctx, cx - 20, cy - 3, 3, 3, '#e04040');
-      }
-    }
     drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
   }
 
