@@ -340,19 +340,21 @@ export class CutsceneScreen {
     // locked voice_note: 'voice memo' tag in the box's top-right — EQ bars + LISTEN
     if (this.dialogue && this.dialogue.locked) {
       const bx = 64, by = 34, bw = View.w - 128;
-      const tagX = bx + bw - 60, tagY = by + 7;
-      // blinking REC dot
-      if (Math.floor(this.t * 1.6) % 2 === 0) {
-        R(ctx, tagX - 6, tagY + 1, 3, 3, '#e04040');
-      }
-      // animated EQ bars
+      // 'LISTEN' anchored to the right; bars sit to its left with a clear gap
+      const labelX = bx + bw - 12, tagY = by + 6;
+      drawText(ctx, 'LISTEN', labelX, tagY, { color: '#e04040', align: 'right' });
+      // animated EQ bars (right-aligned, ending before the label with a gap)
       const freqs = [3.1, 4.7, 3.8, 5.2, 2.9];
       const phases = [0, 1.2, 2.4, 0.6, 1.8];
+      const barsRight = labelX - 38; // left of LISTEN with breathing room
       for (let i = 0; i < 5; i++) {
-        const h = 2 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 5);
-        R(ctx, tagX + i * 4, tagY + 6 - h, 2, h, '#e04040');
+        const h = 3 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 5);
+        R(ctx, barsRight + i * 4, tagY + 7 - h, 2, h, '#e04040');
       }
-      drawText(ctx, 'LISTEN', tagX + 22, tagY, { color: '#e04040' });
+      // blinking REC dot to the left of the bars
+      if (Math.floor(this.t * 1.6) % 2 === 0) {
+        R(ctx, barsRight - 7, tagY + 2, 3, 3, '#e04040');
+      }
     }
 
     Barks.draw(ctx, null);

@@ -198,6 +198,15 @@ export const AudioManager = {
     this.musicPath = null;
   },
 
+  stopVoice() {
+    if (this.voiceEl) {
+      this.voiceEl.pause();
+      this.voiceEl.currentTime = 0;
+    }
+    this.duck = false;
+    if (this.musicEl && this.musicPath) this.setLevel(this.musicPath, this.musicEl, 'music');
+  },
+
   // live re-apply when the settings sliders move
   applyVolumes() {
     if (this.musicEl && this.musicPath) this.setLevel(this.musicPath, this.musicEl, 'music');
@@ -366,6 +375,7 @@ export const Barks = {
     ctx.fillRect(0, y, View.w, h);
     ctx.fillStyle = '#8ae08a';
     ctx.fillRect(0, y, View.w, 1);
+
     const shownFull = (s.speaker ? s.speaker + ': ' : '') + text;
     let used = 0;
     for (let i = 0; i < lines.length; i++) {
