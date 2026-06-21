@@ -9,7 +9,7 @@ import { CONFIG } from '../config.js';
 import { View, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText, wrapText } from '../engine/font.js';
-import { draw, drawImoHead, TIKO_HEAD_RECT } from '../engine/sprites.js';
+import { draw, drawImoHead } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
@@ -204,11 +204,9 @@ export class ShopScreen {
   draw(ctx) {
     drawScene(ctx, 'shop_nook', this.t);
 
-    // shopkeeper tikolosh (Vaki, as himself) + lantern, right side
-    draw(ctx, 'tiko_shop', Math.floor(this.t * 2) % 2, 380, 150, { scale: 2 });
-    drawImoHead(ctx, 'tiko_shop', 380 + TIKO_HEAD_RECT.x * 2, 150 + TIKO_HEAD_RECT.y * 2,
-      TIKO_HEAD_RECT.w * 2, TIKO_HEAD_RECT.h * 2, false);
-    draw(ctx, 'lantern', Math.floor(this.t * 4) % 2, 426, 170);
+    // shopkeeper — Vaki's face, portrait-sized on the right
+    drawImoHead(ctx, 'tiko_shop', 335, 98, 104, 104, false);
+    draw(ctx, 'lantern', Math.floor(this.t * 4) % 2, 441, 165);
 
     drawText(ctx, 'THE TIKOLOSH SHOP', View.w / 2, 10, { color: '#e0a85a', scale: 2, align: 'center' });
     drawText(ctx, 'ARROWS: BROWSE   ENTER: BUY / EQUIP   ESC: EXIT', View.w / 2, 28, { color: '#7480a0', align: 'center' });
