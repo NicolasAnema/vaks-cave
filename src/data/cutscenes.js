@@ -18,6 +18,7 @@ export const CUTSCENES = {
       ['letterbox', true],
       ['fade', 'in', 1.4],
       ['fx', 'zzz', 2.4],
+      ['note', 'VAKS SLEPT PEACEFULLY AT THE BOTTOM OF A CAVE.'],
       ['note', 'ONE TOO MANY ZAMALEKS LAST NIGHT...'],
       ['wait', 1.2],
       ['sprite', 'vaks', 'vaks', 'babalas'],
