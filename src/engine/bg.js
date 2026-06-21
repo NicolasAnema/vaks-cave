@@ -237,11 +237,24 @@ export function drawLayers(ctx, layers, camX, camY, orientation) {
 export function drawScene(ctx, name, t) {
   const fns = {
     cave_floor: sceneCaveFloor, cave_shaft: sceneCaveShaft,
+    cave_deep: sceneCaveDeep, cave_ganja: sceneCaveGanja,
     cave_mouth: sceneCaveMouth, cave_mouth_dawn: (c, tt) => sceneCaveMouth(c, tt, true),
     ridge: sceneRidge, garden: sceneGarden, garden_thursday: sceneThursday,
     shop_nook: sceneShop, black: sceneBlack,
   };
   (fns[name] || sceneBlack)(ctx, t);
+}
+
+// A simple pixel ganja leaf (7 fronds) at (x,y), scale s, color col.
+function ganjaLeaf(g, x, y, s, col, stem) {
+  R(g, x, y, s, s * 5, stem || '#3c6a34');                 // stalk
+  const fronds = [[0, -5, 4], [-3, -3, 4], [3, -3, 4], [-4, -1, 3], [4, -1, 3], [-3, 1, 2], [3, 1, 2]];
+  for (const [dx, dy, len] of fronds) {
+    for (let i = 0; i < len; i++) {
+      R(g, x + dx * s * (i / len) * 0.6, y + dy * s + i * Math.sign(dy || -1) * s, s, s, col);
+    }
+  }
+  R(g, x, y - 5 * s, s, 5 * s, col);                       // top frond
 }
 
 function sceneBlack(g) { R(g, 0, 0, View.w, View.h, '#07070d'); }
@@ -267,10 +280,21 @@ function sceneCaveFloor(g, t) {
   R(g, 0, 218, View.w, 52, '#2c2218');
   R(g, 0, 218, View.w, 3, '#43321f');
   speckles(g, 42, 50, { x: 0, y: 222, w: View.w, h: 46 }, '#1d1710');
-  // Thursday's debris
-  R(g, 120, 210, 4, 9, '#3f7a4a'); R(g, 121, 207, 2, 3, '#c9a86a');
-  R(g, 322, 212, 9, 4, '#3f7a4a');
-  R(g, 360, 213, 4, 6, '#7a4a3a');
+  // Thursday's wreckage — the big party left its mark
+  // empty bottles, tipped over
+  R(g, 116, 210, 4, 9, '#3f7a4a'); R(g, 117, 207, 2, 3, '#c9a86a');     // standing bottle
+  R(g, 322, 214, 10, 4, '#3f7a4a'); R(g, 320, 214, 3, 3, '#c9a86a');    // tipped bottle
+  R(g, 158, 215, 9, 4, '#7a4a3a'); R(g, 156, 215, 3, 3, '#c9a86a');     // tipped brown bottle
+  R(g, 404, 213, 4, 6, '#3f7a4a');                                       // upright
+  // scattered red party cups
+  R(g, 200, 212, 5, 7, '#c43a3a'); R(g, 199, 212, 7, 2, '#e85a5a');
+  R(g, 268, 214, 5, 5, '#c43a3a'); R(g, 267, 218, 7, 2, '#7a2424');
+  // a lone party hat (cone), tilted
+  g.fillStyle = '#e0a84d';
+  g.beginPath(); g.moveTo(360, 210); g.lineTo(370, 218); g.lineTo(352, 218); g.fill();
+  R(g, 359, 208, 3, 3, '#ff6b6b');                                       // pom-pom
+  // a half-rolled spliff
+  R(g, 240, 217, 10, 2, '#d8cba8'); R(g, 248, 217, 3, 2, '#3c2a1a');
   // crystals
   R(g, 70, 200, 4, 18, '#2e8f5e'); R(g, 72, 196, 3, 8, '#5ee0a0');
   R(g, 410, 204, 3, 14, '#2e8f5e');
@@ -282,6 +306,84 @@ function sceneCaveShaft(g, t) {
   // a ledge to stand on
   R(g, 140, 220, 200, 8, '#5d4630');
   R(g, 140, 220, 200, 2, '#8a6f48');
+}
+
+// DOUBT I — deep, cold, ominous. Mist coils below, eyes in the dark.
+function sceneCaveDeep(g, t) {
+  vGradient(g, 0, 0, View.w, View.h, [[0, '#0a0f1e'], [0.55, '#10182e'], [1, '#060810']]);
+  // receding rock walls leaning in (depth)
+  for (let i = 0; i < 4; i++) {
+    const inset = 20 + i * 16, shade = ['#0c1120', '#0e1426', '#10182c', '#141d33'][i];
+    g.fillStyle = shade;
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(inset + 30, 0); g.lineTo(inset, View.h); g.lineTo(0, View.h); g.fill();
+    g.beginPath(); g.moveTo(View.w, 0); g.lineTo(View.w - inset - 30, 0); g.lineTo(View.w - inset, View.h); g.lineTo(View.w, View.h); g.fill();
+  }
+  // glowing cold crystals on the walls
+  const cr = rng(771);
+  for (let i = 0; i < 16; i++) {
+    const left = cr() < 0.5;
+    const x = left ? 16 + cr() * 50 : View.w - 16 - cr() * 50;
+    const y = 30 + cr() * 150, h = 5 + cr() * 12;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2 + i);
+    R(g, x, y, 3, h, '#1c5a6e');
+    R(g, x, y, 2, h * 0.5, `rgba(127,208,255,${0.5 + pulse * 0.4})`);
+  }
+  // a narrow ledge
+  R(g, 130, 220, 220, 8, '#1a2438');
+  R(g, 130, 220, 220, 2, '#2e4a6a');
+  // mist coiling at the bottom (animated)
+  for (let i = 0; i < 7; i++) {
+    const x = (i * 80 + t * 14) % (View.w + 60) - 30;
+    const y = 238 + Math.sin(t * 1.2 + i) * 5;
+    const a = 0.12 + 0.06 * Math.sin(t + i);
+    R(g, x, y, 60, 14, `rgba(120,150,180,${a})`);
+    R(g, x + 14, y - 6, 34, 8, `rgba(140,170,200,${a * 0.7})`);
+  }
+  // two faint watching eyes deep below
+  const blink = (Math.sin(t * 0.6) > -0.9) ? 1 : 0;
+  if (blink) {
+    R(g, 224, 250, 4, 2, 'rgba(255,90,90,0.5)');
+    R(g, 252, 250, 4, 2, 'rgba(255,90,90,0.5)');
+  }
+}
+
+// DOUBT II — irie ganja cave. Green, smoky, glowing spores, weed plants.
+function sceneCaveGanja(g, t) {
+  vGradient(g, 0, 0, View.w, View.h, [[0, '#0e1c10'], [0.5, '#16301a'], [1, '#0a160c']]);
+  // warm-green glow pools from glowing fungus
+  for (const [lx, ly] of [[90, 120], [380, 150], [240, 80]]) {
+    const flick = 0.85 + 0.15 * Math.sin(t * 4 + lx);
+    const grad = g.createRadialGradient(lx, ly, 6, lx, ly, 90);
+    grad.addColorStop(0, `rgba(120,224,120,${0.20 * flick})`);
+    grad.addColorStop(1, 'rgba(120,224,120,0)');
+    g.fillStyle = grad;
+    g.fillRect(lx - 90, ly - 90, 180, 180);
+  }
+  speckles(g, 19, 60, { x: 0, y: 0, w: View.w, h: View.h }, '#2a4a2c');
+  // ledge
+  R(g, 120, 222, 240, 8, '#2e4a30');
+  R(g, 120, 222, 240, 2, '#5a9a5a');
+  // ganja plants growing from the floor and walls
+  ganjaLeaf(g, 60, 214, 1.4, '#4a9a4a');
+  ganjaLeaf(g, 416, 210, 1.6, '#3f8a3f');
+  ganjaLeaf(g, 150, 218, 1.1, '#5aaa5a');
+  ganjaLeaf(g, 330, 216, 1.2, '#4a9a4a');
+  ganjaLeaf(g, 26, 150, 1.0, '#3f7a3f');
+  ganjaLeaf(g, 446, 120, 1.0, '#3f7a3f');
+  // floating glowing spores drifting up (animated)
+  const sr = rng(414);
+  for (let i = 0; i < 22; i++) {
+    const bx = sr() * View.w;
+    const by = (View.h - ((t * 12 + sr() * 300) % (View.h + 40)));
+    const a = 0.4 + 0.4 * Math.sin(t * 3 + i);
+    R(g, bx + Math.sin(t + i) * 4, by, 1 + (sr() < 0.3 ? 1 : 0), 1, `rgba(150,240,150,${a})`);
+  }
+  // smoke haze drifting across (animated)
+  for (let i = 0; i < 4; i++) {
+    const x = ((i * 150 + t * 10) % (View.w + 120)) - 80;
+    R(g, x, 40 + i * 40, 90, 10, 'rgba(180,210,170,0.05)');
+    R(g, x + 20, 34 + i * 40, 50, 8, 'rgba(190,220,180,0.04)');
+  }
 }
 
 function sceneCaveMouth(g, t, dawn) {

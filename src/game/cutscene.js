@@ -87,8 +87,11 @@ export class CutsceneScreen {
         const actor = this.actors[a];
         const sp = SPEAKERS[a] || { face: 'face_vaks', name: a.toUpperCase() };
         const isRow = typeof b === 'string' && b.startsWith('m_');
-        const text = isRow ? Barks.quote(b) : b;
-        this.dialogue = { name: sp.name, face: sp.face, text, shown: 0, holdT: Barks.holdFor(text) * 0.9 + 0.4 };
+        // c is an optional display-text override for m_ rows (voice plays, different text shown)
+        const text = isRow ? (c || Barks.quote(b)) : b;
+        if (isRow && c) Barks.quote(b); // fire audio without overriding text
+        const voiceEl = isRow ? AudioManager.voiceEl : null;
+        this.dialogue = { name: sp.name, face: sp.face, text, shown: 0, holdT: Barks.holdFor(text) * 0.9 + 0.4, voiceEl };
         if (actor) actor.talkT = 0.6;
         this.waitFor = Infinity; // completes via dialogue
         break;
@@ -114,6 +117,7 @@ export class CutsceneScreen {
       case 'sprite': this.actors[a].sheet = b; this.actors[a].anim = c || 'loop'; this.nextStep(); break;
       case 'face': this.actors[a].flip = b < 0; this.nextStep(); break;
       case 'show': this.actors[a].visible = b; this.nextStep(); break;
+      case 'wire': this.nextStep(); break; // wires a manifest row without playing it
       case 'bgset': this.bg = a; this.nextStep(); break;
       case 'flash': this.flashA = 1; this.flashColor = a; this.waitFor = b || 0.3; break;
       case 'shake': this.shakeT = 0.45; this.shakeMag = a; this.nextStep(); break;
@@ -173,7 +177,15 @@ export class CutsceneScreen {
       d.shown = Math.min(d.text.length, d.shown + Barks.cps() * dt);
       if (d.shown >= d.text.length) {
         d.holdT -= dt;
-        if (d.holdT <= 0) { this.dialogue = null; this.nextStep(); return; }
+        if (d.holdT <= 0) {
+          if (d.voiceEl && !d.voiceEl.ended) {
+            // voice clip still going — keep box open until it finishes
+            d.voiceWait = (d.voiceWait || 0) + dt;
+            // give up if clip never started (pre-gesture) after a short grace period
+            if (!d.voiceEl.paused || d.voiceWait < 0.5) return;
+          }
+          this.dialogue = null; this.nextStep(); return;
+        }
       }
     }
 

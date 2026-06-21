@@ -35,7 +35,7 @@ export const CONFIG = {
   // Playback gain per channel, multiplied on top of the 0-10 sliders.
   // >1 needs Web Audio (HTMLMediaElement.volume caps at 1.0). Vaks's
   // voice notes ("sfx") punch through the music at 2x.
-  audio: { sfxGain: 2.0, musicGain: 1.0 },
+  audio: { sfxGain: 3.0, musicGain: 0.75 },
 
   mist: {
     startGap: 70,                     // mist starts this far below spawn (close — it's on you early)

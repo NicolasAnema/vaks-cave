@@ -138,10 +138,10 @@ export class HowToPlayScreen {
 
     drawText(ctx, 'THE GOAL', 28, 152, { color: '#8ae08a' });
     const rules = [
-      'ACT 1 - THE CAVE: CLIMB OUT BEFORE THE MIST RISES OVER YOU.',
-      "ACT 2 - THE STREETS: OUTRUN GRANNY. SHE'S SLOWER, CLEAN PLAY ESCAPES.",
-      'STOMP RATS FROM ABOVE; A BUMP KNOCKS YOU BACK AND COSTS TIME.',
-      'GRAB MANO (R), SPEND IT AT THE SHOP. OUT OF LIVES = GAME OVER.',
+      'ESCAPE THE CAVE.',
+      'MAKE IT THROUGH THE TOWNSHIPS.',
+      'GET TO WORK ON TIME.',
+      'GOOD LUCK.',
     ];
     rules.forEach((r, i) => drawText(ctx, r, 28, 166 + i * 12, { color: '#cfd6ff' }));
 
