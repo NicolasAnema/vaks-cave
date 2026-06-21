@@ -114,7 +114,7 @@ function toMenu() {
 }
 
 function toTitle() {
-  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())), onShop: goTitleShop }));
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())) }));
 }
 
 function goTitleShop() {
@@ -124,7 +124,7 @@ function goTitleShop() {
   M.replace(new ShopScreen(shopRun, 0, {
     onDone: () => {
       if (Save.data.runSnapshot) { Save.data.runSnapshot = { ...shopRun }; Save.save(); }
-      toTitle();
+      toMenu();
     },
   }));
 }
@@ -232,6 +232,7 @@ function menuCbs() {
       onPick: (n) => startRunAt(flowIndexOfLevel(n), true),
       onBack: toMenu,
     })),
+    onShop: goTitleShop,
     onJukebox: () => M.replace(new JukeboxScreen({ onBack: toMenu })),
     onGallery: openGallery,
     onSettings: () => M.replace(new SettingsScreen({ onBack: toMenu })),
@@ -302,7 +303,7 @@ async function boot() {
   // query-param jump for automated checks: ?jump=menu|level3|boss|shop|cutscene:ending
   const jump = new URLSearchParams(location.search).get('jump');
 
-  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())), onShop: goTitleShop }), false);
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())) }), false);
 
   if (jump) {
     if (jump === 'menu') M.replace(new MainMenuScreen(menuCbs()), false);

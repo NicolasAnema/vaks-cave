@@ -157,7 +157,7 @@ export const MUSIC_SLOTS = [
   { id: 'loading', name: 'BABALAS SHUFFLE',    file: 'music/loading.ogg' },
   { id: 'world1',  name: 'DEEP CAVE RIDDIM',   file: 'music/world1.ogg' },
   { id: 'world2',  name: 'KASI SPRINT',        file: 'music/world2.ogg' },
-  { id: 'boss',    name: 'VIBE OF THE WIND',   file: 'music/boss.ogg' },
+  { id: 'boss',    name: 'FELINE FREQUENCY',    file: 'music/feline_frequency.ogg' },
   { id: 'ending',  name: 'BAAS VAN DIE PLAAS', file: 'music/ending.ogg' },
 ];
 
