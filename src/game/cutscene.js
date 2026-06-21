@@ -7,7 +7,7 @@
 
 import { View, dimScreen, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
-import { drawText, wrapText, LINE_H } from '../engine/font.js';
+import { drawText, wrapText, textWidth, LINE_H } from '../engine/font.js';
 import { draw, drawImoHead, spr, PHOTO_FACES, VAKS, GRANNY } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
@@ -340,20 +340,21 @@ export class CutsceneScreen {
     // locked voice_note: 'voice memo' tag in the box's top-right — EQ bars + LISTEN
     if (this.dialogue && this.dialogue.locked) {
       const bx = 64, by = 34, bw = View.w - 128;
-      // 'LISTEN' anchored to the right; bars sit to its left with a clear gap
-      const labelX = bx + bw - 12, tagY = by + 6;
-      drawText(ctx, 'LISTEN', labelX, tagY, { color: '#e04040', align: 'right' });
-      // animated EQ bars (right-aligned, ending before the label with a gap)
-      const freqs = [3.1, 4.7, 3.8, 5.2, 2.9];
-      const phases = [0, 1.2, 2.4, 0.6, 1.8];
-      const barsRight = labelX - 38; // left of LISTEN with breathing room
-      for (let i = 0; i < 5; i++) {
+      const tagY = by + 6;
+      // 'LISTEN' anchored to the right edge of the box
+      const label = 'LISTEN';
+      const labelRight = bx + bw - 10;
+      const labelLeft = labelRight - textWidth(label);
+      drawText(ctx, label, labelLeft, tagY, { color: '#e04040' });
+      // 4 animated EQ bars to the LEFT of the label, with a clear gap
+      const freqs = [3.1, 4.7, 3.8, 5.2];
+      const phases = [0, 1.2, 2.4, 0.6];
+      const barW = 2, barGap = 2, nBars = freqs.length;
+      const barsRight = labelLeft - 6;                       // 6px gap before LISTEN
+      const barsLeft = barsRight - nBars * (barW + barGap);
+      for (let i = 0; i < nBars; i++) {
         const h = 3 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 5);
-        R(ctx, barsRight + i * 4, tagY + 7 - h, 2, h, '#e04040');
-      }
-      // blinking REC dot to the left of the bars
-      if (Math.floor(this.t * 1.6) % 2 === 0) {
-        R(ctx, barsRight - 7, tagY + 2, 3, 3, '#e04040');
+        R(ctx, barsLeft + i * (barW + barGap), tagY + 7 - h, barW, h, '#e04040');
       }
     }
 
