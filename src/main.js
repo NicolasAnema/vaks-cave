@@ -344,17 +344,19 @@ async function boot() {
     last = now;
     acc += Math.min(dt, 0.1);
     let steps = 0;
+    // hidden on the title/home screen; pinned on top of every other screen
+    const showMute = !(M.top() instanceof TitleScreen);
     while (acc >= STEP && steps < 4) {
       handleDebugKeys();
       M.update(STEP);
-      MuteButton.update(STEP); // read clicks before endFrame clears them
+      if (showMute) MuteButton.update(STEP); // read clicks before endFrame clears them
       Input.endFrame();
       acc -= STEP;
       steps++;
     }
     const ctx = getCtx();
     M.draw(ctx);
-    MuteButton.draw(ctx); // pinned on top of every screen
+    if (showMute) MuteButton.draw(ctx);
     present();
   }
   requestAnimationFrame(frame);
