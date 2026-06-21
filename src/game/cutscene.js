@@ -108,7 +108,7 @@ export class CutsceneScreen {
         const text = isRow ? (c || Barks.quote(b)) : b;
         if (isRow && c) Barks.quote(b); // fire audio without overriding text
         const voiceEl = isRow ? AudioManager.voiceEl : null;
-        this.dialogue = { name: sp.name, face: sp.face, text, shown: 0, holdT: Barks.holdFor(text) * 0.9 + 0.4, voiceEl };
+        this.dialogue = { name: sp.name, face: sp.face, text, shown: 0, holdT: Barks.holdFor(text) * 1.2 + 1.0, voiceEl };
         if (actor) actor.talkT = 0.6;
         this.waitFor = Infinity; // completes via dialogue
         break;
@@ -225,7 +225,7 @@ export class CutsceneScreen {
     // dialogue typewriter
     if (this.dialogue) {
       const d = this.dialogue;
-      d.shown = Math.min(d.text.length, d.shown + Barks.cps() * dt);
+      d.shown = Math.min(d.text.length, d.shown + 20 * dt);
       if (d.shown >= d.text.length) {
         d.holdT -= dt;
         if (d.holdT <= 0) {
@@ -363,10 +363,19 @@ export class CutsceneScreen {
     }
 
     if (this.voiceNote) {
-      if (this.voiceNote.caption) {
-        drawText(ctx, this.voiceNote.caption, View.w / 2, View.h - 46, { color: '#c8bc90', align: 'center' });
+      // animated EQ bars inside the bottom letterbox — red "something is playing" signal
+      const cx = Math.round(View.w / 2);
+      const cy = View.h - 13;
+      const freqs = [3.1, 4.7, 3.8, 5.2, 2.9];
+      const phases = [0, 1.2, 2.4, 0.6, 1.8];
+      for (let i = 0; i < 5; i++) {
+        const h = 2 + Math.round(Math.abs(Math.sin(this.t * freqs[i] + phases[i])) * 7);
+        R(ctx, cx - 11 + i * 5, cy - h, 3, h, '#e04040');
       }
-      drawText(ctx, 'CLICK TO SKIP', View.w / 2, View.h - 34, { color: '#5a6280', align: 'center' });
+      // blinking REC dot to the left of the bars
+      if (Math.floor(this.t * 1.6) % 2 === 0) {
+        R(ctx, cx - 20, cy - 3, 3, 3, '#e04040');
+      }
     }
     drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
   }
