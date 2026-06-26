@@ -128,9 +128,13 @@ export class LevelScreen {
   fxJump() { AudioManager.play('jump'); }
   fxLand() { this.cam.addShake(0.4); }
   meow(x, y) {
+    const mr2 = CONFIG.player.meowRadius * CONFIG.player.meowRadius;
     for (const r of this.rats) {
       const dx = r.x - x, dy = (r.y - 4) - y;
-      if (dx * dx + dy * dy < CONFIG.player.meowRadius * CONFIG.player.meowRadius) r.flee(x);
+      if (dx * dx + dy * dy >= mr2) continue;
+      // a meow is a gamble: some rats scatter, some just don't care
+      if (Math.random() < CONFIG.rats.meowScareChance) r.flee(x);
+      else Particles.dust(r.x, r.y - 6, 2); // little "nuh-uh" puff: this one ignored you
     }
     // the meow also scares off the tikoloshes ("birds") — wider reach since
     // they're the aerial instakill threat

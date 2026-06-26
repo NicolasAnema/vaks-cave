@@ -158,10 +158,12 @@ export class Granny {
     switch (this.state) {
       case 'chase': {
         this.burstTimer -= dt;
-        // rubber band: never idle out of relevance, never as fast as Vaks.
-        // gogo never faints/rests now — she only winds up bursts.
+        // rubber band like the mist: gogo hurries up proportionally when Vaks
+        // gets more than maxLead ahead, capped just under runSpeed so she stays
+        // right on his heels but a flat-out runner can still escape. She never
+        // faints/rests now — she only winds up bursts.
         let sp = this.base;
-        if (gap > C.startGap * 1.5) sp = Math.min(CONFIG.player.runSpeed - 12, this.base * 1.7);
+        if (gap > C.maxLead) sp = Math.min(CONFIG.player.runSpeed - C.catchUpCap, this.base + (gap - C.maxLead) * C.catchUpK);
         this.x += sp * dt * slow;
         this.animT += dt * 9 * slow;
         if (this.burstTimer <= 0 && gap < 260) {

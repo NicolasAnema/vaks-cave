@@ -417,7 +417,7 @@ export const LEVELS = [
     theme: 'plat_w1c', height: 2500, dark: true,
     gap: [35, 40], w: [80, 138], dx: [66, 112], ladderEvery: 5,
     decoyFrac: 0.12, crumbleDecoy: 0.6, crumbleMain: 0.55,
-    weedFracs: [0.35, 0.72],
+    weedFracs: [0.55],
     ratFracs: [0.16, 0.3, 0.42, 0.56, 0.7, 0.84],
     shadowFracs: [0.2, 0.34, 0.48, 0.6, 0.74, 0.88], irieFracs: [],
     tutorials: (spawn, ladders, floorY) => [
@@ -450,7 +450,7 @@ export const LEVELS = [
       { frac: 0.66, kind: 'knife' }, { frac: 0.82, kind: 'gun' },
     ],
     overpassPlan: [ { frac: 0.26, len: 3, kind: 'gun' }, { frac: 0.72, len: 4, kind: 'viceroy' } ],
-    weedFracs: [0.3, 0.74],
+    weedFracs: [0.6],
     scriptedStallAt: 0.64,
     propPlan: [
       { kind: 'taxi', frac: 0.16 }, { kind: 'tv', frac: 0.28 },
@@ -468,7 +468,7 @@ export const LEVELS = [
       { frac: 0.86, kind: 'gun' },
     ],
     overpassPlan: [ { frac: 0.3, len: 4, kind: 'gun' }, { frac: 0.66, len: 5, kind: 'knife' } ],
-    weedFracs: [0.35, 0.78],
+    weedFracs: [],
     propPlan: [
       { kind: 'school', frac: 0.24 }, { kind: 'tv', frac: 0.48 },
       { kind: 'taxi', frac: 0.66 }, { kind: 'washing', frac: 0.3 }, { kind: 'washing', frac: 0.8 },

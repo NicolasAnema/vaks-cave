@@ -18,6 +18,7 @@ import { CUTSCENES, SCENE_ORDER } from './data/cutscenes.js';
 import { verifyLevels } from './verify.js';
 import { LevelScreen } from './game/level.js';
 import { BossScreen } from './game/boss.js';
+import { GardenBossScreen } from './game/garden_boss.js';
 import { CutsceneScreen } from './game/cutscene.js';
 import { ShopScreen } from './game/shop.js';
 import {
@@ -175,7 +176,7 @@ function goFlow(i) {
     M.replace(new ShopScreen(run, node.after, { onDone: nextFlow }));
   } else if (node.t === 'boss') {
     const bossIdx = i;
-    const bs = new BossScreen(run, {
+    const cb = {
       onWin: nextFlow,
       onCaught: () => {
         run.lives--;
@@ -183,7 +184,9 @@ function goFlow(i) {
         else goFlow(bossIdx);                                     // still got lives: retry the boss
       },
       onPause: () => pushPause(bs, () => goFlow(bossIdx)),
-    }, { variant: node.variant });
+    };
+    // the granny finale is a different game (TEND THE PLAAS); the cave boss is the vibe-off
+    const bs = node.variant === 'granny' ? new GardenBossScreen(run, cb) : new BossScreen(run, cb);
     M.replace(bs);
   } else if (node.t === 'credits') {
     M.replace(new CreditsScreen({ onDone: finishRun }));

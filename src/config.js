@@ -51,7 +51,7 @@ export const CONFIG = {
   },
 
   granny: {
-    speed: { 4: 106, 5: 124, 6: 140 }, // base px/s — always < player.runSpeed
+    speed: { 4: 122, 5: 138, 6: 140 }, // base px/s — always < player.runSpeed (L6 at the verifier cap)
     burstMul: 1.65, burstTime: 0.8, stareTime: 0.6,
     burstEvery: { 4: 7.2, 5: 5.8, 6: 4.6 },
     faintEvery: { 4: 12.5, 5: 10.5, 6: 9 },
@@ -59,16 +59,24 @@ export const CONFIG = {
     startGap: 215, resetGap: 235, catchDist: 12,
     dangerFracs: [0.5, 0.3, 0.16],
     charmSlow: 0.85,                  // charm: gogo runs this much slower for the run
+    // rubber band (same idea as the mist): when Vaks gets more than maxLead
+    // ahead, gogo hurries up proportionally, capped at runSpeed-catchUpCap so a
+    // flat-out runner still slowly escapes but she is always right behind.
+    maxLead: 105, catchUpK: 0.9, catchUpCap: 3,
   },
 
   bottles: { speed: 74, interval: { 1: 3.4, 2: 2.4, 3: 1.9 }, maxActive: 9, spinHz: 6 },
   // rats: patrol their ledge, but CHARGE Vaks when he comes within aggro
   // range (chaseSpeed). Meow makes them flee. Bigger knockback than before.
-  rats:    { speed: 66, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 112, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
+  // meowScareChance: a meow only scares each in-range rat this often — some
+  // rats just don't care, so the meow is a gamble (adds chaos to the climb).
+  rats:    { speed: 66, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 112, meowScareChance: 0.68, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
   // tiko ("birds"): drift/patrol, but HOME toward Vaks within homeRange at
   // homeSpeed (kept well under walkSpeed=105 so clean play escapes). Contact
   // is still instant death — meow is the counter: it repels them (fleeSpeed).
-  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 96, fleeTime: 1.5, meowRadius: 120 },
+  // fleeSpeed/fleeTime: a meow only shoves a tikolosh back a little for a short
+  // moment (not a full reset) — it comes homing back, so you must meow again.
+  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 78, fleeTime: 1.1, meowRadius: 120 },
   crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 4.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
@@ -105,7 +113,7 @@ export const CONFIG = {
     // that overshoots is trimmed (biggest notes drop first), one that
     // undershoots is topped up (coins upgrade up the denomination ladder).
     // See normalizeMoney() in data/levels.js.
-    levelBudget: { 1: 50, 2: 60, 3: 70, 4: 80, 5: 90, 6: 100 }, // max mano collectable per level (rises so a R140-180 hat lands around the L4 shop)
+    levelBudget: { 1: 76, 2: 82, 3: 86, 4: 90, 5: 92, 6: 96 }, // mano collectable per level: fairer, fuller early game (was 50..100, too lean up front and too top-heavy)
     w1CoinChance: 0.26,   // vertical: chance a wide plank carries an R2 run (was 0.42)
     w1CoinMax: 2,         // vertical: ...of 1..this coins per run (was up to 3)
     w1NoteChance: 0.10,   // vertical: chance a plank carries a lone R10 (was 0.16)
@@ -134,17 +142,20 @@ export const CONFIG = {
   },
 
   boss: {
-    // way harder vibe-off: more rounds, faster tempo, tighter timing, and it
-    // creeps in faster so every miss really bites.
-    rounds: [ { beats: 6, bpm: 80 }, { beats: 7, bpm: 94 }, { beats: 8, bpm: 108 }, { beats: 9, bpm: 122 }, { beats: 10, bpm: 138 } ],
-    hitWindow: 0.11, perfectWindow: 0.05,
-    startDist: 210, catchDist: 42, advanceMiss: 52, retreatHit: 12, driftSpeed: 13,
-    // granny boss (act-2 finale): 1.5x harder again — faster still, tightest window
-    granny: {
-      rounds: [ { beats: 8, bpm: 104 }, { beats: 9, bpm: 122 }, { beats: 10, bpm: 140 }, { beats: 11, bpm: 158 }, { beats: 12, bpm: 176 } ],
-      hitWindow: 0.085, perfectWindow: 0.04,
-      catchDist: 46, advanceMiss: 72, retreatHit: 11, driftSpeed: 19,
-    },
+    // Big Tikolosh vibe-off — properly hard: 5 fast rounds, tight timing, and it
+    // creeps in fast so every miss bites.
+    rounds: [ { beats: 7, bpm: 96 }, { beats: 8, bpm: 112 }, { beats: 9, bpm: 128 }, { beats: 10, bpm: 146 }, { beats: 11, bpm: 164 } ],
+    hitWindow: 0.09, perfectWindow: 0.045,
+    startDist: 210, catchDist: 44, advanceMiss: 66, retreatHit: 11, driftSpeed: 17,
+  },
+
+  // granny finale — a different game entirely: TEND THE PLAAS. Weeds sprout in
+  // the garden plots; pull each (its key) before it overgrows. Too many
+  // overgrow and gogo catches you. As hard as the vibe-off that came before.
+  gardenBoss: {
+    plots: 5, target: 30, angerMax: 7, maxWeeds: 4,
+    sproutStart: 1.1, sproutEnd: 0.42,   // seconds between sprouts (eases down with progress)
+    growStart: 1.45, growEnd: 0.8,       // seconds for a weed to overgrow (eases down)
   },
 
   camera: { lerp: 6, lookUp: 36, lookAhead: 48, shakeDecay: 9 },
