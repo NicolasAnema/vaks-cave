@@ -97,8 +97,11 @@ export const PAL = {
     shoe: '#23232e', shoeD: '#1a1a22', eye: '#ffd84d', dark: '#22222c',
   },
   granny: {
-    dress: '#46355f', dressD: '#352847', scarf: '#ece6d2', scarfD: '#c9c2aa',
-    skin: '#8a5a3a', apron: '#b5524c', shoe: '#26202e', eye: '#2a2030', white: '#ffffff',
+    // classic Elizabethan granny: pale skin, dark formal dress, white ruff,
+    // grey hair under a bonnet
+    dress: '#3a4d40', dressD: '#27362b', scarf: '#dcd6c6', scarfD: '#b9b3a2',
+    skin: '#edcaac', apron: '#e8e2d2', shoe: '#1f1a26', eye: '#2a2030', white: '#ffffff',
+    ruff: '#f6f2e8', hair: '#c7c1b3',
   },
   // original mist-creature tikolosh bodies (the head is Imo's photo)
   tiko: {
@@ -249,10 +252,14 @@ function drawGranny(g, p = {}) {
   const sw = p.arm | 0;
   R(g, 15 + lean, 12 + bob + sw, 2, 2, C.skin);
   R(g, 5 + lean, 12 + bob - sw, 2, 2, C.skin);
-  // head wrapped in scarf
+  // white Elizabethan ruff collar at the neck
+  R(g, 5 + lean, 9 + bob, 11, 2, C.ruff);
+  R(g, 5 + lean, 10 + bob, 11, 1, C.scarfD);
+  // head wrapped in a bonnet, grey hair peeking at the front
   R(g, 6 + lean, 3 + bob, 9, 7, C.scarf);
   R(g, 6 + lean, 9 + bob, 9, 1, C.scarfD);
   R(g, 4 + lean, 7 + bob, 2, 3, C.scarfD); // knot at back
+  R(g, 11 + lean, 4 + bob, 4, 1, C.hair);  // grey hair at the hairline
   // face
   R(g, 11 + lean, 5 + bob, 4, 4, C.skin);
   if (p.stare) {

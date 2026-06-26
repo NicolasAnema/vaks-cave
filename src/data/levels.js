@@ -110,16 +110,7 @@ function buildVertical(o) {
         pickups.push({ x: p.x + p.w / 2, y: p.y - 15, kind: 'weed' });
       }
     }
-    // checkpoints at planned fractions
-    for (const cf of o.checkpointFracs) {
-      const key = 'c' + cf;
-      if (!placedFrac.has(key) && frac >= cf) {
-        placedFrac.add(key);
-        p.w = clamp(Math.max(p.w, 110), p.w, innerR - p.x);
-        p.type = 'solid';
-        checkpoints.push({ x: p.x + p.w / 2, y: p.y });
-      }
-    }
+    // (no checkpoints: a death restarts the whole level from the bottom)
     // rats on wider ledges (host stays solid: a rat never rides a falling step)
     if (o.ratFracs.some((rf, i) => !placedFrac.has('r' + i) && frac >= rf && p.w >= 80 && placedFrac.add('r' + i))) {
       p.type = 'solid';
@@ -197,6 +188,7 @@ function buildHorizontal(o) {
   let gx = 0;       // current ground segment start
   let x = 340;      // build cursor (first stretch is safe)
   let placed100 = false; // one R100 note per level
+  let stallX = null;     // x where the scripted granny-stall triggers
   const placed = new Set();
 
   function endGround(atX) { grounds.push({ x: gx, w: atX - gx }); }
@@ -206,18 +198,15 @@ function buildHorizontal(o) {
 
     // planned one-shot placements
     let didPlace = false;
-    for (const cf of o.checkpointFracs) {
-      if (!placed.has('c' + cf) && frac >= cf) {
-        placed.add('c' + cf);
-        checkpoints.push({ x: Math.round(x + 30), y: G });
-        if (o.scriptedStallAt === cf) {
-          npcs.push({ kind: 'tallman', x: Math.round(x + 70), y: G });
-          npcs.push({ kind: 'shorty', x: Math.round(x + 104), y: G });
-        }
-        x += 150; didPlace = true; break;
-      }
+    // no checkpoints (a death restarts the level) — but the scripted Tallman &
+    // Shorty granny-stall still happens at its planned spot
+    if (o.scriptedStallAt != null && !placed.has('stall') && frac >= o.scriptedStallAt) {
+      placed.add('stall');
+      npcs.push({ kind: 'tallman', x: Math.round(x + 70), y: G });
+      npcs.push({ kind: 'shorty', x: Math.round(x + 104), y: G });
+      stallX = Math.round(x + 70);
+      x += 150; continue;
     }
-    if (didPlace) continue;
     for (const wf of o.weedFracs) {
       if (!placed.has('w' + wf) && frac >= wf) {
         placed.add('w' + wf);
@@ -233,6 +222,26 @@ function buildHorizontal(o) {
         placed.add(key);
         tsotsis.push({ kind: tp.kind, x: Math.round(x + 70), y: G, minX: Math.round(x + 16), maxX: Math.round(x + 150) });
         x += 190; didPlace = true; break;
+      }
+    }
+    if (didPlace) continue;
+    // high-road overpass: a run of rooftops you can hop up to and cross instead
+    // of the street. The street below stays open (and is guarded), so it's a
+    // real choice — safer-but-trickier-jumps up top vs. run-the-gauntlet below.
+    for (const op of (o.overpassPlan || [])) {
+      const key = 'op' + op.frac;
+      if (!placed.has(key) && frac >= op.frac) {
+        placed.add(key);
+        const len = op.len || 3, pw = 56, step = pw + 26;
+        let ox = x + 20;
+        for (let i = 0; i < len; i++) {
+          platforms.push({ x: Math.round(ox), y: G - 42, w: pw, type: 'solid', main: false });
+          pickups.push({ x: Math.round(ox + pw / 2), y: G - 58, kind: i === len - 1 ? 'r50' : 'r20' });
+          ox += step;
+        }
+        // the street below is guarded so the rooftop is worth the risk
+        tsotsis.push({ kind: op.kind || 'gun', x: Math.round(x + (ox - x) / 2), y: G, minX: Math.round(x + 16), maxX: Math.round(ox - 16) });
+        x = Math.round(ox) + 40; didPlace = true; break; // ground continues underneath
       }
     }
     if (didPlace) continue;
@@ -306,7 +315,7 @@ function buildHorizontal(o) {
     music: 'world2',
     platforms, ladders: [], pickups, rats, tikos: [], lanterns: [], checkpoints, tutorials,
     walls: [], grounds, sushi, props, npcs, tsotsis,
-    scriptedStallAt: o.scriptedStallAt ? checkpoints[o.checkpointFracs.indexOf(o.scriptedStallAt)] : null,
+    scriptedStallAt: stallX != null ? { x: stallX } : null,
     spawn, exit,
   };
 }
@@ -376,9 +385,9 @@ export const LEVELS = [
     id: 1, seed: 1101, name: 'SHALLOW SHAFT', tagline: 'BABALAS YESTERDAY. BIG PARTY!',
     music: 'level1',
     theme: 'plat_w1a', height: 1700,
-    gap: [30, 38], w: [110, 190], dx: [55, 95], ladderEvery: 5,
-    decoyFrac: 0.36, crumbleDecoy: 0.45, crumbleMain: 0.6,
-    weedFracs: [], checkpointFracs: [0.25, 0.5, 0.75], ratFracs: [0.3, 0.55, 0.8], shadowFracs: [], irieFracs: [],
+    gap: [35, 40], w: [104, 175], dx: [58, 98], ladderEvery: 6,
+    decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.6,
+    weedFracs: [], ratFracs: [0.25, 0.42, 0.58, 0.74, 0.88], shadowFracs: [], irieFracs: [],
     introTiko: true,
     tutorials: (spawn, ladders, floorY) => {
       const firstLadder = ladders[0];
@@ -386,39 +395,43 @@ export const LEVELS = [
         { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'ARROW KEYS TO MOVE. SPACE TO JUMP.' },
         firstLadder ? { x: firstLadder.x - 50, y: firstLadder.y + firstLadder.h - 60, w: 110, h: 80, text: 'PRESS UP / DOWN ON A LADDER TO CLIMB.' } : null,
         { x: 16, y: floorY - 260, w: 448, h: 60, text: 'THE MIST RISES. IF IT TOUCHES YOU, IT HAS YOU. CLIMB!' },
-        { x: 16, y: floorY - 460, w: 448, h: 60, text: 'CRACKED STEPS GIVE WAY. KEEP CLIMBING.' },
+        { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS BITE ON THE LEDGES. PRESS M TO MEOW AND SCATTER THEM. DO NOT FORGET THE MEOW!' },
+        { x: 16, y: floorY - 560, w: 448, h: 60, text: 'CRACKED STEPS GIVE WAY. KEEP CLIMBING.' },
       ].filter(Boolean);
     },
   }),
   buildVertical({
     id: 2, seed: 2202, name: 'WEED BIOME', tagline: "IT'S GOOD TO BE FEEL IRIE",
     theme: 'plat_w1b', height: 2100,
-    gap: [32, 38], w: [95, 165], dx: [60, 105], ladderEvery: 4,
-    decoyFrac: 0.36, crumbleDecoy: 0.4, crumbleMain: 0.3,
-    weedFracs: [0.22, 0.55, 0.82], checkpointFracs: [0.33, 0.66], ratFracs: [0.4, 0.7],
-    shadowFracs: [], irieFracs: [0.3, 0.58, 0.8],
+    gap: [35, 40], w: [90, 150], dx: [62, 108], ladderEvery: 5,
+    decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.5,
+    weedFracs: [0.3, 0.72], ratFracs: [0.3, 0.5, 0.68, 0.85],
+    shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'GANJA SLOWS THE WORLD AND POWERS THE LEGS. TWO AT ONCE IS TOO STRONG.' },
+      { x: 16, y: floorY - 420, w: 448, h: 60, text: 'THE TIKOLOSH DRIFTS RIGHT AT YOU NOW. MEOW (M) SCARES IT BACK - USE IT!' },
     ],
   }),
   buildVertical({
     id: 3, seed: 3303, name: 'THE DEEP', tagline: 'YOUR CAT IS GONNA DIE',
     theme: 'plat_w1c', height: 2500, dark: true,
-    gap: [33, 38], w: [85, 150], dx: [65, 110], ladderEvery: 4,
-    decoyFrac: 0.4, crumbleDecoy: 0.5, crumbleMain: 0.3,
-    weedFracs: [0.35, 0.72], checkpointFracs: [0.5],
-    ratFracs: [0.2, 0.36, 0.55, 0.68, 0.86],
-    shadowFracs: [0.26, 0.46, 0.62, 0.8], irieFracs: [],
+    gap: [35, 40], w: [80, 138], dx: [66, 112], ladderEvery: 5,
+    decoyFrac: 0.12, crumbleDecoy: 0.6, crumbleMain: 0.55,
+    weedFracs: [0.35, 0.72],
+    ratFracs: [0.16, 0.3, 0.42, 0.56, 0.7, 0.84],
+    shadowFracs: [0.2, 0.34, 0.48, 0.6, 0.74, 0.88], irieFracs: [],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'TOO DARK FOR PEOPLE EYES. GOOD THING VAKS HAS CAT EYES.' },
+      { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS AND THE TIKOLOSH HUNT IN THE DARK. MEOW (M) OFTEN TO KEEP THEM BACK!' },
     ],
   }),
   buildHorizontal({
     id: 4, seed: 4404, name: 'TOWNSHIP OUTSKIRTS', tagline: "I'M COMING BOSS, I'M COMING BOSS",
     length: 3400,
-    gap: [40, 62], gapFrac: 0.24, sushiFrac: 0.18, ratFrac: 0.12,
-    tsotsiPlan: [ { frac: 0.28, kind: 'knife' }, { frac: 0.58, kind: 'viceroy' } ],
-    weedFracs: [0.5], checkpointFracs: [0.36, 0.68],
+    gap: [40, 64], gapFrac: 0.28, sushiFrac: 0.2, ratFrac: 0.16,
+    tsotsiPlan: [ { frac: 0.24, kind: 'knife' }, { frac: 0.5, kind: 'gun' }, { frac: 0.74, kind: 'viceroy' } ],
+    overpassPlan: [ { frac: 0.62, len: 3, kind: 'knife' } ],
+    weedFracs: [0.5],
     propPlan: [
       { kind: 'school', frac: 0.22 }, { kind: 'washing', frac: 0.42 },
       { kind: 'taxi', frac: 0.56 }, { kind: 'washing', frac: 0.78 },
@@ -431,12 +444,13 @@ export const LEVELS = [
   buildHorizontal({
     id: 5, seed: 5505, name: 'KASI MAIN STREET', tagline: 'EVERY TUESDAY',
     length: 4200,
-    gap: [50, 74], gapFrac: 0.28, sushiFrac: 0.22, ratFrac: 0.15,
+    gap: [50, 76], gapFrac: 0.3, sushiFrac: 0.24, ratFrac: 0.18,
     tsotsiPlan: [
-      { frac: 0.18, kind: 'knife' }, { frac: 0.44, kind: 'gun' },
-      { frac: 0.56, kind: 'viceroy' }, { frac: 0.8, kind: 'knife' },
+      { frac: 0.16, kind: 'knife' }, { frac: 0.34, kind: 'gun' }, { frac: 0.5, kind: 'viceroy' },
+      { frac: 0.66, kind: 'knife' }, { frac: 0.82, kind: 'gun' },
     ],
-    weedFracs: [0.3, 0.74], checkpointFracs: [0.34, 0.64],
+    overpassPlan: [ { frac: 0.26, len: 3, kind: 'gun' }, { frac: 0.72, len: 4, kind: 'viceroy' } ],
+    weedFracs: [0.3, 0.74],
     scriptedStallAt: 0.64,
     propPlan: [
       { kind: 'taxi', frac: 0.16 }, { kind: 'tv', frac: 0.28 },
@@ -447,13 +461,14 @@ export const LEVELS = [
   buildHorizontal({
     id: 6, seed: 6606, name: 'HOME STRETCH', tagline: 'EK IS DIE BAAS VAN DIE PLAAS',
     length: 5000,
-    gap: [60, 84], gapFrac: 0.32, sushiFrac: 0.25, ratFrac: 0.17,
+    gap: [60, 86], gapFrac: 0.34, sushiFrac: 0.27, ratFrac: 0.2,
     tsotsiPlan: [
-      { frac: 0.14, kind: 'knife' }, { frac: 0.3, kind: 'gun' },
-      { frac: 0.44, kind: 'viceroy' }, { frac: 0.58, kind: 'gun' },
-      { frac: 0.72, kind: 'knife' }, { frac: 0.88, kind: 'viceroy' },
+      { frac: 0.12, kind: 'knife' }, { frac: 0.26, kind: 'gun' }, { frac: 0.38, kind: 'viceroy' },
+      { frac: 0.5, kind: 'gun' }, { frac: 0.62, kind: 'knife' }, { frac: 0.74, kind: 'viceroy' },
+      { frac: 0.86, kind: 'gun' },
     ],
-    weedFracs: [0.28, 0.6, 0.85], checkpointFracs: [0.34, 0.66],
+    overpassPlan: [ { frac: 0.3, len: 4, kind: 'gun' }, { frac: 0.66, len: 5, kind: 'knife' } ],
+    weedFracs: [0.35, 0.78],
     propPlan: [
       { kind: 'school', frac: 0.24 }, { kind: 'tv', frac: 0.48 },
       { kind: 'taxi', frac: 0.66 }, { kind: 'washing', frac: 0.3 }, { kind: 'washing', frac: 0.8 },

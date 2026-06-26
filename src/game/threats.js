@@ -52,7 +52,15 @@ export class Mist {
   update(dt, player) {
     this.t += dt;
     const slow = player.worldScale();
-    if (!this.frozen) this.topY -= this.rate * dt * slow;
+    if (!this.frozen) {
+      let rise = this.rate;
+      // rubber band: hurry up if Vaks has raced too far ahead, easing back to
+      // the base rate at the threshold (proportional => never overtakes him)
+      const M = CONFIG.mist;
+      const lead = this.topY - player.y;   // how far the mist sits below Vaks
+      if (lead > M.maxLead) rise += Math.min(M.catchUpMax, (lead - M.maxLead) * M.catchUpK);
+      this.topY -= rise * dt * slow;
+    }
     // ambient wisps at the surface
     if (Math.random() < 0.25) {
       Particles.wisp(20 + Math.random() * (this.level.width - 40), this.topY + Math.random() * 30);
@@ -128,8 +136,9 @@ export class Granny {
 
   speed() {
     const C = CONFIG.granny;
-    if (this.state === 'faint' || this.state === 'stare' || this.state === 'stalled') return 0;
+    if (this.state === 'stalled') return 0;          // only the scripted stall fully stops her
     if (this.state === 'burst') return this.base * C.burstMul;
+    if (this.state === 'stare') return this.base * 0.85; // wind-up, but she keeps flowing
     return this.base;
   }
 
@@ -148,20 +157,14 @@ export class Granny {
 
     switch (this.state) {
       case 'chase': {
-        this.faintTimer -= dt;
         this.burstTimer -= dt;
-        // rubber band: never idle out of relevance, never as fast as Vaks
+        // rubber band: never idle out of relevance, never as fast as Vaks.
+        // gogo never faints/rests now — she only winds up bursts.
         let sp = this.base;
         if (gap > C.startGap * 1.5) sp = Math.min(CONFIG.player.runSpeed - 12, this.base * 1.7);
         this.x += sp * dt * slow;
         this.animT += dt * 9 * slow;
-        if (this.faintTimer <= 0) {
-          this.state = 'faint';
-          this.stateT = (C.faintLen[this.level.id] || 3) + this.charm;
-          this.charm = 0;
-          this.faintTimer = C.faintEvery[this.level.id];
-          barkFaint({ subtitle: true, speaker: 'VAKS' });
-        } else if (this.burstTimer <= 0 && gap < 260) {
+        if (this.burstTimer <= 0 && gap < 260) {
           this.state = 'stare';
           this.stateT = C.stareTime;
           this.burstTimer = C.burstEvery[this.level.id];
@@ -171,6 +174,8 @@ export class Granny {
         break;
       }
       case 'stare':
+        this.x += this.speed() * dt * slow;   // keep flowing during the wind-up
+        this.animT += dt * 9 * slow;
         if (this.stateT <= 0) {
           this.state = 'burst';
           this.stateT = C.burstTime;

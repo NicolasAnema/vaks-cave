@@ -11,6 +11,7 @@ import { Particles } from '../engine/particles.js';
 import { Barks } from '../systems/audio.js';
 
 const barkMeow = Barks.wire('m_meow_pool', 'player.js: M key meow');
+const barkMeowCombo = Barks.wire('m_meow_combo', 'player.js: meow-combo easter egg');
 
 export class Player {
   constructor(level, lr) {
@@ -81,7 +82,8 @@ export class Player {
     this.invuln = P.invulnTime;
     this.onGround = false; this.climbing = false;
     this.lr.hitStop();
-    this.lr.shake(CONFIG.fx.shakeImpact);
+    // bigger hits (the rat derail) kick the camera harder — extra wow
+    this.lr.shake(CONFIG.fx.shakeImpact * Math.min(power, 2.2));
     return true;
   }
 
@@ -163,12 +165,23 @@ export class Player {
     else this.idleT = 0;
 
     // meow
-    if (!this.celebrating && Input.wasPressed('KeyM') && this.meowCd <= 0) {
-      this.meowCd = P.meowCooldown;
-      this.meowFlash = 0.5;
-      barkMeow({ anchor: this });
-      this.lr.meow(this.x, this.y);
+    if (!this.celebrating && Input.wasPressed('KeyM')) {
+      // easter egg: mashing M (faster than the cooldown) builds a combo
+      this.meowMashT = 2.2;
+      this.meowMash = (this.meowMash || 0) + 1;
+      if (this.meowMash >= 6) {
+        this.meowMash = 0;
+        this.meowFlash = 0.6;
+        barkMeowCombo({ anchor: this, interrupt: true, force: true });
+        this.lr.meow(this.x, this.y);
+      } else if (this.meowCd <= 0) {
+        this.meowCd = P.meowCooldown;
+        this.meowFlash = 0.5;
+        barkMeow({ anchor: this, interrupt: true });   // the meow cuts any line mid-play
+        this.lr.meow(this.x, this.y);
+      }
     }
+    if (this.meowMashT > 0) { this.meowMashT -= dt; if (this.meowMashT <= 0) this.meowMash = 0; }
 
     // jump buffering
     if (Input.wasPressed('Space')) this.jbuf = P.jumpBuffer;

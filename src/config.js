@@ -35,30 +35,40 @@ export const CONFIG = {
   // Playback gain per channel, multiplied on top of the 0-10 sliders.
   // >1 needs Web Audio (HTMLMediaElement.volume caps at 1.0). Vaks's
   // voice notes ("sfx") punch through the music at 2x.
-  audio: { sfxGain: 3.0, musicGain: 0.75 },
+  // eventGain: per-event multiplier layered on sfxGain (1 = default).
+  audio: { sfxGain: 3.0, musicGain: 0.75, eventGain: { jump: 0.28 } },
 
   mist: {
     startGap: 70,                     // mist starts this far below spawn (close — it's on you early)
-    rate: { 1: 23, 2: 24, 3: 26 },    // rise px/s per level (difficulty dial)
+    rate: { 1: 31, 2: 31, 3: 32 },    // rise px/s per level (difficulty dial)
     resetGap: 150,                    // gap below checkpoint after a death
     catchPad: 6,
+    // rubber band: a fast climber can't leave the mist far behind. When the
+    // mist sits more than maxLead below Vaks it hurries up (proportional, so it
+    // eases back to the base rate at the threshold and never overtakes him).
+    maxLead: 150, catchUpK: 1.3, catchUpMax: 170,
     dangerFracs: [0.5, 0.3, 0.16],    // gauge fractions firing danger_close_1/2/3
   },
 
   granny: {
-    speed: { 4: 96, 5: 114, 6: 130 }, // base px/s — always < player.runSpeed
-    burstMul: 1.6, burstTime: 0.75, stareTime: 0.65,
-    burstEvery: { 4: 8.5, 5: 7, 6: 5.5 },
-    faintEvery: { 4: 11, 5: 9, 6: 7.5 },
-    faintLen:   { 4: 3.6, 5: 2.8, 6: 2.1 },
+    speed: { 4: 106, 5: 124, 6: 140 }, // base px/s — always < player.runSpeed
+    burstMul: 1.65, burstTime: 0.8, stareTime: 0.6,
+    burstEvery: { 4: 7.2, 5: 5.8, 6: 4.6 },
+    faintEvery: { 4: 12.5, 5: 10.5, 6: 9 },
+    faintLen:   { 4: 3.0, 5: 2.3, 6: 1.7 },
     startGap: 215, resetGap: 235, catchDist: 12,
     dangerFracs: [0.5, 0.3, 0.16],
-    charmBonus: 2.2,                  // faint charm: extra seconds on next faint
+    charmSlow: 0.85,                  // charm: gogo runs this much slower for the run
   },
 
-  bottles: { speed: 62, interval: { 1: 4.8, 2: 3.4, 3: 2.8 }, maxActive: 6, spinHz: 6 },
-  rats:    { speed: 52, fleeSpeed: 115, fleeTime: 1.7, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 1.6 },
-  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34 },
+  bottles: { speed: 74, interval: { 1: 3.4, 2: 2.4, 3: 1.9 }, maxActive: 9, spinHz: 6 },
+  // rats: patrol their ledge, but CHARGE Vaks when he comes within aggro
+  // range (chaseSpeed). Meow makes them flee. Bigger knockback than before.
+  rats:    { speed: 66, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 112, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
+  // tiko ("birds"): drift/patrol, but HOME toward Vaks within homeRange at
+  // homeSpeed (kept well under walkSpeed=105 so clean play escapes). Contact
+  // is still instant death — meow is the counter: it repels them (fleeSpeed).
+  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 96, fleeTime: 1.5, meowRadius: 120 },
   crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 4.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
@@ -124,9 +134,17 @@ export const CONFIG = {
   },
 
   boss: {
-    rounds: [ { beats: 4, bpm: 58 }, { beats: 5, bpm: 70 }, { beats: 6, bpm: 82 } ],
-    hitWindow: 0.18, perfectWindow: 0.07,
-    startDist: 210, catchDist: 42, advanceMiss: 30, retreatHit: 12, driftSpeed: 5,
+    // way harder vibe-off: more rounds, faster tempo, tighter timing, and it
+    // creeps in faster so every miss really bites.
+    rounds: [ { beats: 6, bpm: 80 }, { beats: 7, bpm: 94 }, { beats: 8, bpm: 108 }, { beats: 9, bpm: 122 }, { beats: 10, bpm: 138 } ],
+    hitWindow: 0.11, perfectWindow: 0.05,
+    startDist: 210, catchDist: 42, advanceMiss: 52, retreatHit: 12, driftSpeed: 13,
+    // granny boss (act-2 finale): 1.5x harder again — faster still, tightest window
+    granny: {
+      rounds: [ { beats: 8, bpm: 104 }, { beats: 9, bpm: 122 }, { beats: 10, bpm: 140 }, { beats: 11, bpm: 158 }, { beats: 12, bpm: 176 } ],
+      hitWindow: 0.085, perfectWindow: 0.04,
+      catchDist: 46, advanceMiss: 72, retreatHit: 11, driftSpeed: 19,
+    },
   },
 
   camera: { lerp: 6, lookUp: 36, lookAhead: 48, shakeDecay: 9 },

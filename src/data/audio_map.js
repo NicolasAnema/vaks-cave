@@ -35,7 +35,7 @@ export const VOICE_ALIASES = {
   m_tallman:       'sfx/Tallman owes Vaki.opus',
   m_shorty:        'sfx/Shorty Steal Plate.opus',
   m_stout:         'sfx/Lytie is stout.opus',
-  m_meow_pool:     ['sfx/Vaki is a cat.opus', 'sfx/Meeeoooww.ogg', 'sfx/You forget to buy your cat.opus'],
+  m_meow_pool:     'sfx/Meowwww.MP3',   // M key always plays the quick meow
   m_garden:        'sfx/Eyta Boss.mp3',
   m_idle_pool:     ['sfx/It\'s you!.opus', 'sfx/WhatAPP boss.opus', 'sfx/Vaki life update.opus', 'sfx/Grateful for status like.opus'],
   m_listen_up:     'sfx/Listen Up.opus',

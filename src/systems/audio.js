@@ -30,6 +30,7 @@ const stemOf = (file) => file.replace(/\.[a-z0-9]+$/i, '');
 
 export const AudioManager = {
   lastEvent: '-',
+  started: false,              // true once the player's first gesture unlocked audio
   music: null,                 // current slot id (the jukebox name source of truth)
   knownEvents: new Set(EVENTS),
   files: new Set(),            // uploaded audio paths, from assets/audio/index.json
@@ -54,14 +55,19 @@ export const AudioManager = {
       if (p) this.prepare(p, false).load();
     }
     // browsers gate audio behind a user gesture: resume the graph and
-    // (re)start music on the first key. ctx.resume() is async — chain
-    // startMusic so it fires after the context is actually running.
-    window.addEventListener('keydown', () => {
+    // (re)start music on the FIRST interaction of any kind (key, click, tap,
+    // pointer) so menu music kicks in the instant the player touches the page.
+    // ctx.resume() is async — chain startMusic so it fires once running.
+    const GESTURES = ['keydown', 'pointerdown', 'mousedown', 'touchstart', 'click'];
+    const kick = () => {
+      this.started = true;
+      for (const g of GESTURES) window.removeEventListener(g, kick);
       const resume = this.ctx && this.ctx.state === 'suspended'
         ? this.ctx.resume()
         : Promise.resolve();
       resume.then(() => { if (this.music) this.startMusic(this.music); });
-    }, { once: true });
+    };
+    for (const g of GESTURES) window.addEventListener(g, kick, { once: true });
   },
 
   resolve(stem) {
@@ -105,10 +111,10 @@ export const AudioManager = {
     } catch (e) { /* routing failed: el.volume (capped at 1) still plays */ }
   },
 
-  setLevel(path, el, kind) {
+  setLevel(path, el, kind, mul = 1) {
     const g = this.gains.get(path);
-    const duckMul = (kind === 'music' && this.duck) ? 0.25 : 1.0;
-    const level = this.vol(kind) * this.boost(kind) * duckMul;
+    const duckMul = (kind === 'music' && this.duck) ? 0.55 : 1.0;
+    const level = this.vol(kind) * this.boost(kind) * duckMul * mul;
     if (g) { el.volume = 1; g.gain.value = level; }   // graph handles >1
     else { el.volume = Math.min(1, level); }           // fallback ceiling
   },
@@ -125,9 +131,9 @@ export const AudioManager = {
     return el;
   },
 
-  playFile(path, kind) {
+  playFile(path, kind, mul = 1) {
     const el = this.prepare(path, false);
-    this.setLevel(path, el, kind);
+    this.setLevel(path, el, kind, mul);
     el.currentTime = 0;
     const resume = this.ctx && this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
     resume.then(() => el.play().catch(() => {}));
@@ -139,15 +145,18 @@ export const AudioManager = {
   play(event, detail = '') {
     this.lastEvent = event + (detail ? ':' + detail : '');
     const p = this.resolve('sfx/' + event);
-    if (p) this.playFile(p, 'voice');
+    if (p) this.playFile(p, 'voice', CONFIG.audio.eventGain[event] || 1);
   },
 
   // A Vaks voice note for a manifest row. Variant pools may ship one
   // file per line (vo/<stem>_2.opus = line index 1); a single
   // vo/<stem>.opus covers every variant. One mouth: lets current clip
   // finish before starting the next one. Ducks music while playing.
-  voice(row, lineIdx) {
-    if (this.voiceEl && !this.voiceEl.paused && !this.voiceEl.ended) return;
+  voice(row, lineIdx, interrupt = false) {
+    if (this.voiceEl && !this.voiceEl.paused && !this.voiceEl.ended) {
+      if (!interrupt) return;       // one mouth: let the current line finish
+      this.voiceEl.pause();         // ...unless this one barges in (the meow)
+    }
     const alias = VOICE_ALIASES[row.id];
     let p = null;
     if (Array.isArray(alias)) p = this.aliasPath(alias[lineIdx]) || this.aliasPath(alias.find(Boolean));
@@ -213,6 +222,11 @@ export const AudioManager = {
     if (this.voiceEl && this.voicePath) this.setLevel(this.voicePath, this.voiceEl, 'voice');
   },
 
+  // is a music track actually audible right now? (element exists, not paused/ended)
+  musicPlaying() {
+    return !!(this.musicEl && !this.musicEl.paused && !this.musicEl.ended);
+  },
+
   musicName(slotId) {
     const s = MUSIC_SLOTS.find((m) => m.id === slotId);
     return s ? s.name : '';
@@ -268,7 +282,7 @@ export const Barks = {
     firedRows.add(rowId);
     AudioManager.play(event, rowId);
     const li = this.pickIndex(row, opts.line);
-    AudioManager.voice(row, li);
+    AudioManager.voice(row, li, opts.interrupt);
     const text = row.lines[li];
     if (opts.anchor && !opts.subtitle) {
       // one bubble per anchor: replace

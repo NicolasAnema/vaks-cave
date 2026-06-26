@@ -7,7 +7,7 @@
 import { CONFIG } from '../config.js';
 import { View, dimScreen, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
-import { drawText, LINE_H } from '../engine/font.js';
+import { drawText, textWidth, LINE_H } from '../engine/font.js';
 import { draw } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
@@ -18,6 +18,22 @@ import { SCENE_ORDER, CUTSCENES } from '../data/cutscenes.js';
 
 const barkGarden = Barks.wire('m_garden', 'menus.js: title screen');
 const barkNewSong = Barks.wire('m_new_song', 'menus.js: jukebox select');
+
+// Browsers block audio until the first user gesture. While audio is still
+// locked, the menus show a pulsing "click to play" button; any click unlocks
+// the sound (AudioManager wires the gesture) and the button vanishes.
+export function drawSoundButton(ctx, t, cy = View.h - 38) {
+  if (AudioManager.musicPlaying()) return; // only prompt while no sound is playing
+  const label = 'CLICK TO PLAY SOUND';
+  const bw = textWidth(label) + 22, bh = 18;
+  const x = Math.round(View.w / 2 - bw / 2), y = cy;
+  const pulse = 0.55 + 0.45 * Math.sin(t * 4);
+  panel(ctx, x, y, bw, bh, { border: '#ffe49a', bg: 'rgba(20,28,48,0.95)' });
+  // little speaker glyph + label
+  ctx.globalAlpha = 0.5 + 0.5 * pulse;
+  drawText(ctx, label, View.w / 2, y + 5, { color: '#ffe49a', align: 'center' });
+  ctx.globalAlpha = 1;
+}
 const barkMenuIdle = Barks.wire('m_idle_pool', 'menus.js: menu idle pool');
 const barkMenuIdle2 = Barks.wire('m_im_good', 'menus.js: menu idle check-in');
 
@@ -84,7 +100,11 @@ export class TitleScreen {
     drawText(ctx, "VAK'S CAVE", View.w / 2, 48 + bob, { color: '#ffe49a', scale: 4, align: 'center' });
     drawText(ctx, 'A BABALAS LEGEND IN TWO ACTS', View.w / 2, 86 + bob, { color: '#f4f0e0', align: 'center' });
 
-    if (Math.floor(this.t * 1.6) % 2 === 0) {
+    // while no sound is playing the button sits where PRESS ENTER goes;
+    // once music is playing the button vanishes and PRESS ENTER appears
+    if (!AudioManager.musicPlaying()) {
+      drawSoundButton(ctx, this.t, 146);
+    } else if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER', View.w / 2, 150, { color: '#fff', scale: 2, align: 'center' });
     }
 
@@ -124,7 +144,7 @@ export class HowToPlayScreen {
     const controls = [
       ['ARROWS', 'MOVE  (UP / DOWN CLIMB LADDERS)'],
       ['SPACE', 'JUMP  (HOLD FOR A HIGHER JUMP)'],
-      ['M', 'MEOW - SCATTERS THE RATS'],
+      ['M', 'MEOW - SCATTER RATS & SCARE OFF THE TIKOLOSH'],
       ['G', 'BURN A LIFE FOR AN IRIE RUSH (ONCE A LEVEL)'],
       ['ENTER', 'CONFIRM / SKIP A SCENE'],
       ['ESC', 'PAUSE'],
@@ -136,6 +156,10 @@ export class HowToPlayScreen {
       drawText(ctx, d, 122, y, { color: '#cfd6ff' });
     });
 
+
+    // standout reminder: people forget the meow exists
+    drawText(ctx, "DON'T FORGET TO MEOW (M)! IT IS YOUR ONLY DEFENCE", View.w / 2, 150, { color: '#ffb84d', align: 'center' });
+    drawText(ctx, 'AGAINST THE RATS AND THE TIKOLOSH. USE IT OFTEN.', View.w / 2, 162, { color: '#ffb84d', align: 'center' });
 
     if (Math.floor(this.t * 1.6) % 2 === 0) {
       drawText(ctx, 'PRESS ENTER TO BEGIN', View.w / 2, 230, { color: '#fff', align: 'center' });
@@ -217,6 +241,11 @@ export class MainMenuScreen extends ListScreen {
     super('MAIN MENU', items, cb);
     this.hintText = 'ARROWS: MOVE   ENTER: SELECT';
     AudioManager.playMusic('title'); // same track as the title screen: carries over, no restart
+  }
+
+  draw(ctx) {
+    super.draw(ctx);
+    drawSoundButton(ctx, this.t); // shows until the first click unlocks audio
   }
 }
 

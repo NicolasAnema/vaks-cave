@@ -85,6 +85,9 @@ const FLOW = [
   { t: 'level', n: 5 },
   { t: 'shop', after: 5 },
   { t: 'level', n: 6 },
+  { t: 'cutscene', id: 'granny_corner' },
+  { t: 'boss', variant: 'granny' },
+  { t: 'cutscene', id: 'granny_outro' },
   { t: 'cutscene', id: 'ending' },
   { t: 'credits' },
 ];
@@ -161,10 +164,10 @@ function goFlow(i) {
         Save.unlockLevel(Math.min(6, node.n + 1));
         M.replace(new ClearScreen(level.name, stats, { onDone: nextFlow }));
       },
-      onGameOver: () => M.replace(new GameOverScreen({
-        onContinue: () => { run.lives = CONFIG.lives.start; goFlow(flowIndexOfLevel(node.n)); },
-        onQuit: toMenu,
-      })),
+      // a single death restarts THIS level (no checkpoints)
+      onRestart: () => goFlow(flowIndexOfLevel(node.n)),
+      // running out of lives restarts the WHOLE game from the first level
+      onGameOver: () => startRunAt(flowIndexOfLevel(1), true),
       onPause: () => pushPause(ls, () => goFlow(flowIndexOfLevel(node.n))),
     });
     M.replace(ls);
@@ -176,17 +179,11 @@ function goFlow(i) {
       onWin: nextFlow,
       onCaught: () => {
         run.lives--;
-        if (run.lives < 0) {
-          M.replace(new GameOverScreen({
-            onContinue: () => { run.lives = CONFIG.lives.start; goFlow(bossIdx); },
-            onQuit: toMenu,
-          }));
-        } else {
-          goFlow(bossIdx);
-        }
+        if (run.lives < 0) startRunAt(flowIndexOfLevel(1), true); // out of lives: restart whole game
+        else goFlow(bossIdx);                                     // still got lives: retry the boss
       },
       onPause: () => pushPause(bs, () => goFlow(bossIdx)),
-    });
+    }, { variant: node.variant });
     M.replace(bs);
   } else if (node.t === 'credits') {
     M.replace(new CreditsScreen({ onDone: finishRun }));
@@ -269,10 +266,11 @@ export function bootReports() {
 
 // ---------------- debug ----------------
 
-let debugCutsceneIdx = -1;
-
 function handleDebugKeys() {
   if (!CONFIG.debug) return;
+  // never let a debug hotkey bypass an unskippable cutscene (e.g. the intro)
+  const top = M.top();
+  if (top && top.scene && top.scene.noSkip) return;
   for (let d = 1; d <= 6; d++) {
     if (Input.wasPressed('Digit' + d)) {
       Save.unlockLevel(d);
@@ -284,11 +282,8 @@ function handleDebugKeys() {
     run = newRun();
     goFlow(FLOW.findIndex((f) => f.t === 'boss'));
   }
-  if (Input.wasPressed('KeyC')) {
-    debugCutsceneIdx = (debugCutsceneIdx + 1) % SCENE_ORDER.length;
-    const id = SCENE_ORDER[debugCutsceneIdx];
-    M.replace(new CutsceneScreen(id, { onDone: () => { Save.unlockScene(id); toMenu(); } }), false);
-  }
+  // (the old KeyC "cycle cutscenes" hotkey was removed — it let players skip
+  // scenes. Cutscenes are still reachable for testing via ?jump=cutscene:<id>.)
 }
 
 // ---------------- boot ----------------

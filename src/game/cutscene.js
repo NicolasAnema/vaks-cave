@@ -170,8 +170,9 @@ export class CutsceneScreen {
     this.t += dt;
     this.stepT += dt;
 
-    // locked dialogue (voice_note step) blocks all skipping until clip ends
-    if (Input.wasPressed('Enter') && !(this.dialogue && this.dialogue.locked)) { this.skip(); return; }
+    // locked dialogue (voice_note step) blocks all skipping until clip ends;
+    // a noSkip scene (the intro) can't be Enter-skipped at all so its voice plays out
+    if (Input.wasPressed('Enter') && !this.scene.noSkip && !(this.dialogue && this.dialogue.locked)) { this.skip(); return; }
 
     const clicked = this._clicked;
     this._clicked = false;
@@ -373,7 +374,7 @@ export class CutsceneScreen {
       ctx.globalAlpha = 1;
     }
 
-    drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
+    if (!this.scene.noSkip) drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
   }
 
   drawDialogue(ctx) {

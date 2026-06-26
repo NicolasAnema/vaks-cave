@@ -9,7 +9,7 @@ import { CONFIG } from '../config.js';
 import { View, dimScreen, panel } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText } from '../engine/font.js';
-import { draw, drawImoHead, TIKO_HEAD_RECT, VAKS } from '../engine/sprites.js';
+import { draw, drawImoHead, TIKO_HEAD_RECT, VAKS, GRANNY } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
@@ -26,9 +26,16 @@ const KEYS = [
 ];
 
 export class BossScreen {
-  constructor(run, cb) {
+  constructor(run, cb, opts = {}) {
     this.run = run;
     this.cb = cb; // { onWin(), onCaught() -> bool keepFighting, onPause() }
+    // variant: 'tiko' (cave-mouth vibe-off) | 'granny' (act-2 finale, harder)
+    this.variant = opts.variant || 'tiko';
+    this.isGranny = this.variant === 'granny';
+    this.cfg = this.isGranny ? { ...CONFIG.boss, ...CONFIG.boss.granny } : CONFIG.boss;
+    this.rounds = this.cfg.rounds;
+    this.bg = this.isGranny ? 'garden' : 'cave_mouth';
+    this.bossName = this.isGranny ? 'GRANNY' : 'BIG TIKOLOSH';
     this.t = 0;
     this.phase = 'enter'; // enter | round_intro | fight | rest | win | caught
     this.phaseT = 1.2;
@@ -37,7 +44,7 @@ export class BossScreen {
     this.vaksX = BOSS_ARENA.vaksX;
     this.floorY = BOSS_ARENA.floorY;
     this.prompts = [];
-    this.totalBeats = CONFIG.boss.rounds.reduce((s, r) => s + r.beats, 0);
+    this.totalBeats = this.rounds.reduce((s, r) => s + r.beats, 0);
     this.hits = 0;
     this.misses = 0;
     this.frozen = false;
@@ -50,7 +57,7 @@ export class BossScreen {
   }
 
   startRound() {
-    const r = CONFIG.boss.rounds[this.round];
+    const r = this.cfg.rounds[this.round];
     const interval = 60 / r.bpm;
     const lead = interval * 2.2;
     this.prompts = [];
@@ -68,7 +75,7 @@ export class BossScreen {
   miss(p) {
     p.state = 'miss';
     this.misses++;
-    if (!this.frozen) this.tikoX += CONFIG.boss.advanceMiss;
+    if (!this.frozen) this.tikoX += this.cfg.advanceMiss;
     this.lungeT = 0.3;
     this.feedback = { text: 'OFF BEAT!', color: '#ff8a8a', t: 0.6 };
   }
@@ -76,7 +83,7 @@ export class BossScreen {
   hit(p, perfect) {
     p.state = 'hit';
     this.hits++;
-    this.tikoX -= CONFIG.boss.retreatHit * (perfect ? 1.5 : 1);
+    this.tikoX -= this.cfg.retreatHit * (perfect ? 1.5 : 1);
     this.tikoX = Math.max(40, this.tikoX);
     this.feedback = { text: perfect ? 'PERFECT VIBE!' : 'VIBE!', color: perfect ? '#ffe49a' : '#8ae08a', t: 0.6 };
     Particles.sparkle(this.vaksX - 60, this.floorY - 60, perfect ? '#ffe49a' : '#8ae08a', perfect ? 10 : 5);
@@ -86,7 +93,8 @@ export class BossScreen {
   update(dt) {
     if (!this.started) {
       this.started = true;
-      barkVibe({ subtitle: true, speaker: 'BIG TIKOLOSH', force: true });
+      if (this.isGranny) Barks.note('STAND STILL! YOU ARE SO LATE, VAKS. VIBE WITH GOGO!', 'GRANNY');
+      else barkVibe({ subtitle: true, speaker: 'BIG TIKOLOSH', force: true });
     }
     if (Input.wasPressed('Escape') && this.cb.onPause) { this.cb.onPause(); return; }
     if (Input.wasPressed('KeyI')) this.invincible = !this.invincible;
@@ -112,7 +120,7 @@ export class BossScreen {
         if (this.phaseT <= 0) { this.phase = 'round_intro'; this.phaseT = 0.8; }
         break;
       case 'fight': {
-        if (!this.frozen) this.tikoX += CONFIG.boss.driftSpeed * dt;
+        if (!this.frozen) this.tikoX += this.cfg.driftSpeed * dt;
 
         // input matching
         for (const k of KEYS) {
@@ -124,19 +132,19 @@ export class BossScreen {
             const d = Math.abs(p.hitT - this.t);
             if (d < bestD) { bestD = d; best = p; }
           }
-          if (best && bestD <= CONFIG.boss.hitWindow) {
-            if (best.key.code === k.code) this.hit(best, bestD <= CONFIG.boss.perfectWindow);
+          if (best && bestD <= this.cfg.hitWindow) {
+            if (best.key.code === k.code) this.hit(best, bestD <= this.cfg.perfectWindow);
             else this.miss(best);
           }
         }
         // expired prompts
         for (const p of this.prompts) {
-          if (p.state === 'pending' && this.t > p.hitT + CONFIG.boss.hitWindow) this.miss(p);
+          if (p.state === 'pending' && this.t > p.hitT + this.cfg.hitWindow) this.miss(p);
         }
         // round done?
         if (this.prompts.every((p) => p.state !== 'pending')) {
           this.round++;
-          if (this.round >= CONFIG.boss.rounds.length) {
+          if (this.round >= this.cfg.rounds.length) {
             this.phase = 'win'; this.phaseT = 1.6;
             AudioManager.play('boss_resolve', 'vibe complete');
             Particles.confetti(this.vaksX - 40, this.floorY - 60, 20);
@@ -157,7 +165,7 @@ export class BossScreen {
 
     // caught?
     if (this.phase === 'fight' && !this.invincible &&
-        this.tikoX + CONFIG.boss.catchDist >= this.vaksX - 8) {
+        this.tikoX + this.cfg.catchDist >= this.vaksX - 8) {
       this.phase = 'caught';
       this.phaseT = 1.4;
       AudioManager.play('death', 'boss');
@@ -166,26 +174,30 @@ export class BossScreen {
   }
 
   draw(ctx) {
-    drawScene(ctx, 'cave_mouth', this.t);
+    drawScene(ctx, this.bg, this.t);
 
-    // mist pooling behind the big one
-    const poolW = Math.max(0, this.tikoX - 20);
-    if (poolW > 0) {
-      const pg = ctx.createLinearGradient(0, 0, poolW, 0);
-      pg.addColorStop(0, 'rgba(143,208,124,0.3)');
-      pg.addColorStop(1, 'rgba(143,208,124,0)');
-      ctx.fillStyle = pg;
-      ctx.fillRect(0, this.floorY - 30, poolW, 50);
-    }
-
-    // Big Tikolosh (scale 3, swaying)
     const bob = Math.sin(this.swayT * 1.6) * 4;
     const lunge = this.lungeT > 0 ? 10 : 0;
-    const bx = this.tikoX - 30 + lunge, by = this.floorY - 78 + bob - 26;
-    draw(ctx, 'tiko_big', Math.floor(this.swayT * 2) % 2, bx, by, { scale: 3, flip: true });
-    // the actual photo head, crisp at full resolution (not pixelised)
-    drawImoHead(ctx, 'tiko_big', bx + TIKO_HEAD_RECT.x * 3, by + TIKO_HEAD_RECT.y * 3,
-      TIKO_HEAD_RECT.w * 3, TIKO_HEAD_RECT.h * 3, true);
+    if (this.isGranny) {
+      // granny bears down (scale 3), pumping toward Vaks
+      const gx = this.tikoX - 26 + lunge, gy = this.floorY - 30 - 26 * 3 + bob;
+      const gf = this.lungeT > 0 ? GRANNY.run[Math.floor(this.swayT * 12) % GRANNY.run.length] : GRANNY.stare;
+      draw(ctx, 'granny', gf, gx, gy, { scale: 3, flip: true });
+    } else {
+      // mist pooling behind the Big Tikolosh
+      const poolW = Math.max(0, this.tikoX - 20);
+      if (poolW > 0) {
+        const pg = ctx.createLinearGradient(0, 0, poolW, 0);
+        pg.addColorStop(0, 'rgba(143,208,124,0.3)');
+        pg.addColorStop(1, 'rgba(143,208,124,0)');
+        ctx.fillStyle = pg;
+        ctx.fillRect(0, this.floorY - 30, poolW, 50);
+      }
+      const bx = this.tikoX - 30 + lunge, by = this.floorY - 78 + bob - 26;
+      draw(ctx, 'tiko_big', Math.floor(this.swayT * 2) % 2, bx, by, { scale: 3, flip: true });
+      drawImoHead(ctx, 'tiko_big', bx + TIKO_HEAD_RECT.x * 3, by + TIKO_HEAD_RECT.y * 3,
+        TIKO_HEAD_RECT.w * 3, TIKO_HEAD_RECT.h * 3, true);
+    }
 
     // Vaks holds his ground
     const vf = this.phase === 'win' ? VAKS.celeb[Math.floor(this.t * 4) % 2]
@@ -202,17 +214,20 @@ export class BossScreen {
     ctx.fillStyle = '#8ae08a';
     ctx.fillRect(View.w / 2 - mw / 2, 15, Math.round(mw * this.hits / this.totalBeats), 8);
     drawText(ctx, 'VIBE', View.w / 2 - mw / 2 - 26, 16, { color: '#8ae08a' });
-    drawText(ctx, 'ROUND ' + Math.min(this.round + 1, 3) + '/3', View.w / 2 + mw / 2 + 8, 16, { color: '#8a93b8' });
+    drawText(ctx, 'ROUND ' + Math.min(this.round + 1, this.rounds.length) + '/' + this.rounds.length, View.w / 2 + mw / 2 + 8, 16, { color: '#8a93b8' });
 
     // rhythm track
     if (this.phase === 'fight' || this.phase === 'rest') this.drawTrack(ctx);
 
     if (this.phase === 'enter' || this.phase === 'round_intro') {
-      drawText(ctx, this.round === 0 ? 'VIBE WITH ME.' : 'AGAIN. FEEL IT.', View.w / 2, 110, { color: '#aef2a8', scale: 2, align: 'center' });
+      const intro = this.isGranny
+        ? (this.round === 0 ? 'VIBE WITH GOGO!' : 'AGAIN! KEEP UP!')
+        : (this.round === 0 ? 'VIBE WITH ME.' : 'AGAIN. FEEL IT.');
+      drawText(ctx, intro, View.w / 2, 110, { color: this.isGranny ? '#ffd2e0' : '#aef2a8', scale: 2, align: 'center' });
       drawText(ctx, 'PRESS THE KEYS ON THE BEAT AS THEY REACH THE RING', View.w / 2, 134, { color: '#8a93b8', align: 'center' });
     }
     if (this.phase === 'win') {
-      drawText(ctx, 'THE VIBE LANDS.', View.w / 2, 110, { color: '#ffe49a', scale: 2, align: 'center' });
+      drawText(ctx, this.isGranny ? 'GOGO IS SATISFIED.' : 'THE VIBE LANDS.', View.w / 2, 110, { color: '#ffe49a', scale: 2, align: 'center' });
     }
     if (this.phase === 'caught') {
       dimScreen(ctx, 0.5);
@@ -239,7 +254,7 @@ export class BossScreen {
     ctx.lineWidth = 1;
     ctx.strokeRect(ringX - 9, ty - 9, 18, 18);
 
-    const r = CONFIG.boss.rounds[Math.min(this.round, 2)];
+    const r = this.rounds[Math.min(this.round, this.rounds.length - 1)];
     const interval = 60 / r.bpm;
     const speed = 90 / interval; // px per second toward the ring
 

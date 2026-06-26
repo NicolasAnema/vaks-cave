@@ -10,7 +10,7 @@
 export const CUTSCENES = {
 
   cold_open: {
-    id: 'cold_open', name: 'COLD OPEN', music: 'world1', bg: 'cave_floor',
+    id: 'cold_open', name: 'COLD OPEN', music: 'world1', bg: 'cave_floor', noSkip: true,
     actors: {
       vaks: { sheet: 'vaks_sleep', anim: 'loop', x: 210, y: 218, flip: false },
     },
@@ -185,10 +185,53 @@ export const CUTSCENES = {
       ['fade', 'out', 1.4],
     ],
   },
+
+  granny_corner: {
+    id: 'granny_corner', name: 'CORNERED AT THE PLAAS', music: 'world2', bg: 'garden',
+    actors: {
+      vaks: { sheet: 'vaks', anim: 'run', x: -20, y: 252, flip: false },
+      granny: { sheet: 'granny', anim: 'run', x: 540, y: 248, flip: true },
+    },
+    steps: [
+      ['letterbox', true],
+      ['fade', 'in', 0.7],
+      ['move', 'vaks', 180, 252, 1.0],
+      ['anim', 'vaks', 'idle'],
+      ['say', 'vaks', 'THE PLAAS! I MADE IT! NOW LET ME LOOK BUSY, QUICK...'],
+      ['move', 'granny', 340, 248, 1.0],
+      ['anim', 'granny', 'stare'],
+      ['shake', 1.8],
+      ['note', 'GOGO BLOCKS THE GATE. NO ESCAPE NOW.'],
+      ['say', 'granny', 'NOT SO FAST, VAKS. YOU THINK GOGO IS SLOW?'],
+      ['say', 'vaks', 'HAIBO. OK GOGO... ONE MORE VIBE.'],
+      ['fade', 'out', 0.6],
+    ],
+  },
+
+  granny_outro: {
+    id: 'granny_outro', name: 'GOGO IS SATISFIED', music: 'ending', bg: 'garden',
+    actors: {
+      vaks: { sheet: 'vaks', anim: 'idle', x: 200, y: 252, flip: false },
+      granny: { sheet: 'granny', anim: 'idle', x: 320, y: 248, flip: true },
+    },
+    steps: [
+      ['letterbox', true],
+      ['fade', 'in', 0.6],
+      ['anim', 'granny', 'stare'],
+      ['wait', 0.8],
+      ['note', 'VAKS HELD THE VIBE. EVEN GOGO CANNOT STAY CROSS.'],
+      ['say', 'granny', 'HMMPH. YOU STILL GOT THE RHYTHM, BOY.'],
+      ['anim', 'granny', 'idle'],
+      ['say', 'vaks', 'ALWAYS, GOGO. ALWAYS.'],
+      ['fx', 'sparkle', 0.5],
+      ['wait', 0.6],
+      ['fade', 'out', 1.0],
+    ],
+  },
 };
 
 // gallery order
-export const SCENE_ORDER = ['cold_open', 'doubt1', 'doubt2', 'boss_intro', 'boss_resolve', 'chase_begins', 'ending'];
+export const SCENE_ORDER = ['cold_open', 'doubt1', 'doubt2', 'boss_intro', 'boss_resolve', 'chase_begins', 'granny_corner', 'granny_outro', 'ending'];
 
 // actor id -> portrait + display name for dialogue boxes
 export const SPEAKERS = {

@@ -67,7 +67,7 @@ export const MANIFEST = [
       'THIS PROPELLER HAT MAKE ME FLY LIKE A TIKOLOSH.',
       'A BEANIE FOR THE COLD. AND FOR SMASHING THE SMALL RATS.',
       'KAIZER CHIEFS HAT! AMAKHOSI FOR LIFE, BOSS!',
-      'THE CHARM MAKE GRANNY SLEEP LONGER. SHE WORKS TOO HARD.',
+      'THE CHARM MAKE GRANNY TIRED. SHE RUN SLOWER, BOSS.',
       'EYTA TIKOLOSH, WHY EVERYTHING SO EXPENSIVE NOW?',
       "I'M JUST LOOKING, BOSS. I'M JUST LOOKING.",
       'PUT IT ON MY ACCOUNT. TALLMAN STILL OWES ME MONEY.',
@@ -90,6 +90,8 @@ export const MANIFEST = [
     lines: ['THAT LYTIE IS STOUT.'], file: 'vo/stout.ogg' },
   { id: 'm_meow_pool',     event: 'meow',             trigger: 'M key meow, variant pool',
     lines: ["I'M A CAT NOW BOSS, MEOW.", 'MEEOWW.', 'YOU FORGET TO BUY YOUR CAT, SAY MEOW.'], file: 'vo/meow.ogg' },
+  { id: 'm_meow_combo',    event: 'meow',             trigger: 'EASTER EGG: mash M six times fast',
+    lines: ['OK OK I AM A REAL CAT NOW. STOP IT BOSS, HAIBO!', 'MEOW MEOW MEOW MEOW MEOW. YOU HAPPY NOW?', 'NINE LIVES UNLOCKED... JOKING. ONE CAT, ONE VAKS.'], file: 'vo/meow_combo.ogg' },
   { id: 'm_garden',        event: 'menu_idle',        trigger: 'Title screen',
     lines: ['EYTA BOSS, LOOK AT YOUR GARDEN, SO BEAUTIFUL, SUPER DAY.'], file: 'vo/garden.ogg' },
   { id: 'm_im_good',       event: 'idle_checkin',     trigger: 'Idle check-in pool',
@@ -163,9 +165,9 @@ export const MUSIC_SLOTS = [
 
 // Loading screen tips.
 export const TIPS = [
-  'TIP: GRANNY FAINTS BECAUSE SHE WORKS TOO HARD.',
+  'TIP: GOGO NEVER STOPS NOW. KEEP RUNNING, DO NOT LOOK BACK.',
   'TIP: HESITATION FEEDS THE MIST. KEEP CLIMBING.',
-  'TIP: PRESS M TO MEOW. RATS HATE IT.',
+  'TIP: DO NOT FORGET TO MEOW (M)! IT SCATTERS RATS AND SCARES OFF THE TIKOLOSH.',
   'TIP: TWO GANJAS AT ONCE IS TOO STRONG, BOSS.',
   'TIP: BOTTLES ROLL DOWNHILL. THURSDAY WAS BIG.',
   'TIP: 25 CEPPIES = ONE EXTRA LIFE.',

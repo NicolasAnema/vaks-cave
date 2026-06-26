@@ -61,8 +61,10 @@ export class LevelScreen {
 
     this.layers = this.o === 'vertical' ? makeCaveLayers(level.id) : makeTownLayers(level.id);
     this.threat = this.o === 'vertical' ? new Mist(level) : new Granny(level);
+    // the charm now tires gogo out for the whole run: she runs slower
+    // (she no longer faints, so this is the way to buy yourself breathing room)
     if (this.o === 'horizontal' && run.faintCharm) {
-      this.threat.charm = CONFIG.granny.charmBonus;
+      this.threat.base *= CONFIG.granny.charmSlow;
       run.faintCharm = false;
     }
 
@@ -129,6 +131,13 @@ export class LevelScreen {
     for (const r of this.rats) {
       const dx = r.x - x, dy = (r.y - 4) - y;
       if (dx * dx + dy * dy < CONFIG.player.meowRadius * CONFIG.player.meowRadius) r.flee(x);
+    }
+    // the meow also scares off the tikoloshes ("birds") — wider reach since
+    // they're the aerial instakill threat
+    const tr = CONFIG.tiko.meowRadius;
+    for (const t of this.tikos) {
+      const dx = t.x - x, dy = t.y - y;
+      if (dx * dx + dy * dy < tr * tr) t.flee(x);
     }
   }
   killY() {
@@ -263,8 +272,10 @@ export class LevelScreen {
       Particles.update(dt);
       Barks.update(dt);
       if (this.deathT <= 0) {
+        // no checkpoints: a death restarts the level from the top; running out
+        // of lives restarts the whole game (both handled by main.js).
         if (this.run.lives < 0) this.cb.onGameOver();
-        else this.doRespawn();
+        else this.cb.onRestart();
       }
       return;
     }
@@ -441,29 +452,13 @@ export class LevelScreen {
       if (dx * dx + dy * dy < 15 * 15) this.collect(pk);
     }
 
-    // checkpoints
-    for (const cp of this.checkpoints) {
-      cp.update(dt);
-      // a checkpoint counts as soon as Vaks PASSES it — touching the
-      // lantern or simply climbing above it / running beyond it
-      const near = Math.abs(this.player.x - cp.x) < 16 && Math.abs(this.player.y - cp.y) < 26;
-      const passed = this.o === 'vertical'
-        ? this.player.y < cp.y - 28
-        : this.player.x > cp.x + 24;
-      if (!cp.active && (near || passed)) {
-        cp.active = true;
-        this.respawnPoint = { x: cp.x, y: cp.y };
-        AudioManager.play('checkpoint', 'L' + this.level.id);
-        barkCheckpoint({ anchor: this.player, force: true });
-        Particles.sparkle(cp.x, cp.y - 8, '#ffcf6a');
-        // the scripted Tallman & Shorty beat: they stall granny
-        if (this.level.scriptedStallAt && !this.stallDone &&
-            Math.abs(cp.x - this.level.scriptedStallAt.x) < 8) {
-          this.stallDone = true;
-          this.threat.stall(5.0);
-          Barks.note('TALLMAN AND SHORTY STALL GRANNY OVER THEIR DEBTS. RUN!');
-        }
-      }
+    // scripted Tallman & Shorty beat: they stall granny when Vaks passes the spot
+    // (no checkpoints anymore — this is a plain position trigger)
+    if (this.level.scriptedStallAt && !this.stallDone &&
+        this.player.x > this.level.scriptedStallAt.x) {
+      this.stallDone = true;
+      this.threat.stall(5.0);
+      Barks.note('TALLMAN AND SHORTY STALL GRANNY OVER THEIR DEBTS. RUN!');
     }
 
     // NPCs

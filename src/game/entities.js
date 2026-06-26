@@ -105,7 +105,21 @@ export class Rat {
     }
     const d = dt * slow;
     this.fleeT -= dt;
-    const sp = this.fleeT > 0 ? CONFIG.rats.fleeSpeed : CONFIG.rats.speed;
+    const R = CONFIG.rats;
+    let sp;
+    if (this.fleeT > 0) {
+      sp = R.fleeSpeed;                       // meow: scatter (dir already set away)
+    } else {
+      // charge Vaks when he's close on this ledge; otherwise lazy patrol
+      const p = lr.player;
+      const dx = p.x - this.x;
+      if (!p.dead && Math.abs(dx) < R.aggroX && Math.abs(p.y - this.y) < R.aggroY) {
+        this.dir = dx >= 0 ? 1 : -1;
+        sp = R.chaseSpeed;
+      } else {
+        sp = R.speed;
+      }
+    }
     this.x += this.dir * sp * d;
     if (this.x < this.minX) { this.x = this.minX; this.dir = 1; }
     if (this.x > this.maxX) { this.x = this.maxX; this.dir = -1; }
@@ -262,21 +276,57 @@ export class Tiko {
     this.dir = 1;
     this.t = Math.random() * 10;
     this.phase = Math.random() * 6.28;
+    this.fleeT = 0; this.fleeDir = 1;
+  }
+
+  // meow repel: shoved away from Vaks for a moment, breaking any homing
+  flee(fromX) {
+    this.fleeT = CONFIG.tiko.fleeTime;
+    this.fleeDir = this.x >= fromX ? 1 : -1;
+  }
+
+  // move at most `step` px toward (tx,ty) — caps homing speed so Vaks escapes
+  stepToward(tx, ty, step) {
+    const dx = tx - this.x, dy = ty - this.y;
+    const m = Math.hypot(dx, dy) || 1;
+    const k = Math.min(step, m) / m;
+    this.x += dx * k; this.y += dy * k;
   }
 
   update(dt, lr, slow) {
     const d = dt * slow;
     this.t += d;
+    const C = CONFIG.tiko;
+    const p = lr.player;
+
+    if (this.fleeT > 0) { // repelled by a meow
+      this.fleeT -= dt;
+      this.x += this.fleeDir * C.fleeSpeed * d;
+      this.y = this.baseY + Math.sin(this.t * 5) * 3 - 16;
+      return;
+    }
+
+    // home in on Vaks once he's within range (contact = death; meow is relief).
+    // not in the dark level — you can't see them coming there, so they only patrol.
+    const near = !p.dead && !lr.level.dark
+      && Math.abs(p.x - this.x) < C.homeRange && Math.abs(p.y - this.y) < C.homeRange;
+    if (near) {
+      const sp = (this.kind === 'shadow' ? C.shadowChase : C.homeSpeed) * d;
+      this.stepToward(p.x, p.y - 6, sp);
+      if (this.kind === 'irie' && Math.random() < 0.06) Particles.wisp(this.x, this.y + 10, 'rgba(176,127,224,0.4)');
+      return;
+    }
+
     if (this.kind === 'irie') {
       // lazy unpredictable drift
       const span = this.maxX - this.minX;
       const u = (Math.sin(this.t * 0.45 + this.phase) + Math.sin(this.t * 0.23 + this.phase * 2) * 0.5) / 1.5;
       this.x = this.minX + span * (0.5 + u * 0.5);
-      this.y = this.baseY + Math.sin(this.t * 1.1) * CONFIG.tiko.irieBobAmp - 16;
+      this.y = this.baseY + Math.sin(this.t * 1.1) * C.irieBobAmp - 16;
       if (Math.random() < 0.04) Particles.wisp(this.x, this.y + 10, 'rgba(176,127,224,0.4)');
     } else {
       // shadow patrol along its ledge
-      this.x += this.dir * CONFIG.tiko.shadowSpeed * d;
+      this.x += this.dir * C.shadowSpeed * d;
       if (this.x < this.minX) { this.x = this.minX; this.dir = 1; }
       if (this.x > this.maxX) { this.x = this.maxX; this.dir = -1; }
       this.y = this.baseY - 13 + Math.sin(this.t * 2) * 2;

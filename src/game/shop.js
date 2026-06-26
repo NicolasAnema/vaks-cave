@@ -52,7 +52,7 @@ export class ShopScreen {
       { id: 'chiefs', name: 'KAIZER CHIEFS HAT', desc: 'FASTER, LIKE A TIKOLOSH', price: CONFIG.hats.chiefs.price, sprite: 'hat_chiefs', hat: true },
     ];
     if (afterLevel >= 4) {
-      this.items.push({ id: 'charm', name: 'FAINT CHARM', desc: 'GRANNY RESTS LONGER NEXT TIME', price: CONFIG.shop.prices.charm, sprite: 'lantern' });
+      this.items.push({ id: 'charm', name: 'TIRED CHARM', desc: 'GRANNY RUNS SLOWER ALL NEXT LEVEL', price: CONFIG.shop.prices.charm, sprite: 'lantern' });
     }
 
     // selectable slots: every item on the shelf grid, then LEAVE SHOP

@@ -16,7 +16,7 @@
 import { CONFIG } from './config.js';
 import { LEVELS } from './data/levels.js';
 
-const SAFETY = 1.35;
+const SAFETY = 1.22;
 
 // Exact arc feasibility: can a jump at horizontal `speed` clear a
 // rise of `rise` px while crossing `edge` px of horizontal gap?
