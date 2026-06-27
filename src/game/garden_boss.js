@@ -68,6 +68,16 @@ export class GardenBossScreen {
     Particles.shards(this.plots[w.plot], this.floorY - 10, ['#3f7a4a', '#7fc98a'], 5);
   }
 
+  // a wrong key — its plot has no weed — frays gogo's patience and docks
+  // score, so you can't just mash all five keys: aim for the weed.
+  misinput(plot) {
+    this.anger += this.cfg.misinputAnger;
+    this.run.score = Math.max(0, this.run.score - this.cfg.misinputScore);
+    this.shakeT = 0.22; this.shakeMag = CONFIG.fx.shakeImpact * 0.6;
+    this.feedback = { text: 'WRONG PLANT!', color: '#ff8a5a', t: 0.5 };
+    Particles.dust(this.plots[plot], this.floorY - 6, 4);
+  }
+
   update(dt) {
     if (!this.started) {
       this.started = true;
@@ -96,11 +106,13 @@ export class GardenBossScreen {
     const C = this.cfg;
     const p = this.pulled / C.target; // progress 0..1, drives the ramp
 
-    // pull input (one key per plot)
+    // pull input (one key per plot). Hitting a plot's key with no weed in it
+    // is a wrong press — it penalises you (no free mashing).
     for (let i = 0; i < this.plots.length; i++) {
       if (!Input.wasPressed(PLOT_KEYS[i].code)) continue;
       const w = this.weedAt(i);
       if (w) this.pull(w);
+      else this.misinput(i);
     }
 
     if (!this.frozen) {
@@ -185,7 +197,8 @@ export class GardenBossScreen {
 
     if (this.phase === 'enter') {
       drawText(ctx, 'TEND THE PLAAS!', View.w / 2, 92, { color: '#ffd2e0', scale: 2, align: 'center' });
-      drawText(ctx, "HIT A PLOT'S KEY TO PULL ITS WEED BEFORE IT OVERGROWS", View.w / 2, 116, { color: '#8a93b8', align: 'center' });
+      drawText(ctx, "HIT A PLOT'S KEY TO PULL ITS WEED BEFORE IT OVERGROWS", View.w / 2, 114, { color: '#8a93b8', align: 'center' });
+      drawText(ctx, 'THE WRONG PLANT ANGERS GRANNY. AIM, NOT MASH BUTTONS', View.w / 2, 126, { color: '#ff9a7a', align: 'center' });
     }
     if (this.phase === 'win') drawText(ctx, 'THE GARDEN IS PERFECT.', View.w / 2, 92, { color: '#ffe49a', scale: 2, align: 'center' });
     if (this.phase === 'caught') { dimScreen(ctx, 0.5); drawText(ctx, 'WEEDS WIN. CHAO.', View.w / 2, 100, { color: '#ff8a8a', scale: 2, align: 'center' }); }

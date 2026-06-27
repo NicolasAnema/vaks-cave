@@ -221,11 +221,18 @@ const VAKS_POSES = [
   /* 14 bab1  */ (g) => drawVaks(g, { lean: 1, bob: 1, eyes: 'closed', babalas: true, armB: 2, armF: 1, legs: [{ dx: -1, lift: 0 }, { dx: 2, lift: 0 }] }),
   /* 15 hurt  */ (g) => drawVaks(g, { lean: -1, eyes: 'x', mouth: 'big', armB: 'up', armF: 'up', legs: [{ dx: -3, lift: 1 }, { dx: 3, lift: 0 }] }),
   /* 16 meow  */ (g) => drawVaks(g, { eyes: 'closed', mouth: 'big', armB: 0, armF: 'up' }),
+  // skin-up ritual (G): the joint itself is drawn live in player.draw so it can
+  // burn down to the Rodger; these are just the body postures for each phase.
+  /* 17 smkPull  */ (g) => drawVaks(g, { crouch: 1, eyes: 'open', mouth: false, armB: 2, armF: 2, legs: [{ dx: -1, lift: 0 }, { dx: 1, lift: 0 }] }),
+  /* 18 smkRoll0 */ (g) => drawVaks(g, { crouch: 1, eyes: 'closed', mouth: false, armB: 1, armF: 1 }),
+  /* 19 smkRoll1 */ (g) => drawVaks(g, { crouch: 1, bob: 1, eyes: 'closed', mouth: false, armB: 2, armF: 2 }),
+  /* 20 smkPuff  */ (g) => drawVaks(g, { eyes: 'closed', mouth: false, armB: 0, armF: 'up' }),
 ];
 
 export const VAKS = {
   idle: [0, 1], run: [2, 3, 4, 5], jump: 6, fall: 7, climb: [8, 9],
   land: 10, celeb: [11, 12], babalas: [13, 14], hurt: 15, meow: 16,
+  smokePull: 17, smokeRoll: [18, 19], smokePuff: 20,
 };
 
 // ============================================================

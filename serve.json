@@ -1,0 +1,8 @@
+{
+  "headers": [
+    {
+      "source": "**/*.opus",
+      "headers": [{ "key": "Content-Type", "value": "audio/ogg" }]
+    }
+  ]
+}

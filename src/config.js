@@ -14,7 +14,7 @@ export const CONFIG = {
 
   player: {
     hbW: 10, hbH: 22,            // hitbox
-    walkSpeed: 105,              // World 1 — deliberate
+    walkSpeed: 125,              // World 1 — deliberate, but now faster than the rat charge (84) so Vaks can outrun it
     runSpeed: 165,               // World 2 — urgent (granny must stay below)
     runAccel: 1500, runDecel: 2000,
     jumpVel: 330, jumpCutMul: 0.45,
@@ -24,7 +24,20 @@ export const CONFIG = {
     meowRadius: 84, meowCooldown: 1.4,
   },
 
-  irie: { duration: 4.0, slowFactor: 0.45, jumpMul: 1.35, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7 },
+  irie: {
+    // nerfed: no longer slows the whole world or boosts run speed. It now just
+    // boosts the jump 1.8x (jumpMul) and makes rats + tikolosh crawl at enemySlow
+    // (half speed). Vaks stays invincible for the duration.
+    duration: 4.0, enemySlow: 0.5, jumpMul: 1.8, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7,
+    // G "skin up" ritual: Vaks plants his feet, pulls out the blunt, rolls the
+    // joint, brings it to his lips and smokes it down to the stinging Rodger
+    // (the filter) in one pull. He's untouchable the whole way; the irie rush
+    // lands the moment it's burned to the Rodger. Phase lengths in seconds.
+    // pull+roll is silent prep; the inhale SFX ('skin_up' = magiaz-smoke-454927,
+    // ~5.11s) fires the instant the joint hits his mouth, so light+smoke (5.11s)
+    // is tuned to run exactly as long as that inhale — burn-down ends with it.
+    smoke: { pull: 0.45, roll: 0.9, light: 0.3, smoke: 4.81 },
+  },
 
   // babalas: bottle-hit hangover — slower and weaker until it wears off.
   // jumpMul floor: 330*0.85 -> 40px apex, still >= MAX_UP(38) so no soft-lock.
@@ -70,14 +83,14 @@ export const CONFIG = {
   // range (chaseSpeed). Meow makes them flee. Bigger knockback than before.
   // meowScareChance: a meow only scares each in-range rat this often — some
   // rats just don't care, so the meow is a gamble (adds chaos to the climb).
-  rats:    { speed: 66, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 112, meowScareChance: 0.68, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
+  rats:    { speed: 48, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 84, meowScareChance: 0.68, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
   // tiko ("birds"): drift/patrol, but HOME toward Vaks within homeRange at
   // homeSpeed (kept well under walkSpeed=105 so clean play escapes). Contact
   // is still instant death — meow is the counter: it repels them (fleeSpeed).
   // fleeSpeed/fleeTime: a meow only shoves a tikolosh back a little for a short
   // moment (not a full reset) — it comes homing back, so you must meow again.
   tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 78, fleeTime: 1.1, meowRadius: 120 },
-  crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 4.0, shakeAmp: 1.4 },
+  crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 2.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
   // township tsotsis (W2): phone snatcher (knife), gunman, viceroy pusher.
@@ -142,11 +155,12 @@ export const CONFIG = {
   },
 
   boss: {
-    // Big Tikolosh vibe-off — properly hard: 5 fast rounds, tight timing, and it
-    // creeps in fast so every miss bites.
-    rounds: [ { beats: 7, bpm: 96 }, { beats: 8, bpm: 112 }, { beats: 9, bpm: 128 }, { beats: 10, bpm: 146 }, { beats: 11, bpm: 164 } ],
-    hitWindow: 0.09, perfectWindow: 0.045,
-    startDist: 210, catchDist: 44, advanceMiss: 66, retreatHit: 11, driftSpeed: 17,
+    // Big Tikolosh vibe-off (the FIRST boss) — eased: 4 shorter rounds with a
+    // gentler tempo ramp, a forgiving hit window, and it creeps in slowly so a
+    // stray miss no longer snowballs into a loss.
+    rounds: [ { beats: 6, bpm: 84 }, { beats: 7, bpm: 96 }, { beats: 8, bpm: 110 }, { beats: 8, bpm: 124 } ],
+    hitWindow: 0.13, perfectWindow: 0.07,
+    startDist: 210, catchDist: 38, advanceMiss: 40, retreatHit: 15, driftSpeed: 11,
   },
 
   // granny finale — a different game entirely: TEND THE PLAAS. Weeds sprout in
@@ -156,6 +170,8 @@ export const CONFIG = {
     plots: 5, target: 30, angerMax: 7, maxWeeds: 4,
     sproutStart: 1.1, sproutEnd: 0.42,   // seconds between sprouts (eases down with progress)
     growStart: 1.45, growEnd: 0.8,       // seconds for a weed to overgrow (eases down)
+    misinputAnger: 0.5,                  // wrong key (no weed in that plot) = this much gogo anger (2 misses = 1 overgrow)
+    misinputScore: 20,                   // ...and this much score docked, so mashing actually costs you
   },
 
   camera: { lerp: 6, lookUp: 36, lookAhead: 48, shakeDecay: 9 },
@@ -176,6 +192,7 @@ export const CONFIG = {
     rareBarkMin: 26, rareBarkMax: 50,
     glitchMin: 40, glitchMax: 75, glitchLen: 0.55,
     loading: 1.7, introCard: 2.4,
+    liveTutorial: 20,   // L1: interactive practice window before the mist rises
   },
 
   fx: { hitStop: 0.08, shakeImpact: 3, shakeBurst: 2.4 },

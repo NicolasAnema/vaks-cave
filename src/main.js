@@ -95,7 +95,9 @@ const FLOW = [
 
 function newRun() {
   return {
-    lives: CONFIG.lives.start, score: 0, mano: 0, earned: 0,
+    lives: livesForLevel(1), score: 0, mano: 0, earned: 0,
+    currentLevel: 0,   // which level's lives are loaded (0 = none yet)
+    bonusLives: 0,     // permanent +1s bought in the shop / earned at R200 milestones
     faintCharm: false, rattex: false,
     hats: { propeller: false, beanie: false, chiefs: false },        // equipped (active abilities)
     hatsOwned: { propeller: false, beanie: false, chiefs: false },   // purchased
@@ -106,6 +108,46 @@ let run = newRun();
 let flowIdx = 0;
 
 function flowIndexOfLevel(n) { return FLOW.findIndex((f) => f.t === 'level' && f.n === n); }
+
+// You start each level with as many lives as its number WITHIN its world:
+// World 1 (the cave) is L1/L2/L3 -> 1/2/3 lives; World 2 (the township) is
+// L4/L5/L6, also its 1st/2nd/3rd -> 1/2/3 lives. Permanent bonus lives (shop /
+// R200 milestones) stack on top of this base. See goFlow()'s level branch.
+function livesForLevel(n) { return ((n - 1) % 3) + 1; }
+
+// the most recent 'level' node before flow index i (used by the boss fights)
+function prevLevelNodeBefore(i) {
+  for (let k = i - 1; k >= 0; k--) if (FLOW[k].t === 'level') return FLOW[k].n;
+  return null;
+}
+
+// out of lives: drop back to the previous level (keeping mano/score/upgrades),
+// where lives reload to that level's base. Nothing precedes L1, so that is the
+// only true GAME OVER.
+function goBackToLevel(prevN) {
+  run.currentLevel = 0;            // force a fresh-entry life reload on arrival
+  startRunAt(flowIndexOfLevel(prevN), false);
+}
+function loseAllLives(failedLevelN) {
+  const prev = failedLevelN > 1 ? failedLevelN - 1 : null;
+  if (prev) goBackToLevel(prev); else gameOver();
+}
+function gameOver() {
+  M.replace(new GameOverScreen({
+    onContinue: () => startRunAt(flowIndexOfLevel(1), true), // fresh run from L1
+    onQuit: toMenu,
+  }));
+}
+
+// level select hands back an entry: a level number or a boss variant. Bosses
+// are reachable here for testing; startRunAt drives them like any flow node
+// (it even picks the right world for the loading card by flow index).
+function startFromSelect(e) {
+  const i = e.kind === 'boss'
+    ? FLOW.findIndex((f) => f.t === 'boss' && (f.variant || 'tiko') === e.variant)
+    : flowIndexOfLevel(e.n);
+  startRunAt(i, true);
+}
 
 function saveProgress() {
   Save.data.flowNode = flowIdx;
@@ -160,6 +202,22 @@ function goFlow(i) {
   } else if (node.t === 'level') {
     const level = getLevel(node.n);
     Save.unlockLevel(node.n);
+    // Fresh arrival at a level reloads lives to its base (level-in-world number)
+    // plus any permanent bonus lives. A same-level death-restart keeps whatever
+    // lives are left, so each death just costs one and restarts from the top.
+    if (run.currentLevel !== node.n) {
+      run.currentLevel = node.n;
+      run.lives = livesForLevel(node.n) + (run.bonusLives || 0);
+    }
+    // The L1 control drill plays once, ever — on the first time the player
+    // reaches L1. A death-restart or a demotion back to L1 (after a wipe)
+    // skips it, since by then it's been seen.
+    let showTutorial = false;
+    if (node.n === 1 && level.liveTutorial && !Save.data.tutorialSeen) {
+      showTutorial = true;
+      Save.data.tutorialSeen = true;
+      Save.save();
+    }
     const ls = new LevelScreen(level, run, {
       onClear: (stats) => {
         Save.unlockLevel(Math.min(6, node.n + 1));
@@ -167,10 +225,10 @@ function goFlow(i) {
       },
       // a single death restarts THIS level (no checkpoints)
       onRestart: () => goFlow(flowIndexOfLevel(node.n)),
-      // running out of lives restarts the WHOLE game from the first level
-      onGameOver: () => startRunAt(flowIndexOfLevel(1), true),
+      // out of lives: fall back one level (or GAME OVER if this is the first)
+      onGameOver: () => loseAllLives(node.n),
       onPause: () => pushPause(ls, () => goFlow(flowIndexOfLevel(node.n))),
-    });
+    }, { tutorial: showTutorial });
     M.replace(ls);
   } else if (node.t === 'shop') {
     M.replace(new ShopScreen(run, node.after, { onDone: nextFlow }));
@@ -180,8 +238,13 @@ function goFlow(i) {
       onWin: nextFlow,
       onCaught: () => {
         run.lives--;
-        if (run.lives < 0) startRunAt(flowIndexOfLevel(1), true); // out of lives: restart whole game
-        else goFlow(bossIdx);                                     // still got lives: retry the boss
+        if (run.lives < 0) {
+          // out of lives: fall back to the level that leads into this fight
+          const pn = prevLevelNodeBefore(bossIdx);
+          if (pn) goBackToLevel(pn); else gameOver();
+        } else {
+          goFlow(bossIdx);   // still got lives: retry the boss
+        }
       },
       onPause: () => pushPause(bs, () => goFlow(bossIdx)),
     };
@@ -231,7 +294,7 @@ function menuCbs() {
       onBack: toMenu,
     })),
     onLevelSelect: () => M.replace(new LevelSelectScreen({
-      onPick: (n) => startRunAt(flowIndexOfLevel(n), true),
+      onPick: startFromSelect,
       onBack: toMenu,
     })),
     onShop: goTitleShop,
@@ -313,7 +376,7 @@ async function boot() {
 
   if (jump) {
     if (jump === 'menu') M.replace(new MainMenuScreen(menuCbs()), false);
-    else if (jump === 'levelselect') { Save.data.unlockedLevel = 6; M.replace(new LevelSelectScreen({ onPick: (n) => startRunAt(flowIndexOfLevel(n), true), onBack: toMenu }), false); }
+    else if (jump === 'levelselect') { Save.data.unlockedLevel = 6; M.replace(new LevelSelectScreen({ onPick: startFromSelect, onBack: toMenu }), false); }
     else if (jump.startsWith('level')) startRunAt(flowIndexOfLevel(parseInt(jump.slice(5), 10) || 1), true);
     else if (jump === 'boss') { run = newRun(); goFlow(FLOW.findIndex((f) => f.t === 'boss')); }
     else if (jump === 'shop') { run = newRun(); run.mano = 500; M.replace(new ShopScreen(run, 4, { onDone: toMenu }), false); }

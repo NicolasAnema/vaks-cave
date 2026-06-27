@@ -115,7 +115,9 @@ export class ShopScreen {
     if (item.id === 'charm' && this.run.faintCharm) { this.deny('CHARM ALREADY GLOWING'); return; }
     if (this.balance() < item.price) { this.deny('NOT ENOUGH MANO'); barkShopBroke({ subtitle: true, speaker: 'VAKS' }); return; }
     this.run.mano -= item.price;
-    if (item.id === 'life') this.run.lives++;
+    // a bought life is permanent: bank it so it survives each level's life
+    // reload (lives reset to the level's base + bonusLives on every entry)
+    if (item.id === 'life') { this.run.lives++; this.run.bonusLives = (this.run.bonusLives || 0) + 1; }
     if (item.id === 'rattex') this.run.rattex = true;
     if (item.id === 'charm') this.run.faintCharm = true;
     if (item.hat) { this.run.hatsOwned[item.id] = true; this.run.hats[item.id] = true; }

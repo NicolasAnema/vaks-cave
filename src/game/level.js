@@ -48,10 +48,11 @@ const barkTsotsiStomp = Barks.wire('m_tsotsi_stomp', 'level.js: tsotsi stomped')
 const barkTsotsiGrab = Barks.wire('m_tsotsi_grab', 'level.js: tsotsi grabs Vaks');
 
 export class LevelScreen {
-  constructor(level, run, cb) {
+  constructor(level, run, cb, opts = {}) {
     this.level = level;
     this.run = run;       // { lives, score, mano, hats, faintCharm }
     this.cb = cb;         // { onClear(stats), onGameOver(), onPause() }
+    this.opts = opts;     // { tutorial } — caller decides if the L1 drill plays this entry
     this.o = level.orientation;
     this.debug = { invincible: false };
 
@@ -87,10 +88,37 @@ export class LevelScreen {
 
     this.respawnPoint = { x: level.spawn.x, y: level.spawn.y };
     this.ganjaUsed = false; // G: burn a life for an irie rush, once per level
+    this.autoIrie = !!level.irieStart; // irie level: auto skin-up into the rush at the open
     this.time = 0;
     this.manoCollected = 0;
     this.deaths = 0;
     this.firstMano = false;
+
+    // L1 only: a live, interactive control drill. The mist is held back while
+    // Vaks tries each control for real; each row ticks off as he does it, and
+    // when the clock runs out (or he's tried them all and confirms) the mist
+    // rises and the climb is on. opts.tutorial gates it so it plays only on the
+    // player's first-ever arrival at L1 — not on a death-restart or a demotion.
+    this.liveTut = (level.liveTutorial && opts.tutorial) ? {
+      t: CONFIG.timers.liveTutorial,
+      done: false,
+      steps: [
+        { id: 'move',  label: 'MOVE',  hint: 'LEFT / RIGHT',        ok: false },
+        { id: 'jump',  label: 'JUMP',  hint: 'SPACE',               ok: false },
+        { id: 'climb', label: 'CLIMB', hint: 'UP / DOWN ON LADDER', ok: false },
+        { id: 'meow',  label: 'MEOW',  hint: 'M',                   ok: false },
+      ],
+      tiko: null,         // practice tikolosh, sent in once the climb is done
+      cappedNoted: false,
+    } : null;
+
+    // during the control drill Vaks may climb the FIRST ladder but no higher,
+    // so he can't leave the tutorial zone before the mist is loosed. A ladder's
+    // top is its `y`, so the lowest (first) ladder has the largest y — cap his
+    // ascent there (up = smaller y, so this is the minimum y he can reach).
+    this.tutCeilingY = this.liveTut && level.ladders.length
+      ? Math.max(...level.ladders.map((l) => l.y))
+      : null;
 
     this.introT = CONFIG.timers.introCard;
     this.deathT = 0;
@@ -146,6 +174,70 @@ export class LevelScreen {
   }
   killY() {
     return this.o === 'vertical' ? this.threat.topY + 40 : this.level.groundY + 70;
+  }
+
+  // ---- live control drill (L1) ----
+  // Returns true while the drill is holding the mist back. Each control ticks
+  // off the moment Vaks actually performs it, so the lesson is live, not text.
+  updateLiveTutorial(dt) {
+    const T = this.liveTut;
+    if (!T || T.done) return false;
+    T.t -= dt;
+    for (const s of T.steps) {
+      if (s.ok) continue;
+      const did = (s.id === 'move' && Input.dirX() !== 0)
+        || (s.id === 'jump' && Input.wasPressed('Space'))
+        || (s.id === 'climb' && this.player.climbing)
+        || (s.id === 'meow' && Input.wasPressed('KeyM'));
+      if (did) {
+        s.ok = true;
+        AudioManager.play('tutorial_prompt', s.id);
+        Particles.sparkle(this.player.x, this.player.y - 14, '#8ae08a', 5);
+        // climbing the ladder earns a chaser to practise the meow on
+        if (s.id === 'climb') this.spawnTutorialTiko();
+      }
+    }
+    // invisible roof: keep Vaks at or below the first ladder's top (up = smaller
+    // y), so he can't leave the drill arena before the mist is loosed
+    if (this.tutCeilingY != null && this.player.y < this.tutCeilingY) {
+      this.player.y = this.tutCeilingY;
+      if (this.player.vy < 0) this.player.vy = 0;
+      if (this.player.climbing) this.player.climbing = false;
+      if (!T.cappedNoted) { T.cappedNoted = true; Barks.note('STAY LOW TILL THE MIST COMES, BOSS.'); }
+    }
+    const allOk = T.steps.every((s) => s.ok);
+    // time's up, or everything tried and Vaks taps Enter to start early
+    if (T.t <= 0 || (allOk && Input.wasPressed('Enter'))) { this.endLiveTutorial(); return false; }
+    return true;
+  }
+
+  // a single tikolosh drifts in to give the meow a target. It's harmless for
+  // the drill (the contact-kill is gated while the tutorial holds) and meow
+  // shoves it back — exactly how the real ones behave higher up the shaft.
+  spawnTutorialTiko() {
+    if (!this.liveTut || this.liveTut.tiko) return;
+    const side = this.player.x < this.level.width / 2 ? 1 : -1;
+    const x = Math.max(28, Math.min(this.level.width - 28, this.player.x + side * 70));
+    const t = new Tiko({ kind: 'irie', x, y: this.player.y - 24, minX: 60, maxX: this.level.width - 60 });
+    this.tikos.push(t);
+    this.liveTut.tiko = t;
+    AudioManager.play('hazard_warning', 'tiko');
+    Barks.note('TIKOLOSH! PRESS M TO MEOW AND SCARE IT BACK!');
+  }
+
+  endLiveTutorial() {
+    if (!this.liveTut || this.liveTut.done) return;
+    this.liveTut.done = true;
+    this.liveTut.t = 0;
+    // the practice tikolosh poofs away — it was never a real threat
+    if (this.liveTut.tiko) {
+      Particles.sparkle(this.liveTut.tiko.x, this.liveTut.tiko.y - 8, '#b07fe0', 8);
+      this.tikos = this.tikos.filter((t) => t !== this.liveTut.tiko);
+      this.liveTut.tiko = null;
+    }
+    AudioManager.play('hazard_warning', 'mist_rise');
+    Barks.note('MIST RISING! CLIMB, BOSS!');
+    this.shake(1.2);
   }
 
   // ---- tsotsi hooks (called by the entities) ----
@@ -208,7 +300,7 @@ export class LevelScreen {
   // ---- death / respawn / clear ----
 
   die() {
-    if (this.player.dead || this.cleared || this.debug.invincible || this.player.irie) return;
+    if (this.player.dead || this.cleared || this.debug.invincible || this.player.irie || this.player.smoking) return;
     // a grabbing tsotsi lets go of a caught Vaks
     if (this.player.grabbedBy) { this.player.grabbedBy.holding = false; this.player.grabbedBy = null; }
     this.player.dead = true;
@@ -243,6 +335,38 @@ export class LevelScreen {
     Particles.confetti(this.player.x, this.player.y - 20);
   }
 
+  // Kick off the skin-up ritual: freeze the world, roll + smoke the joint, and
+  // land the irie rush when it's lit (onSmokeDone). burnLife spends a life — the
+  // manual G emergency does; the irie level's auto-open does not.
+  startSkinUp(burnLife) {
+    if (burnLife) { this.ganjaUsed = true; this.run.lives--; }
+    this.player.startSmoke();
+    AudioManager.pauseMusic();      // the whole world holds while he skins up
+    // the "IT'S GOOD TO BE FEEL IRIE." voice note fires the moment he commits —
+    // interrupt:true barges in and cuts any line already mid-play (like the meow)
+    barkIrie({ anchor: this.player, force: true, interrupt: true });
+    this.shake(0.6);
+  }
+
+  // the joint reaches his lips — the inhale plays now (not before), and runs the
+  // length of the burn-down (player.js calls this once, when the joint's lit)
+  onJointLit() {
+    AudioManager.play('skin_up');
+  }
+
+  // burned to the Rodger — the irie rush lands (player.js calls this the instant
+  // the ritual finishes; the life was already burned when G was pressed)
+  onSmokeDone() {
+    this.player.startIrie();
+    // the world (and the music) come back to life — on the irie level the Irie
+    // Loop takes over from here; everywhere else the held track resumes.
+    if (this.level.irieMusic) AudioManager.playMusic(this.level.irieMusic);
+    else AudioManager.resumeMusic();
+    Particles.sparkle(this.player.x, this.player.y - 10, '#6ac24a', 10);
+    Particles.smoke(this.player.x + this.player.facing * 5, this.player.y - 24);
+    this.shake(1.5);
+  }
+
   // ---- update ----
 
   update(dt) {
@@ -256,6 +380,13 @@ export class LevelScreen {
 
     if (this.introT > 0) { this.introT -= dt; Barks.update(dt); return; }
     if (this.hitStopT > 0) { this.hitStopT -= dt; return; }
+
+    // the irie level opens with Vaks already skinning up — the rush is how you
+    // start the climb, and it costs no life. Fires once, right after the intro.
+    if (this.autoIrie && !this.player.smoking && !this.player.irie) {
+      this.autoIrie = false;
+      this.startSkinUp(false);
+    }
 
     if (this.cleared) {
       this.clearT -= dt;
@@ -284,33 +415,58 @@ export class LevelScreen {
       return;
     }
 
-    this.time += dt;
+    if (!this.player.smoking) this.time += dt;   // the clock stops too while he skins up
 
-    // G: burn a life for an emergency ganja rush — once per level, and
-    // only when not already irie (spending a life to overstack is a trap).
-    if (Input.wasPressed('KeyG')) {
-      if (!this.ganjaUsed && !this.player.irie && this.run.lives > 0) {
-        this.ganjaUsed = true;
-        this.run.lives--;
-        this.player.startIrie();
-        AudioManager.play('powerup_irie', 'ganja_burn');
-        (Math.random() < 0.5 ? barkIrie : barkIriePool)({ anchor: this.player, force: true });
-        Particles.sparkle(this.player.x, this.player.y - 10, '#6ac24a', 10);
-        this.shake(1.5);
+    // G: burn a life to skin up — Vaks plants his feet, pulls out the blunt,
+    // rolls the joint and smokes it down to the stinging Rodger in one pull.
+    // The irie rush lands when it's lit (onSmokeDone). Once per level, never
+    // while already irie (burning a life to overstack is a trap), and his
+    // feet must be planted (no rolling mid-air or on a ladder).
+    if (Input.wasPressed('KeyG') && !this.player.smoking) {
+      const canBurn = !this.ganjaUsed && !this.player.irie && this.run.lives > 0;
+      if (canBurn && this.player.onGround && !this.player.climbing && !this.player.grabbedBy) {
+        this.startSkinUp(true);
+      } else if (canBurn) {
+        Barks.note('PLANT YA FEET TO SKIN UP, BOSS', 'VAKS');
       } else if (!this.player.irie) {
         Barks.note(this.ganjaUsed ? 'ONE IRIE BURN PER LEVEL, BOSS' : 'NO LIVES TO BURN');
       }
     }
 
-    const slow = this.player.worldScale();
+    // irie now slows ONLY the rats and tikolosh (eslow); everything else —
+    // bottles, tsotsis, bullets, the mist, granny, Vaks — runs at full speed.
+    const eslow = this.player.enemySlow();
 
     this.player.update(dt);
-    this.threat.update(dt, this.player, this);
 
-    // crumbling platforms
+    // control drill (L1): hold Vaks at the first ladder's top — he can climb
+    // that one ladder but can't ascend past it until the drill ends.
+    if (this.tutCeilingY != null && this.liveTut && !this.liveTut.done && this.player.y < this.tutCeilingY) {
+      this.player.y = this.tutCeilingY;
+      if (this.player.vy < 0) this.player.vy = 0;
+    }
+
+    // Skin-up ritual freezes the whole world. Only Vaks's own animation (the
+    // burning joint + its smoke) and the inhale SFX keep going — threats,
+    // hazards, enemies, projectiles, the clock and the music all hold until the
+    // rush lands. (player.update fired onSmokeDone on the frame it ended, which
+    // resumes the music, so this returns on every frame BUT that last one.)
+    if (this.player.smoking) {
+      Particles.update(dt);
+      Barks.update(dt);
+      this.cam.follow(this.player.x, this.player.y, dt);
+      return;
+    }
+
+    // live control drill (L1): Vaks plays for real but the mist is held back
+    const tutHold = this.updateLiveTutorial(dt);
+    if (!tutHold) this.threat.update(dt, this.player, this);
+
+    // crumbling platforms (held while Vaks skins up so the ledge under his
+    // planted feet can't fall away mid-ritual)
     for (const [p, st] of this.crumbleState) {
       if (!st.gone) {
-        st.timer -= dt;
+        if (!this.player.smoking) st.timer -= dt;
         if (st.timer <= 0) {
           st.gone = true; st.respawn = CONFIG.crumble.respawn;
           Particles.shards(p.x + p.w / 2, p.y + 5, ['#9a8468', '#6b5a44'], 7);
@@ -322,8 +478,8 @@ export class LevelScreen {
     }
 
     // bottles (W1)
-    if (this.level.bottles && this.o === 'vertical') {
-      this.bottleTimer -= dt * slow;
+    if (this.level.bottles && this.o === 'vertical' && !tutHold) {
+      this.bottleTimer -= dt;
       if (this.bottleTimer <= 0 && this.bottles.length < CONFIG.bottles.maxActive) {
         this.bottleTimer = CONFIG.bottles.interval[this.level.id] || 4;
         const top = this.cam.y - 20;
@@ -337,7 +493,7 @@ export class LevelScreen {
     }
     for (let i = this.bottles.length - 1; i >= 0; i--) {
       const b = this.bottles[i];
-      b.update(dt, this, slow);
+      b.update(dt, this, 1);
       if (b.dead) { this.bottles.splice(i, 1); continue; }
       if (this.hitEntity(b.x - 5, b.y - 12, 10, 12) && this.player.invuln <= 0) {
         b.shatter();
@@ -352,8 +508,11 @@ export class LevelScreen {
     // rats
     for (const r of this.rats) {
       if (r.dead) continue;
-      r.update(dt, this, slow);
-      if (r.squishT > 0) continue;
+      r.update(dt, this, eslow);
+      // a stomped rat is harmless for the rest of its life: skip its hitbox while
+      // it's squished AND on the frame the squish expires (update flips it to
+      // dead that same frame), so a flattened rat can never knock Vaks off.
+      if (r.squishT > 0 || r.dead) continue;
       const hb = r.hitbox();
       if (this.hitEntity(hb.x, hb.y, hb.w, hb.h)) {
         if (this.rattex) {
@@ -372,7 +531,7 @@ export class LevelScreen {
           this.player.vy = -210;
           this.player.sqX = 0.85; this.player.sqY = 1.15;
         } else if (this.player.invuln <= 0) {
-          this.player.hurt(r.x, CONFIG.rats.knockMul);
+          this.player.hurt(r.x, CONFIG.rats.knockMul, true); // rats shove sideways only, no upward pop
         }
       }
     }
@@ -381,7 +540,7 @@ export class LevelScreen {
     // township tsotsis (W2): contact = GRABBED. Vaks is pinned to the
     // tsotsi until he mashes free — and granny keeps coming the whole time.
     for (const ts of this.tsotsis) {
-      ts.update(dt, this, slow);
+      ts.update(dt, this, 1);
       if (ts.holding) {
         // the knife guy picks the pocket for as long as he holds on
         if (ts.kind === 'knife' && this.run.mano > 0) {
@@ -424,7 +583,7 @@ export class LevelScreen {
     // the gunman's bullets: slow, straight, jumpable
     for (let i = this.tsotsiBullets.length - 1; i >= 0; i--) {
       const b = this.tsotsiBullets[i];
-      b.update(dt, this, slow);
+      b.update(dt, this, 1);
       if (b.dead) { this.tsotsiBullets.splice(i, 1); continue; }
       if (this.hitEntity(b.x - 3, b.y - 2, 6, 4)) {
         this.tsotsiBullets.splice(i, 1);
@@ -432,11 +591,12 @@ export class LevelScreen {
       }
     }
 
-    // tikolosh variants: contact = caught
+    // tikolosh variants: contact = caught (the drill's practice tiko is harmless
+    // while the tutorial holds — meow it back without dying)
     for (const t of this.tikos) {
-      t.update(dt, this, slow);
+      t.update(dt, this, eslow);
       const hb = t.hitbox();
-      if (this.hitEntity(hb.x, hb.y, hb.w, hb.h)) this.die();
+      if (this.hitEntity(hb.x, hb.y, hb.w, hb.h) && !tutHold) this.die();
     }
 
     // sushi (W2): china's food
@@ -532,8 +692,8 @@ export class LevelScreen {
     if (this.glitchT > 0) this.glitchT -= dt;
 
     // threat catches (irie makes Vaks invincible, like debug invincibility)
-    const invincible = this.debug.invincible || this.player.irie;
-    if (!invincible) {
+    const invincible = this.debug.invincible || this.player.irie || this.player.smoking;
+    if (!invincible && !tutHold) {
       if (this.threat.caught(this.player)) {
         if (this.o === 'horizontal') { AudioManager.play('granny_caught'); this.threat.onCaught(); }
         this.die();
@@ -570,11 +730,13 @@ export class LevelScreen {
       this.run.score += v * CONFIG.score.perRand;
       Particles.sparkle(pk.x, pk.y, v >= 50 ? '#ffe49a' : (v >= 10 ? '#8ae08a' : '#ff8a8a'), v >= 50 ? 8 : 4);
       if (!this.firstMano) { this.firstMano = true; barkMano({ anchor: this.player }); }
-      // every R{manoPerLife} EARNED across the run = an extra life
+      // every R{manoPerLife} EARNED across the run = an extra life. It's a
+      // permanent +1: bank it so it survives the per-level life reload.
       const per = CONFIG.lives.manoPerLife;
       if (Math.floor(this.run.earned / per) > Math.floor((this.run.earned - v) / per) &&
           this.run.lives < CONFIG.lives.max) {
         this.run.lives++;
+        this.run.bonusLives = (this.run.bonusLives || 0) + 1;
         Barks.note('R' + per + ' EARNED! EXTRA LIFE, BOSS!');
         Particles.confetti(pk.x, pk.y, 8);
       }
@@ -643,8 +805,10 @@ export class LevelScreen {
 
     if (this.level.dark) this.drawDarkness(ctx, cam);
     if (this.player.irie) this.drawIrieTint(ctx);
+    if (this.player.smoking) this.drawSmoke(ctx);
 
     this.drawHUD(ctx);
+    if (this.liveTut && !this.liveTut.done && this.introT <= 0) this.drawLiveTutorial(ctx);
     Barks.draw(ctx, cam);
 
     if (this.glitchT > 0) this.drawGlitch(ctx);
@@ -779,6 +943,40 @@ export class LevelScreen {
     ctx.fillRect(fx + 4, fy, 2, 1);
   }
 
+  // while Vaks skins up the whole screen washes green and fills with colourful
+  // bubbles drifting up across it — the world's already frozen behind it.
+  drawSmoke(ctx) {
+    const p = this.player;
+    const prog = p.smokeTotal ? 1 - p.smokeT / p.smokeTotal : 0;
+    const T = performance.now() / 1000;
+    // green wash, deepening as the joint burns down
+    const a = 0.24 + prog * 0.16 + Math.sin(T * 3) * 0.03;
+    ctx.fillStyle = `rgba(46,196,74,${a})`;
+    ctx.fillRect(0, 0, View.w, View.h);
+
+    // colourful bubbles rising and wobbling across the screen
+    const COLORS = ['#ff5ea8', '#ffd84d', '#7ec8ff', '#8ae08a', '#c08aff', '#ff9a4d', '#5ef0d0'];
+    const N = 28, colW = View.w + 24, span = View.h + 28;
+    for (let i = 0; i < N; i++) {
+      const seed = i * 12.9898;
+      const speed = 16 + (i % 5) * 8;
+      const sway = 14 + (i % 4) * 7;
+      const x = (((i * 61 + Math.sin(T * 0.7 + seed) * sway) % colW) + colW) % colW - 12;
+      const y = View.h + 14 - ((T * speed + i * 41) % span);
+      const r = 2 + ((i + Math.floor(T * 1.5)) % 4);
+      const al = Math.max(0.18, 0.45 + 0.3 * Math.sin(T * 2.2 + seed));
+      ctx.globalAlpha = al;
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.beginPath();
+      ctx.arc(Math.round(x), Math.round(y), r, 0, 6.2832);
+      ctx.fill();
+      ctx.globalAlpha = al * 0.7;                     // glossy highlight
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(Math.round(x) - 1, Math.round(y) - r + 1, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   drawIrieTint(ctx) {
     const a = Math.min(0.22, this.player.irieT > 0.6 ? 0.22 : this.player.irieT * 0.36);
     ctx.fillStyle = `rgba(255,150,60,${a})`;
@@ -815,7 +1013,7 @@ export class LevelScreen {
     // y=30 keeps clear of the persistent mute button pinned to the top-right corner
     drawText(ctx, 'SCORE ' + this.run.score, View.w - 6, 30, { color: '#f4f0e0', align: 'right' });
     // ganja burn hint (G: spend a life for an irie rush, once per level)
-    if (!this.ganjaUsed && this.run.lives > 0 && !this.player.irie) {
+    if (!this.ganjaUsed && this.run.lives > 0 && !this.player.irie && !this.player.smoking) {
       drawText(ctx, 'G:BURN LIFE>IRIE', 6, 32, { color: '#6ac24a' });
     }
 
@@ -829,6 +1027,13 @@ export class LevelScreen {
       drawText(ctx, this.player.overstacked ? 'TOO STRONG!' : 'IRIE', View.w / 2, 16, {
         color: this.player.overstacked ? '#ff8a8a' : '#8ae08a', align: 'center',
       });
+    } else if (this.player.smoking) {
+      // skin-up progress: rolling/lighting the joint before the rush
+      const w = 56;
+      const frac = this.player.smokeTotal ? 1 - this.player.smokeT / this.player.smokeTotal : 0;
+      ctx.fillStyle = '#1a1a24'; ctx.fillRect(View.w / 2 - w / 2 - 1, 7, w + 2, 7);
+      ctx.fillStyle = '#c9a23a'; ctx.fillRect(View.w / 2 - w / 2, 8, Math.round(w * frac), 5);
+      drawText(ctx, 'SKINNIN UP', View.w / 2, 16, { color: '#e0c060', align: 'center' });
     }
 
     // threat gauge
@@ -854,6 +1059,28 @@ export class LevelScreen {
 
     if (this.threat.frozen) drawText(ctx, 'THREAT FROZEN', View.w / 2, 24, { color: '#7fd0ff', align: 'center' });
     if (this.debug.invincible) drawText(ctx, 'INVINCIBLE', View.w / 2, 32, { color: '#7fd0ff', align: 'center' });
+  }
+
+  drawLiveTutorial(ctx) {
+    const T = this.liveTut;
+    const w = 150, h = 64, x = Math.round(View.w / 2 - w / 2), y = 40;
+    // panel + top accent
+    ctx.fillStyle = 'rgba(10,12,20,0.74)';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(138,224,138,0.6)';
+    ctx.fillRect(x, y, w, 1);
+    drawText(ctx, 'TRY THE CONTROLS', View.w / 2, y + 5, { color: '#ffe49a', align: 'center' });
+    let ly = y + 17;
+    for (const s of T.steps) {
+      const col = s.ok ? '#8ae08a' : '#f4f0e0';
+      drawText(ctx, (s.ok ? '* ' : '- ') + s.label, x + 9, ly, { color: col });
+      drawText(ctx, s.hint, x + w - 9, ly, { color: s.ok ? '#5a7a5a' : '#8a93b8', align: 'right' });
+      ly += LINE_H;
+    }
+    const secs = Math.max(0, Math.ceil(T.t));
+    const allOk = T.steps.every((s) => s.ok);
+    const msg = allOk ? 'ENTER: START NOW   ' + secs : 'MIST RISES IN ' + secs;
+    drawText(ctx, msg, View.w / 2, y + h - 8, { color: secs <= 5 ? '#ff5a5a' : '#7fd0ff', align: 'center' });
   }
 
   drawIntroCard(ctx) {

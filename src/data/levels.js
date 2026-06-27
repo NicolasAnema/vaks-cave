@@ -165,6 +165,8 @@ function buildVertical(o) {
     id: o.id, name: o.name, tagline: o.tagline, world: 1, orientation: 'vertical',
     width: W, height: o.height, theme: o.theme, dark: !!o.dark,
     introTiko: !!o.introTiko, bottles: o.bottles !== false,
+    liveTutorial: !!o.liveTutorial, irieStart: !!o.irieStart,
+    irieMusic: o.irieMusic || null,
     music: o.music || 'world1',
     platforms, ladders, pickups, rats, tikos, lanterns, checkpoints, tutorials,
     walls: [{ x: 0, y: 0, w: 16, h: o.height }, { x: W - 16, y: 0, w: 16, h: o.height }],
@@ -389,11 +391,13 @@ export const LEVELS = [
     decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.6,
     weedFracs: [], ratFracs: [0.25, 0.42, 0.58, 0.74, 0.88], shadowFracs: [], irieFracs: [],
     introTiko: true,
+    // L1 opens with a live, interactive 20s control drill (the mist is held
+    // back while Vaks tries the controls) — see CONFIG.timers.liveTutorial.
+    // The bottom move/ladder prompts are taught by that drill now; these
+    // zones cover the threats Vaks meets higher up the shaft.
+    liveTutorial: true,
     tutorials: (spawn, ladders, floorY) => {
-      const firstLadder = ladders[0];
       return [
-        { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'ARROW KEYS TO MOVE. SPACE TO JUMP.' },
-        firstLadder ? { x: firstLadder.x - 50, y: firstLadder.y + firstLadder.h - 60, w: 110, h: 80, text: 'PRESS UP / DOWN ON A LADDER TO CLIMB.' } : null,
         { x: 16, y: floorY - 260, w: 448, h: 60, text: 'THE MIST RISES. IF IT TOUCHES YOU, IT HAS YOU. CLIMB!' },
         { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS BITE ON THE LEDGES. PRESS M TO MEOW AND SCATTER THEM. DO NOT FORGET THE MEOW!' },
         { x: 16, y: floorY - 560, w: 448, h: 60, text: 'CRACKED STEPS GIVE WAY. KEEP CLIMBING.' },
@@ -403,6 +407,10 @@ export const LEVELS = [
   buildVertical({
     id: 2, seed: 2202, name: 'WEED BIOME', tagline: "IT'S GOOD TO BE FEEL IRIE",
     theme: 'plat_w1b', height: 2100,
+    irieStart: true,    // the irie level opens with Vaks auto-skinning up into the rush
+    irieMusic: 'irie',  // ...and the Irie Loop takes over the music once he's smoked
+
+
     gap: [35, 40], w: [90, 150], dx: [62, 108], ladderEvery: 5,
     decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.5,
     weedFracs: [0.3, 0.72], ratFracs: [0.3, 0.5, 0.68, 0.85],
@@ -414,6 +422,7 @@ export const LEVELS = [
   }),
   buildVertical({
     id: 3, seed: 3303, name: 'THE DEEP', tagline: 'YOUR CAT IS GONNA DIE',
+    music: 'level3',
     theme: 'plat_w1c', height: 2500, dark: true,
     gap: [35, 40], w: [80, 138], dx: [66, 112], ladderEvery: 5,
     decoyFrac: 0.12, crumbleDecoy: 0.6, crumbleMain: 0.55,

@@ -63,7 +63,7 @@ export class TitleScreen {
     this.t = 0;
     this.idle = new MenuIdle();
     this.started = false;
-    AudioManager.playMusic('title');
+    AudioManager.playMusic(AudioManager.menuTrack); // jukebox pick carries over (defaults to 'title')
   }
 
   update(dt) {
@@ -240,7 +240,7 @@ export class MainMenuScreen extends ListScreen {
     items.push({ label: 'CREDITS', run: () => cb.onCredits() });
     super('MAIN MENU', items, cb);
     this.hintText = 'ARROWS: MOVE   ENTER: SELECT';
-    AudioManager.playMusic('title'); // same track as the title screen: carries over, no restart
+    AudioManager.playMusic(AudioManager.menuTrack); // the jukebox pick (or 'title') carries over, no restart
   }
 
   draw(ctx) {
@@ -253,41 +253,59 @@ export class MainMenuScreen extends ListScreen {
 
 export class LevelSelectScreen {
   constructor(cb) {
-    this.cb = cb; // { onPick(n), onBack() }
+    this.cb = cb; // { onPick(entry), onBack() }
     this.sel = 0;
     this.t = 0;
-    this.names = ['SHALLOW SHAFT', 'WEED BIOME', 'THE DEEP', 'TOWNSHIP OUTSKIRTS', 'KASI MAIN STREET', 'HOME STRETCH'];
+    // bosses sit after the six levels and are always playable here (test access)
+    this.entries = [
+      { kind: 'level', n: 1, label: 'LEVEL 1', name: 'SHALLOW SHAFT',      zone: 'THE CAVE' },
+      { kind: 'level', n: 2, label: 'LEVEL 2', name: 'WEED BIOME',         zone: 'THE CAVE' },
+      { kind: 'level', n: 3, label: 'LEVEL 3', name: 'THE DEEP',           zone: 'THE CAVE' },
+      { kind: 'level', n: 4, label: 'LEVEL 4', name: 'TOWNSHIP OUTSKIRTS', zone: 'THE TOWNSHIP' },
+      { kind: 'level', n: 5, label: 'LEVEL 5', name: 'KASI MAIN STREET',   zone: 'THE TOWNSHIP' },
+      { kind: 'level', n: 6, label: 'LEVEL 6', name: 'HOME STRETCH',       zone: 'THE TOWNSHIP' },
+      { kind: 'boss', variant: 'tiko',   label: 'BOSS 1', name: 'BIG TIKOLOSH',  zone: 'THE VIBE-OFF' },
+      { kind: 'boss', variant: 'granny', label: 'BOSS 2', name: 'TEND THE PLAAS', zone: 'THE FINALE' },
+    ];
   }
+
+  unlocked(e) { return e.kind === 'boss' || e.n <= Save.data.unlockedLevel; }
 
   update(dt) {
     this.t += dt;
     Barks.update(dt);
-    if (Input.wasPressed('ArrowLeft')) this.sel = (this.sel + 5) % 6;
-    if (Input.wasPressed('ArrowRight')) this.sel = (this.sel + 1) % 6;
-    if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + 3) % 6;
-    if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + 3) % 6;
-    if (Input.wasPressed('Enter') && this.sel + 1 <= Save.data.unlockedLevel) this.cb.onPick(this.sel + 1);
+    const N = this.entries.length, COLS = 3;
+    if (Input.wasPressed('ArrowLeft')) this.sel = (this.sel + N - 1) % N;
+    if (Input.wasPressed('ArrowRight')) this.sel = (this.sel + 1) % N;
+    if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + N - COLS) % N;
+    if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + COLS) % N;
+    if (Input.wasPressed('Enter')) {
+      const e = this.entries[this.sel];
+      if (this.unlocked(e)) this.cb.onPick(e);
+    }
     if (Input.wasPressed('Escape')) this.cb.onBack();
   }
 
   draw(ctx) {
     drawScene(ctx, 'garden', this.t);
     dimScreen(ctx, 0.66);
-    drawText(ctx, 'LEVEL SELECT', View.w / 2, 22, { color: '#ffe49a', scale: 2, align: 'center' });
-    for (let i = 0; i < 6; i++) {
-      const col = i % 3, row = Math.floor(i / 3);
-      const x = 70 + col * 120, y = 66 + row * 76;
-      const unlocked = i + 1 <= Save.data.unlockedLevel;
+    drawText(ctx, 'LEVEL SELECT', View.w / 2, 18, { color: '#ffe49a', scale: 2, align: 'center' });
+    const COLS = 3;
+    this.entries.forEach((e, i) => {
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const x = 70 + col * 120, y = 46 + row * 64;
+      const unlocked = this.unlocked(e);
       const seld = this.sel === i;
-      panel(ctx, x, y, 100, 56, { border: seld ? '#ffe49a' : '#4a5a8a', bg: unlocked ? 'rgba(16,20,36,0.92)' : 'rgba(10,10,16,0.92)' });
-      drawText(ctx, 'LEVEL ' + (i + 1), x + 50, y + 7, { color: unlocked ? '#8ae08a' : '#4a4f63', align: 'center' });
+      const isBoss = e.kind === 'boss';
+      panel(ctx, x, y, 100, 50, { border: seld ? '#ffe49a' : (isBoss ? '#8a4a5a' : '#4a5a8a'), bg: unlocked ? 'rgba(16,20,36,0.92)' : 'rgba(10,10,16,0.92)' });
+      drawText(ctx, e.label, x + 50, y + 6, { color: unlocked ? (isBoss ? '#ff9a9a' : '#8ae08a') : '#4a4f63', align: 'center' });
       if (unlocked) {
-        drawText(ctx, this.names[i], x + 50, y + 22, { color: seld ? '#fff' : '#9aa3c0', align: 'center' });
-        drawText(ctx, i < 3 ? 'THE CAVE' : 'THE TOWNSHIP', x + 50, y + 38, { color: '#5a6280', align: 'center' });
+        drawText(ctx, e.name, x + 50, y + 20, { color: seld ? '#fff' : '#9aa3c0', align: 'center' });
+        drawText(ctx, e.zone, x + 50, y + 34, { color: '#5a6280', align: 'center' });
       } else {
-        drawText(ctx, 'LOCKED', x + 50, y + 26, { color: '#4a4f63', align: 'center' });
+        drawText(ctx, 'LOCKED', x + 50, y + 22, { color: '#4a4f63', align: 'center' });
       }
-    }
+    });
     hint(ctx, 'ARROWS: MOVE   ENTER: PLAY   ESC: BACK');
     Barks.draw(ctx, null);
   }
@@ -312,6 +330,7 @@ export class JukeboxScreen {
       const slot = MUSIC_SLOTS[this.sel];
       AudioManager.play('jukebox_select', slot.id);
       AudioManager.playMusic(slot.id);
+      AudioManager.menuTrack = slot.id; // this pick becomes the new title/menu song
       this.playing = slot.id;
       barkNewSong({ subtitle: true, speaker: 'VAKS', force: true });
     }

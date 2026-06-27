@@ -12,7 +12,7 @@ import { readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MANIFEST, MUSIC_SLOTS, EVENTS } from '../src/data/manifest.js';
-import { VOICE_ALIASES, MUSIC_ALIASES } from '../src/data/audio_map.js';
+import { VOICE_ALIASES, MUSIC_ALIASES, SFX_ALIASES } from '../src/data/audio_map.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DIR = join(ROOT, 'assets', 'audio');
@@ -78,6 +78,14 @@ for (const slot of MUSIC_SLOTS) {
 
 const sfx = EVENTS.filter((ev) => stems.has('sfx/' + ev));
 console.log(`\nSFX (sfx/<event>): ${sfx.length ? sfx.join(', ') : 'none'}`);
+
+// event one-shots routed to a descriptively-named file via SFX_ALIASES
+const sfxAliased = [];
+for (const [ev, rel] of Object.entries(SFX_ALIASES)) {
+  if (!have.has(rel)) { dangling.push(`sfx ${ev} -> ${rel}`); continue; }
+  used.add(rel); sfxAliased.push(`${ev} -> ${rel}`);
+}
+if (sfxAliased.length) console.log(`SFX (aliased): ${sfxAliased.join(', ')}`);
 
 const leftover = files.filter((f) => !used.has(f) && !sfx.some((ev) => f.startsWith('sfx/' + ev + '.')));
 if (leftover.length) {

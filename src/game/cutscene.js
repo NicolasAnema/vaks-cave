@@ -1,7 +1,8 @@
 // ============================================================
 // CUTSCENE PLAYER — executes the data scripts: staged actors,
 // timed commands, typewriter dialogue with portraits, letterbox,
-// screen effects. Enter skips. Pure command interpreter; all
+// screen effects. Enter (or a click) advances ONE beat at a time —
+// it never skips the whole scene. Pure command interpreter; all
 // content lives in src/data/cutscenes.js.
 // ============================================================
 
@@ -70,20 +71,6 @@ export class CutsceneScreen {
       document.removeEventListener('pointerdown', this._clickHandler);
       this._clickHandler = null;
     }
-  }
-
-  skip() {
-    if (this.done) return;
-    this.done = true;
-    this._removeClickHandler();
-    // fire any unfired manifest 'say' rows so the beat still registers
-    const steps = this.scene.steps;
-    for (let i = this.stepIdx + 1; i < steps.length; i++) {
-      const s = steps[i];
-      if (s[0] === 'say' && typeof s[2] === 'string' && s[2].startsWith('m_')) Barks.quote(s[2]);
-      if (s[0] === 'voice_note' && typeof s[2] === 'string' && s[2].startsWith('m_')) Barks.quote(s[2]);
-    }
-    this.cb.onDone();
   }
 
   nextStep() {
@@ -170,19 +157,15 @@ export class CutsceneScreen {
     this.t += dt;
     this.stepT += dt;
 
-    // locked dialogue (voice_note step) blocks all skipping until clip ends;
-    // a noSkip scene (the intro) can't be Enter-skipped at all so its voice plays out
-    if (Input.wasPressed('Enter') && !this.scene.noSkip && !(this.dialogue && this.dialogue.locked)) { this.skip(); return; }
-
-    const clicked = this._clicked;
+    // Enter (or a click) advances ONE beat — it never skips the whole scene.
+    // First press snaps the typewriter to full; the next moves to the next
+    // step. Locked voice_note steps ignore both inputs until the clip ends.
+    const advance = (Input.wasPressed('Enter') || this._clicked) && !(this.dialogue && this.dialogue.locked);
     this._clicked = false;
-    if (clicked && this.dialogue && !this.dialogue.locked) {
+    if (advance && this.dialogue) {
       const d = this.dialogue;
-      if (d.shown < d.text.length) {
-        d.shown = d.text.length; d.holdT = 0;
-      } else {
-        this.dialogue = null; this.nextStep(); return;
-      }
+      if (d.shown < d.text.length) { d.shown = d.text.length; d.holdT = 0; }
+      else { this.dialogue = null; this.nextStep(); return; }
     }
 
     // ambient state
@@ -374,7 +357,7 @@ export class CutsceneScreen {
       ctx.globalAlpha = 1;
     }
 
-    if (!this.scene.noSkip) drawText(ctx, 'ENTER: SKIP', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
+    if (!(this.dialogue && this.dialogue.locked)) drawText(ctx, 'ENTER: NEXT', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
   }
 
   drawDialogue(ctx) {

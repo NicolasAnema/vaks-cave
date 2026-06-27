@@ -110,10 +110,11 @@ export class Rat {
     if (this.fleeT > 0) {
       sp = R.fleeSpeed;                       // meow: scatter (dir already set away)
     } else {
-      // charge Vaks when he's close on this ledge; otherwise lazy patrol
+      // charge Vaks only when he's actually standing on this ledge — not while
+      // he's jumping up from below; otherwise lazy patrol
       const p = lr.player;
       const dx = p.x - this.x;
-      if (!p.dead && Math.abs(dx) < R.aggroX && Math.abs(p.y - this.y) < R.aggroY) {
+      if (!p.dead && p.onGround && Math.abs(dx) < R.aggroX && Math.abs(p.y - this.y) < R.aggroY) {
         this.dir = dx >= 0 ? 1 : -1;
         sp = R.chaseSpeed;
       } else {

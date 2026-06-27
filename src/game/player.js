@@ -25,6 +25,7 @@ export class Player {
     this.climbing = false; this.ladder = null;
     this.coyote = 0; this.jbuf = 0; this.jumpHeld = false;
     this.irieT = 0; this.overT = 0; this.swayPhase = 0;
+    this.smokeT = 0; this.smokeTotal = 0; this.smokeEmit = 0; // G skin-up ritual
     this.stun = 0; this.invuln = 0;
     this.babalasT = 0;
     this.meowCd = 0; this.meowFlash = 0;
@@ -42,8 +43,11 @@ export class Player {
   get irie() { return this.irieT > 0; }
   get overstacked() { return this.overT > 0; }
   get babalas() { return this.babalasT > 0; }
-  // world time scale: irie slows the world around Vaks
-  worldScale() { return this.irie ? CONFIG.irie.slowFactor : 1; }
+  // mid skin-up ritual (G): frozen and untouchable until the joint's lit
+  get smoking() { return this.smokeT > 0; }
+  // irie no longer slows the whole world — only the rats and tikolosh crawl
+  // (enemySlow). The mist, granny, bottles and Vaks himself stay at full speed.
+  enemySlow() { return this.irie ? CONFIG.irie.enemySlow : 1; }
   hats() { return this.lr.run?.hats || {}; }
   // irie powers the legs (ladders optional); babalas saps them;
   // the propeller hat lifts every jump, the chiefs hat is tikolosh speed
@@ -70,14 +74,41 @@ export class Player {
     return 'irie';
   }
 
-  hurt(fromX, power = 1) {
+  // G: begin the skin-up ritual — plant his feet and run the timeline. He's
+  // frozen and invincible the whole way; the level lights the rush (onSmokeDone)
+  // the instant the timer runs out.
+  startSmoke() {
+    const S = CONFIG.irie.smoke;
+    this.smokeTotal = S.pull + S.roll + S.light + S.smoke;
+    this.smokeT = this.smokeTotal;
+    this.smokeEmit = 0;
+    this.smokeLit = false; // fires the inhale the moment the joint reaches his lips
+    this.vx = 0; this.vy = Math.max(0, this.vy); // plant him, never launch
+    this.climbing = false; this.ladder = null;
+    // untouchable through the ritual even before the irie kicks in
+    this.invuln = Math.max(this.invuln, this.smokeTotal + 0.2);
+  }
+
+  // which beat of the ritual we're on, and how far the joint has burned (0..1)
+  smokeState() {
+    const S = CONFIG.irie.smoke;
+    const e = this.smokeTotal - this.smokeT; // elapsed
+    if (e < S.pull) return { phase: 'pull', burn: 0 };
+    if (e < S.pull + S.roll) return { phase: 'roll', burn: 0 };
+    if (e < S.pull + S.roll + S.light) return { phase: 'light', burn: 0 };
+    const start = S.pull + S.roll + S.light;
+    return { phase: 'smoke', burn: Math.min(1, (e - start) / S.smoke) };
+  }
+
+  hurt(fromX, power = 1, noLift = false) {
     // irie = invincible; while grabbed the hold IS the punishment.
     // power scales the bounce (rats hit harder than a stray bottle).
-    if (this.invuln > 0 || this.dead || this.irie || this.grabbedBy) return false;
+    // noLift = pure sideways knock, no upward pop (rats just shove him aside).
+    if (this.invuln > 0 || this.dead || this.irie || this.smoking || this.grabbedBy) return false;
     const P = CONFIG.player;
     const dir = this.x >= fromX ? 1 : -1;
     this.vx = dir * P.knockbackX * power;
-    this.vy = -P.knockbackY * 0.7 * power;
+    this.vy = noLift ? 0 : -P.knockbackY * 0.7 * power;
     this.stun = P.stunTime * Math.min(power, 1.3);
     this.invuln = P.invulnTime;
     this.onGround = false; this.climbing = false;
@@ -92,6 +123,7 @@ export class Player {
     this.vx = 0; this.vy = 0;
     this.dead = false; this.climbing = false; this.onGround = true;
     this.stun = 0; this.invuln = 1.6; this.irieT = 0; this.overT = 0;
+    this.smokeT = 0;
     this.babalasT = 1.4;
     this.grabbedBy = null;
   }
@@ -143,6 +175,30 @@ export class Player {
     this.babalasT = Math.max(0, this.babalasT - dt);
     this.swayPhase += dt * CONFIG.irie.swayHz * Math.PI * 2;
     this.meowFlash -= dt;
+
+    // ---- skin-up ritual (G): pinned in place, untouchable, running the
+    // timeline. A full early-return (like the tsotsi grip) so NO physics touches
+    // him — a jump buffered just before he pressed G can't fire, and gravity
+    // can't drop him off a crumbling ledge. He just stops and rolls; the level
+    // lights the rush (onSmokeDone) the instant it's done.
+    if (this.smoking) {
+      this.smokeT = Math.max(0, this.smokeT - dt);
+      this.vx = 0; this.vy = 0;
+      this.animT += dt * 3;
+      this.sqX += (1 - this.sqX) * Math.min(1, 12 * dt); // squash relaxes to neutral
+      this.sqY += (1 - this.sqY) * Math.min(1, 12 * dt);
+      const ss = this.smokeState();
+      if (ss.phase === 'light' || ss.phase === 'smoke') { // joint's at his lips now
+        if (!this.smokeLit) { this.smokeLit = true; this.lr.onJointLit?.(); } // -> inhale SFX
+        this.smokeEmit -= dt;                                                 // + smoke wisps
+        if (this.smokeEmit <= 0) {
+          this.smokeEmit = 0.1;
+          Particles.smoke(this.x + this.facing * 7, this.y - 23);
+        }
+      }
+      if (this.smokeT === 0) this.lr.onSmokeDone?.(); // burned to the Rodger — rush lands
+      return;
+    }
 
     // squash decay
     this.sqX += (1 - this.sqX) * Math.min(1, 12 * dt);
@@ -297,6 +353,12 @@ export class Player {
   }
 
   currentFrame() {
+    if (this.smoking) {
+      const ph = this.smokeState().phase;
+      if (ph === 'pull') return VAKS.smokePull;
+      if (ph === 'roll') return VAKS.smokeRoll[Math.floor(this.animT * 1.2) % 2];
+      return VAKS.smokePuff; // light + smoke: joint clamped in the lips
+    }
     if (this.celebrating) return VAKS.celeb[Math.floor(this.animT * 0.6) % 2];
     if (this.grabbedBy) return VAKS.hurt; // wriggling in the grip
     if (this.stun > 0) return VAKS.hurt;
@@ -311,7 +373,9 @@ export class Player {
 
   draw(ctx) {
     if (this.dead) return;
-    if (this.invuln > 0 && Math.floor(this.invuln * 14) % 2 === 0 && this.stun <= 0 && this.babalasT <= 0) return;
+    // i-frame blink — but not while the irie/skin-up shield is up (that invuln is
+    // a power state, not a hit, so he stays solid instead of flickering)
+    if (this.invuln > 0 && !this.smoking && !this.irie && Math.floor(this.invuln * 14) % 2 === 0 && this.stun <= 0 && this.babalasT <= 0) return;
     const f = this.currentFrame();
     const fw = 26, fh = 32;
     const sx = this.sqX, sy = this.sqY;
@@ -320,7 +384,47 @@ export class Player {
     ctx.scale(sx, sy);
     draw(ctx, 'vaks', f, -fw / 2, -fh, { flip: this.facing < 0 });
     this.drawHats(ctx);
+    if (this.smoking) this.drawJoint(ctx, this.smokeState());
     ctx.restore();
+  }
+
+  // The blunt, drawn live (in the unflipped, player-local space drawHats uses,
+  // mirrored by facing) so it can burn from a full joint down to the stinging
+  // Rodger — the filter that stays clamped in his lips at the end.
+  drawJoint(ctx, ss) {
+    const d = this.facing; // +1 faces right, -1 faces left
+    if (ss.phase === 'pull') {
+      // fishing the bud + papers out of the pocket, held low in the front hand
+      ctx.fillStyle = '#6ac24a'; ctx.fillRect(d > 0 ? 4 : -6, -15, 2, 2);  // bud
+      ctx.fillStyle = '#efe7cf'; ctx.fillRect(d > 0 ? 6 : -8, -15, 2, 2);  // papers
+      return;
+    }
+    if (ss.phase === 'roll') {
+      // the joint takes shape between his hands at chest height
+      const x = d > 0 ? 2 : -7;
+      ctx.fillStyle = '#efe7cf'; ctx.fillRect(x, -15, 5, 1);
+      ctx.fillStyle = '#d9cfb0'; ctx.fillRect(x, -14, 5, 1);
+      ctx.fillStyle = '#7a4a24'; ctx.fillRect(d > 0 ? x : x + 4, -15, 1, 2); // Rodger end
+      return;
+    }
+    // light + smoke: lit, clamped in the lips, burning down to the Rodger
+    const my = -21;                                  // lip height
+    const base = d > 0 ? 2 : -2;                      // at the corner of the mouth
+    const filterLen = 2;                             // the stinging Rodger — always remains
+    const paperLen = Math.round((1 - ss.burn) * 6);  // burns away to nothing
+    // filter (the roach) at the lips
+    ctx.fillStyle = '#7a4a24'; ctx.fillRect(d > 0 ? base : base - filterLen, my, filterLen, 2);
+    ctx.fillStyle = '#5e3619'; ctx.fillRect(d > 0 ? base : base - filterLen, my + 1, filterLen, 1);
+    // paper burning down
+    if (paperLen > 0) {
+      const px = d > 0 ? base + filterLen : base - filterLen - paperLen;
+      ctx.fillStyle = '#efe7cf'; ctx.fillRect(px, my, paperLen, 2);
+      ctx.fillStyle = '#d9cfb0'; ctx.fillRect(px, my + 1, paperLen, 1);
+    }
+    // glowing ember at the burning tip
+    const ex = d > 0 ? base + filterLen + paperLen : base - filterLen - paperLen - 1;
+    const flick = Math.floor((this.smokeTotal - this.smokeT) * 12) % 2;
+    ctx.fillStyle = flick ? '#ff7a2a' : '#ffd24a'; ctx.fillRect(ex, my, 1, 2);
   }
 
   // ability caps from the shop, worn over the base cap

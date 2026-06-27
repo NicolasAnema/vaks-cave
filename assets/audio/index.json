@@ -1,6 +1,7 @@
 {
   "files": [
     "music/Feline_Frequency.mp3",
+    "music/Irie Loop.mp3",
     "music/Lobby.mp3",
     "music/Mkhukhu Echo.mp3",
     "music/Theme Song.mp3",
@@ -74,6 +75,7 @@
     "sfx/gta-san-andreas-gorevi-gecme-muzigi-respect-mp3indirdur.mp3",
     "sfx/jump.mp3",
     "sfx/level_clear.mp3",
-    "sfx/live for faam.opus"
+    "sfx/live for faam.opus",
+    "sfx/magiaz-smoke-454927.mp3"
   ]
 }

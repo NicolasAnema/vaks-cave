@@ -148,7 +148,7 @@ export const EVENTS = [
   'granny_chase_start', 'granny_faint', 'granny_caught', 'checkpoint', 'jump',
   'shop_enter', 'shop_browse', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
   'menu_idle', 'tutorial_prompt', 'jukebox_select', 'easter_egg_rare',
-  'glitch_gag', 'ending',
+  'glitch_gag', 'ending', 'skin_up',
   'tsotsi_alert', 'tsotsi_shoot', 'tsotsi_stomp', 'tsotsi_drink', 'tsotsi_grab',
 ];
 
@@ -157,8 +157,11 @@ export const MUSIC_SLOTS = [
   { id: 'title',   name: 'GARDEN OF VAKS',     file: 'music/title.ogg' },
   { id: 'loading', name: 'BABALAS SHUFFLE',    file: 'music/loading.ogg' },
   { id: 'level1',  name: 'TIKOLOSH SAY SHORTY', file: 'music/level1.ogg' },
+  { id: 'level3',  name: 'MKHUKHU ECHO',       file: 'music/level3.ogg' },
   { id: 'world1',  name: 'DEEP CAVE RIDDIM',   file: 'music/world1.ogg' },
   { id: 'world2',  name: 'KASI SPRINT',        file: 'music/world2.ogg' },
+  { id: 'irie',    name: 'IRIE LOOP',          file: 'music/irie.ogg' },
+
   { id: 'boss',    name: 'FELINE FREQUENCY',    file: 'music/feline_frequency.ogg' },
   { id: 'ending',  name: 'BAAS VAN DIE PLAAS', file: 'music/ending.ogg' },
 ];

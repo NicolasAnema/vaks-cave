@@ -18,7 +18,7 @@
 
 import { CONFIG } from '../config.js';
 import { MANIFEST, EVENTS, MUSIC_SLOTS } from '../data/manifest.js';
-import { VOICE_ALIASES, MUSIC_ALIASES } from '../data/audio_map.js';
+import { VOICE_ALIASES, MUSIC_ALIASES, SFX_ALIASES } from '../data/audio_map.js';
 import { drawText, wrapText, textWidth, LINE_H } from '../engine/font.js';
 import { Save } from './save.js';
 import { View, roundedRect } from '../engine/render.js';
@@ -32,6 +32,7 @@ export const AudioManager = {
   lastEvent: '-',
   started: false,              // true once the player's first gesture unlocked audio
   music: null,                 // current slot id (the jukebox name source of truth)
+  menuTrack: 'title',          // track the title/main-menu play; jukebox can repoint it
   knownEvents: new Set(EVENTS),
   files: new Set(),            // uploaded audio paths, from assets/audio/index.json
   cache: new Map(),            // path -> HTMLAudioElement
@@ -51,7 +52,7 @@ export const AudioManager = {
     // warm the cache for event one-shots (sfx/<event>) so the first hit —
     // e.g. the death sting — fires instantly instead of fetching on play.
     for (const ev of EVENTS) {
-      const p = this.resolve('sfx/' + ev);
+      const p = this.aliasPath(SFX_ALIASES[ev]) || this.resolve('sfx/' + ev);
       if (p) this.prepare(p, false).load();
     }
     // browsers gate audio behind a user gesture: resume the graph and
@@ -144,7 +145,7 @@ export const AudioManager = {
   // (or any supported extension), it plays too.
   play(event, detail = '') {
     this.lastEvent = event + (detail ? ':' + detail : '');
-    const p = this.resolve('sfx/' + event);
+    const p = this.aliasPath(SFX_ALIASES[event]) || this.resolve('sfx/' + event);
     if (p) this.playFile(p, 'voice', CONFIG.audio.eventGain[event] || 1);
   },
 
@@ -205,6 +206,18 @@ export const AudioManager = {
     if (this.musicEl) this.musicEl.pause();
     this.musicEl = null;
     this.musicPath = null;
+  },
+
+  // Hold the current track in place (keeps the element + position so it can
+  // pick up exactly where it left off) — used to freeze the world while Vaks
+  // skins up. resumeMusic() plays it again from the same spot.
+  pauseMusic() {
+    if (this.musicEl) this.musicEl.pause();
+  },
+  resumeMusic() {
+    if (!this.musicEl || !this.musicPath || !this.musicEl.paused) return;
+    const resume = this.ctx && this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
+    resume.then(() => this.musicEl.play().catch(() => {}));
   },
 
   stopVoice() {

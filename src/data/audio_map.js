@@ -48,8 +48,18 @@ export const VOICE_ALIASES = {
   m_cat_eyes:      'sfx/Vaki going dark.opus',
 };
 
+// Event one-shots (AudioManager.play('<event>')) normally resolve by the
+// sfx/<event>.<ext> convention; an alias here lets an event point at a
+// descriptively-named upload instead. Same rules as VOICE_ALIASES.
+export const SFX_ALIASES = {
+  skin_up: 'sfx/magiaz-smoke-454927.mp3',  // the inhale that plays across the G skin-up ritual
+};
+
 export const MUSIC_ALIASES = {
   title: 'music/Theme Song.mp3',
+  irie: 'music/Irie Loop.mp3',   // L2: takes over the level music once Vaks has smoked
   level1: 'music/Tikolosh Say Shorty.mp3',
+  level3: 'music/Mkhukhu Echo.mp3',
+  boss: 'music/Feline_Frequency.mp3',
   // lobby: 'music/Lobby.mp3',  // removed for now — Lobby.mp3 stays on disk, unwired
 };

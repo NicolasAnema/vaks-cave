@@ -51,7 +51,7 @@ export class Mist {
 
   update(dt, player) {
     this.t += dt;
-    const slow = player.worldScale();
+    const slow = 1; // irie no longer slows the mist — only rats & tikolosh
     if (!this.frozen) {
       let rise = this.rate;
       // rubber band: hurry up if Vaks has raced too far ahead, easing back to
@@ -145,7 +145,7 @@ export class Granny {
   update(dt, player, lr) {
     const C = CONFIG.granny;
     this.t += dt;
-    const slow = player.worldScale();
+    const slow = 1; // irie no longer slows granny — only rats & tikolosh
     if (!this.announced) {
       this.announced = true;
       barkSpy({ subtitle: true, speaker: 'GRANNY', force: true });
