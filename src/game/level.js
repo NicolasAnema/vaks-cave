@@ -14,7 +14,7 @@ import { Particles } from '../engine/particles.js';
 import { makeCaveLayers, makeTownLayers, drawLayers } from '../engine/bg.js';
 import { AudioManager, Barks } from '../systems/audio.js';
 import { Player } from './player.js';
-import { Mist, Granny } from './threats.js';
+import { Mist, Chaser } from './threats.js';
 import { Bottle, Rat, Tiko, Tsotsi, TsotsiBullet, Pickup, Checkpoint, NPC } from './entities.js';
 
 const barkStartSafari = Barks.wire('m_irie_safari', 'level.js: W1 level start variant');
@@ -61,11 +61,11 @@ export class LevelScreen {
     this.cam.snapTo(this.player.x, this.player.y);
 
     this.layers = this.o === 'vertical' ? makeCaveLayers(level.id) : makeTownLayers(level.id);
-    this.threat = this.o === 'vertical' ? new Mist(level) : new Granny(level);
-    // the charm now tires gogo out for the whole run: she runs slower
-    // (she no longer faints, so this is the way to buy yourself breathing room)
+    this.threat = this.o === 'vertical' ? new Mist(level) : new Chaser(level);
+    // the charm tires the chaser out for the whole run: it runs slower, so you
+    // buy yourself breathing room
     if (this.o === 'horizontal' && run.faintCharm) {
-      this.threat.base *= CONFIG.granny.charmSlow;
+      this.threat.base *= CONFIG.chaser.charmSlow;
       run.faintCharm = false;
     }
 
@@ -79,6 +79,9 @@ export class LevelScreen {
     this.tsotsiSeen = false;
     this.bottles = [];
     this.sushi = level.sushi.map((s) => ({ ...s, hit: false }));
+    // L5 hawker gauntlet: stalls/people in the road — contact = a stumble (not
+    // death), which lets the taxi close the gap. You weave/jump through them.
+    this.hawkers = (level.hawkers || []).map((h) => ({ ...h, hit: false, t: Math.random() * 4 }));
     this.props = level.props.map((p) => ({ ...p, fired: false, t: Math.random() * 5 }));
     this.tutorials = level.tutorials.map((t) => ({ ...t, fired: false }));
 
@@ -89,6 +92,9 @@ export class LevelScreen {
     this.respawnPoint = { x: level.spawn.x, y: level.spawn.y };
     this.ganjaUsed = false; // G: burn a life for an irie rush, once per level
     this.autoIrie = !!level.irieStart; // irie level: auto skin-up into the rush at the open
+    // L2 first visit only: instead of auto skin-up, hold on a "PRESS G" prompt so
+    // the player smokes the opening rush themselves (taught, not granted).
+    this.ganjaTut = (level.irieStart && opts.ganjaTut) ? { done: false } : null;
     this.time = 0;
     this.manoCollected = 0;
     this.deaths = 0;
@@ -126,6 +132,7 @@ export class LevelScreen {
     this.cleared = false;
     this.hitStopT = 0;
     this.glitchT = 0;
+    this.drunkFlashT = 0;   // bottle clonk -> screen swims drunk-yellow while it ticks down
     this.idleBarkAlt = false;
     this.fishWarned = false;
     this.stallDone = false;
@@ -174,6 +181,29 @@ export class LevelScreen {
   }
   killY() {
     return this.o === 'vertical' ? this.threat.topY + 40 : this.level.groundY + 70;
+  }
+
+  // ---- chaser signature hooks (called by the Chaser) ----
+  // L4 shebeen: lob a bottle that arcs ahead of Vaks and shatters into a
+  // babalas hazard on the ground (reuses the W1 bottle physics + collision).
+  spawnLobBottle(fromX, towardX) {
+    if (this.bottles.length >= CONFIG.bottles.maxActive) return;
+    const dir = towardX >= fromX ? 1 : -1;
+    const b = new Bottle(fromX + dir * 10, this.level.groundY - 26, dir);
+    b.vx = dir * CONFIG.chaser.shebeen.lobSpeed;
+    b.vy = -CONFIG.chaser.shebeen.lobUp;
+    this.bottles.push(b);
+    AudioManager.play('bottle_spawn', 'shebeen');
+  }
+
+  // L6 tsotsi: detach a fast runner that flanks up from behind. Reuses the
+  // Tsotsi grab (= phone snatch); it despawns once it drops off the left edge.
+  spawnFlankTsotsi(fromX) {
+    if (this.tsotsis.filter((t) => t.flank && !t.dead).length >= 2) return;
+    const t = new Tsotsi({ kind: 'knife', x: fromX, y: this.level.groundY, minX: fromX - 20, maxX: this.level.width - 40 });
+    t.flank = true;
+    this.tsotsis.push(t);
+    AudioManager.play('tsotsi_alert', 'flank');
   }
 
   // ---- live control drill (L1) ----
@@ -238,6 +268,23 @@ export class LevelScreen {
     AudioManager.play('hazard_warning', 'mist_rise');
     Barks.note('MIST RISING! CLIMB, BOSS!');
     this.shake(1.2);
+  }
+
+  // ---- ganja drill (L2 first visit) ----
+  // Holds the mist back while a "PRESS G" prompt teaches the irie rush. The
+  // moment Vaks smokes (G), it's the level's free opening rush (no life burned)
+  // and the climb is on. Returns true while it's holding.
+  updateGanjaTutorial() {
+    const T = this.ganjaTut;
+    if (!T || T.done) return false;
+    if (this.player.smoking || this.player.irie) { T.done = true; return false; }
+    if (Input.wasPressed('KeyG') && this.player.onGround && !this.player.climbing) {
+      T.done = true;
+      this.autoIrie = false;
+      this.startSkinUp(false);   // free opening rush, costs no life
+      return false;
+    }
+    return true;
   }
 
   // ---- tsotsi hooks (called by the entities) ----
@@ -383,7 +430,8 @@ export class LevelScreen {
 
     // the irie level opens with Vaks already skinning up — the rush is how you
     // start the climb, and it costs no life. Fires once, right after the intro.
-    if (this.autoIrie && !this.player.smoking && !this.player.irie) {
+    // (Held back on the first-visit ganja drill, where the player smokes it with G.)
+    if (this.autoIrie && !(this.ganjaTut && !this.ganjaTut.done) && !this.player.smoking && !this.player.irie) {
       this.autoIrie = false;
       this.startSkinUp(false);
     }
@@ -422,7 +470,9 @@ export class LevelScreen {
     // The irie rush lands when it's lit (onSmokeDone). Once per level, never
     // while already irie (burning a life to overstack is a trap), and his
     // feet must be planted (no rolling mid-air or on a ladder).
-    if (Input.wasPressed('KeyG') && !this.player.smoking) {
+    // (skipped while the L2 ganja drill is holding — there G is the free taught
+    // rush, handled by updateGanjaTutorial, so it must not burn a life here)
+    if (Input.wasPressed('KeyG') && !this.player.smoking && !(this.ganjaTut && !this.ganjaTut.done)) {
       const canBurn = !this.ganjaUsed && !this.player.irie && this.run.lives > 0;
       if (canBurn && this.player.onGround && !this.player.climbing && !this.player.grabbedBy) {
         this.startSkinUp(true);
@@ -458,8 +508,9 @@ export class LevelScreen {
       return;
     }
 
-    // live control drill (L1): Vaks plays for real but the mist is held back
-    const tutHold = this.updateLiveTutorial(dt);
+    // live control drill (L1) / ganja drill (L2): Vaks plays for real but the
+    // mist is held back while either prompt is up
+    const tutHold = this.updateLiveTutorial(dt) || this.updateGanjaTutorial(dt);
     if (!tutHold) this.threat.update(dt, this.player, this);
 
     // crumbling platforms (held while Vaks skins up so the ledge under his
@@ -497,6 +548,8 @@ export class LevelScreen {
       if (b.dead) { this.bottles.splice(i, 1); continue; }
       if (this.hitEntity(b.x - 5, b.y - 12, 10, 12) && this.player.invuln <= 0) {
         b.shatter();
+        AudioManager.play('glass_break', 'L' + this.level.id); // file is pre-trimmed (0.2s lead-in cut), so it cracks on impact with no seek lag
+        this.drunkFlashT = CONFIG.babalas.time;                     // screen swims drunk-yellow for the hangover
         if (this.player.hurt(b.x)) {
           // beer = babalas: slower and weaker until it wears off
           this.player.babalasT = CONFIG.babalas.time;
@@ -580,6 +633,7 @@ export class LevelScreen {
         }
       }
     }
+    this.tsotsis = this.tsotsis.filter((t) => !t.dead); // drop spent flank runners
     // the gunman's bullets: slow, straight, jumpable
     for (let i = this.tsotsiBullets.length - 1; i >= 0; i--) {
       const b = this.tsotsiBullets[i];
@@ -608,6 +662,18 @@ export class LevelScreen {
       }
     }
 
+    // L5 hawker gauntlet: bump a stall = a stumble (knockback + stun, no death),
+    // which costs you ground while the taxi closes. Jump/weave through them.
+    for (const h of this.hawkers) {
+      h.t += dt;
+      if (Math.abs(this.player.x - h.x) < 11 && this.player.y > this.level.groundY - 24 &&
+          this.player.invuln <= 0 && !this.player.irie && !this.player.smoking) {
+        if (!h.hit) { h.hit = true; Barks.note('AWE! MIND THE STALL, BOSS!'); }
+        this.player.hurt(h.x);
+        this.player.stun = CONFIG.sushi.stunTime;
+      }
+    }
+
     // pickups
     for (const pk of this.pickups) {
       if (pk.taken) continue;
@@ -622,7 +688,7 @@ export class LevelScreen {
         this.player.x > this.level.scriptedStallAt.x) {
       this.stallDone = true;
       this.threat.stall(5.0);
-      Barks.note('TALLMAN AND SHORTY STALL GRANNY OVER THEIR DEBTS. RUN!');
+      Barks.note('TALLMAN AND SHORTY STALL THE ' + this.threat.label + ' OVER THEIR DEBTS. RUN!');
     }
 
     // NPCs
@@ -690,6 +756,7 @@ export class LevelScreen {
       barkGlitch({ subtitle: true, speaker: 'VAKS', force: true });
     }
     if (this.glitchT > 0) this.glitchT -= dt;
+    if (this.drunkFlashT > 0) this.drunkFlashT -= dt;
 
     // threat catches (irie makes Vaks invincible, like debug invincibility)
     const invincible = this.debug.invincible || this.player.irie || this.player.smoking;
@@ -793,6 +860,7 @@ export class LevelScreen {
     for (const s of this.sushi) {
       if (cam.sees(s.x, s.y, 16)) draw(ctx, 'sushi', 0, s.x - 6, s.y - 7);
     }
+    this.drawHawkers(ctx, cam);
     this.player.draw(ctx);
     // grabbed: flashing mash prompt over the struggle
     if (this.player.grabbedBy && Math.floor(this.time * 6) % 2 === 0) {
@@ -806,9 +874,12 @@ export class LevelScreen {
     if (this.level.dark) this.drawDarkness(ctx, cam);
     if (this.player.irie) this.drawIrieTint(ctx);
     if (this.player.smoking) this.drawSmoke(ctx);
+    if (this.level.tint === 'drunk') this.drawDrunkTint(ctx);
+    else if (this.drunkFlashT > 0) this.drawDrunkTint(ctx, this.drunkFlashT);
 
     this.drawHUD(ctx);
     if (this.liveTut && !this.liveTut.done && this.introT <= 0) this.drawLiveTutorial(ctx);
+    if (this.ganjaTut && !this.ganjaTut.done && this.introT <= 0) this.drawGanjaTutorial(ctx);
     Barks.draw(ctx, cam);
 
     if (this.glitchT > 0) this.drawGlitch(ctx);
@@ -987,6 +1058,48 @@ export class LevelScreen {
     ctx.fillRect(0, View.h - 30 + wob, View.w, 30);
   }
 
+  // L4 shebeen: the whole street reads tipsy-yellow, deepening each time a
+  // drink-pusher forces a sip (babalas), with a slow vignette wobble. Also reused
+  // as a TRANSIENT flash elsewhere: pass the bottle-hit timer and the yellow
+  // peaks on impact and swims away as the hangover wears off.
+  drawDrunkTint(ctx, flash = 0) {
+    let a;
+    if (flash > 0) {
+      a = 0.3 * Math.min(1, flash / CONFIG.babalas.time);
+    } else {
+      const extra = this.player.babalasT > 0 ? Math.min(0.12, 0.06 + this.player.babalasT * 0.02) : 0;
+      a = 0.12 + extra;
+    }
+    ctx.fillStyle = `rgba(232,192,64,${a})`;
+    ctx.fillRect(0, 0, View.w, View.h);
+    const wob = Math.sin(performance.now() / 320) * 8;
+    ctx.fillStyle = `rgba(176,118,28,${a * 0.5})`;
+    ctx.fillRect(0, 0, View.w, 26 + wob);
+    ctx.fillRect(0, View.h - 26 + wob, View.w, 26);
+  }
+
+  // L5 hawker stalls — red/white stand, wares on a table, a hawker behind
+  drawHawkers(ctx, cam) {
+    for (const h of this.hawkers) {
+      if (!cam.sees(h.x, h.y, 44)) continue;
+      const x = Math.round(h.x), y = Math.round(h.y);
+      // table + legs
+      ctx.fillStyle = '#6a4a30'; ctx.fillRect(x - 12, y - 16, 24, 4);
+      ctx.fillStyle = '#3f2e1c'; ctx.fillRect(x - 11, y - 12, 3, 12); ctx.fillRect(x + 8, y - 12, 3, 12);
+      // wares
+      ctx.fillStyle = '#d05a4a'; ctx.fillRect(x - 9, y - 20, 4, 4);
+      ctx.fillStyle = '#e0b84a'; ctx.fillRect(x - 2, y - 20, 4, 4);
+      ctx.fillStyle = '#5a9a5a'; ctx.fillRect(x + 5, y - 20, 4, 4);
+      // umbrella/cover + pole
+      ctx.fillStyle = '#c84040'; ctx.fillRect(x - 16, y - 40, 32, 4);
+      ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x - 16, y - 40, 32, 1);
+      ctx.fillStyle = '#2c2c3a'; ctx.fillRect(x - 1, y - 38, 2, 22);
+      // the hawker behind the stand
+      ctx.fillStyle = '#7a5a3a'; ctx.fillRect(x - 3, y - 30, 6, 14);
+      ctx.fillStyle = '#2a1f14'; ctx.fillRect(x - 3, y - 34, 6, 5);
+    }
+  }
+
   drawGlitch(ctx) {
     for (let i = 0; i < 7; i++) {
       const y = Math.random() * View.h, h = 2 + Math.random() * 5;
@@ -1053,8 +1166,8 @@ export class LevelScreen {
       ctx.fillStyle = col;
       const fw = Math.round(w * (1 - frac));
       ctx.fillRect(View.w / 2 - w / 2 + (w - fw), gy + 1, fw, 6);
-      drawText(ctx, 'GOGO', View.w / 2 - w / 2 - 26, gy + 1, { color: col });
-      if (this.threat.state === 'faint') drawText(ctx, 'GOGO IS RESTING...', View.w / 2, gy + 11, { color: '#8ae08a', align: 'center' });
+      drawText(ctx, this.threat.label || 'CHASER', View.w / 2 - w / 2 - 30, gy + 1, { color: col });
+      if (this.threat.state === 'stalled') drawText(ctx, 'STALLED!', View.w / 2, gy + 11, { color: '#8ae08a', align: 'center' });
     }
 
     if (this.threat.frozen) drawText(ctx, 'THREAT FROZEN', View.w / 2, 24, { color: '#7fd0ff', align: 'center' });
@@ -1081,6 +1194,21 @@ export class LevelScreen {
     const allOk = T.steps.every((s) => s.ok);
     const msg = allOk ? 'ENTER: START NOW   ' + secs : 'MIST RISES IN ' + secs;
     drawText(ctx, msg, View.w / 2, y + h - 8, { color: secs <= 5 ? '#ff5a5a' : '#7fd0ff', align: 'center' });
+  }
+
+  drawGanjaTutorial(ctx) {
+    const w = 320, h = 64, x = Math.round(View.w / 2 - w / 2), y = 40;
+    ctx.fillStyle = 'rgba(10,12,20,0.74)';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(138,224,138,0.6)';
+    ctx.fillRect(x, y, w, 1);
+    drawText(ctx, 'THE WEED BIOME', View.w / 2, y + 6, { color: '#ffe49a', align: 'center' });
+    drawText(ctx, 'GANJA SLOWS THE WORLD AND POWERS THE LEGS.', View.w / 2, y + 20, { color: '#f4f0e0', align: 'center' });
+    drawText(ctx, 'YOU NEED THE RUSH TO CLIMB. (FREE HERE - NO LIFE.)', View.w / 2, y + 32, { color: '#8a93b8', align: 'center' });
+    // pulsing call to action
+    if (Math.floor(this.time * 2) % 2 === 0) {
+      drawText(ctx, 'PRESS G TO SKIN UP', View.w / 2, y + h - 11, { color: '#8ae08a', scale: 2, align: 'center' });
+    }
   }
 
   drawIntroCard(ctx) {

@@ -10,7 +10,7 @@
 export const CUTSCENES = {
 
   cold_open: {
-    id: 'cold_open', name: 'COLD OPEN', music: 'world1', bg: 'cave_floor', noSkip: true,
+    id: 'cold_open', name: 'COLD OPEN', music: 'darkcave', bg: 'cave_floor', noSkip: true,
     actors: {
       vaks: { sheet: 'vaks_sleep', anim: 'loop', x: 210, y: 218, flip: false },
     },
@@ -43,7 +43,7 @@ export const CUTSCENES = {
   },
 
   doubt1: {
-    id: 'doubt1', name: 'DOUBT I', music: 'world1', bg: 'cave_deep',
+    id: 'doubt1', name: 'DOUBT I', music: 'darkcave', bg: 'cave_deep',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 220, y: 220, flip: false },
       tiko: { sheet: 'tiko', anim: 'loop', x: 420, y: 250, flip: true },
@@ -61,7 +61,7 @@ export const CUTSCENES = {
   },
 
   doubt2: {
-    id: 'doubt2', name: 'DOUBT II', music: 'world1', bg: 'cave_ganja',
+    id: 'doubt2', name: 'DOUBT II', music: 'darkcave', bg: 'cave_ganja',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 230, y: 220, flip: false },
       tiko: { sheet: 'tiko_irie', anim: 'loop', x: 60, y: 200, flip: false, faceOverlay: 'face_vaks' },
@@ -98,7 +98,7 @@ export const CUTSCENES = {
   },
 
   boss_resolve: {
-    id: 'boss_resolve', name: "IT'S LIKE THE WIND", music: 'ending', bg: 'cave_mouth_dawn',
+    id: 'boss_resolve', name: "IT'S LIKE THE WIND", music: 'ascend', bg: 'cave_mouth_dawn',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 350, y: 226, flip: true },
       big: { sheet: 'tiko_big', anim: 'loop', x: 110, y: 238, flip: true, scale: 3 },
@@ -122,30 +122,38 @@ export const CUTSCENES = {
   },
 
   chase_begins: {
-    id: 'chase_begins', name: 'THE CHASE BEGINS', music: 'world2', bg: 'ridge',
+    // Township Scent plays the whole scene (Township Riddem takes over in L4-L6).
+    // Granny NEVER shows up in person — she
+    // strikes through the family WhatsApp group: Shorty, then Tallman, then GOGO,
+    // whose message fires alert.mp3 and shakes the screen. Then it's a runner.
+    id: 'chase_begins', name: 'ONE FOR THE ROAD', music: 'township', bg: 'ridge',
     actors: {
-      vaks: { sheet: 'vaks', anim: 'run', x: -20, y: 230, flip: false },
-      granny: { sheet: 'granny', anim: 'idle', x: 520, y: 224, flip: true },
+      vaks:  { sheet: 'vaks', anim: 'idle', x: 210, y: 230, flip: false },
+      imo:   { sheet: 'imo', anim: 'idle', x: 60, y: 233, flip: false },   // the small boy
+      masi:  { sheet: 'masi', anim: 'idle', x: 108, y: 232, flip: false },  // the fat one
+      rasta: { sheet: 'rasta', anim: 'idle', x: 314, y: 232, flip: true },  // dreads + tam
     },
     steps: [
       ['letterbox', true],
       ['fade', 'in', 1.0],
-      ['move', 'vaks', 150, 228, 1.2],
-      ['anim', 'vaks', 'celeb'],
-      ['say', 'vaks', 'SURFACE! FRESH AIR! YHO, WHAT A DAY!'],
-      ['anim', 'vaks', 'idle'],
-      ['say', 'vaks', 'WAIT. SUN IS ALREADY UP. WHAT TIME IS IT? I AM FINISHED.'],
-      ['move', 'granny', 420, 222, 1.0],
-      ['anim', 'granny', 'stare'],
-      ['shake', 1.5],
-      ['note', 'ON THE RIDGE: GRANNY SPYING.'],
-      ['say', 'granny', 'm_granny_spy'],
-      ['wait', 0.3],
-      ['say', 'vaks', 'm_coming_boss'],
+      ['note', 'OUT THE CAVE, STRAIGHT INTO THE DRUNK CREW: MASI, IMO AND RASTA.'],
+      ['say', 'masi', 'EYTA VAKS! YOU MADE IT OUT, MY BRA! SIT, DRINK OUR ZAMALEKS, MWAHAHA!'],
+      ['say', 'rasta', 'IRIE, BREDREN... DOWN THIS VICEROY WITH I AND I. JAH BLESS.'],
+      ['say', 'imo', 'CAN I HEV SAVANA, BHUTI VAKS? AND NDICELA KFC!'],
+      ['say', 'vaks', "NO MAN, BOSS... MY GOGO IS WAITING. SHE'S GONNA MOER ME."],
+      ['say', 'masi', 'AG, VIVO VICEROY! JUST ONE SIP, MY BRA. RELAX.'],
+      ['say', 'vaks', 'WAIT... LET ME JUST CHECK MY PHONE QUICK.'],
+      // the family group blows up
+      ['phone', true],
+      ['chat', 'sys', "IT'S FRIDAY!"],
+      ['chat', 'shorty', 'WHERE IS MY BOSS?'],
+      ['chat', 'tallman', 'YOU MUST KNOW'],
+      ['chat', 'granny', "I'M GONNA BEAT YOU", 'alert'],
+      ['wait', 0.9],
+      ['phone', false],
+      ['say', 'vaks', "HAIBO! GOGO IS ON THE GROUP! SHE KNOWS! I'M FINISHED... I MUST RUN!"],
       ['anim', 'vaks', 'run'],
-      ['move', 'vaks', 520, 228, 1.0],
-      ['anim', 'granny', 'run'],
-      ['move', 'granny', 560, 224, 1.2],
+      ['move', 'vaks', 540, 228, 1.0],
       ['fade', 'out', 0.7],
     ],
   },
@@ -187,7 +195,7 @@ export const CUTSCENES = {
   },
 
   granny_corner: {
-    id: 'granny_corner', name: 'CORNERED AT THE PLAAS', music: 'world2', bg: 'garden',
+    id: 'granny_corner', name: 'CORNERED AT THE PLAAS', music: 'level1', bg: 'garden',
     actors: {
       vaks: { sheet: 'vaks', anim: 'run', x: -20, y: 252, flip: false },
       granny: { sheet: 'granny', anim: 'run', x: 540, y: 248, flip: true },
@@ -209,7 +217,7 @@ export const CUTSCENES = {
   },
 
   granny_outro: {
-    id: 'granny_outro', name: 'GOGO IS SATISFIED', music: 'ending', bg: 'garden',
+    id: 'granny_outro', name: 'GOGO IS SATISFIED', music: 'level1', bg: 'garden',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 200, y: 252, flip: false },
       granny: { sheet: 'granny', anim: 'idle', x: 320, y: 248, flip: true },
@@ -242,4 +250,7 @@ export const SPEAKERS = {
   shopkeeper: { face: 'face_shop', name: 'SHOPKEEPER' },
   tallman: { face: 'face_tallman', name: 'TALLMAN' },
   shorty: { face: 'face_shorty', name: 'SHORTY' },
+  masi: { face: 'face_masi', name: 'MASI' },
+  imo: { face: 'face_imo', name: 'IMO' },
+  rasta: { face: 'face_rasta', name: 'RASTA' },
 };

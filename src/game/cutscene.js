@@ -6,7 +6,7 @@
 // content lives in src/data/cutscenes.js.
 // ============================================================
 
-import { View, dimScreen, panel } from '../engine/render.js';
+import { View, dimScreen, panel, roundedRect } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText, wrapText, textWidth, LINE_H } from '../engine/font.js';
 import { draw, drawImoHead, spr, PHOTO_FACES, VAKS, GRANNY } from '../engine/sprites.js';
@@ -16,6 +16,14 @@ import { AudioManager, Barks } from '../systems/audio.js';
 import { CUTSCENES, SPEAKERS } from '../data/cutscenes.js';
 
 function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
+
+// who's who in the WhatsApp-style family group chat (the 'phone'/'chat' steps)
+const CHAT_SENDERS = {
+  vaks:    { name: 'VAKS',    color: '#8ae08a', bubble: '#103a26' },
+  shorty:  { name: 'SHORTY',  color: '#7fd0ff', bubble: '#202c33' },
+  tallman: { name: 'TALLMAN', color: '#c0a6ff', bubble: '#202c33' },
+  granny:  { name: 'GOGO',    color: '#ff8a8a', bubble: '#41232a' },
+};
 
 function resolveFrames(sheet, anim) {
   if (sheet === 'vaks') {
@@ -28,6 +36,7 @@ function resolveFrames(sheet, anim) {
     if (anim === 'stare') return { frames: [GRANNY.stare], fps: 1 };
     return { frames: [GRANNY.idle], fps: 1 };
   }
+  if (sheet.startsWith('tsotsi_')) return { frames: [0, 1, 2, 1], fps: 4 }; // skip stun/arm frames
   const n = spr(sheet) ? spr(sheet).n : 1;
   const fr = [];
   for (let i = 0; i < n; i++) fr.push(i);
@@ -53,6 +62,7 @@ export class CutsceneScreen {
     this.shakeT = 0; this.shakeMag = 0;
     this.dialogue = null;
     this.fx = null;
+    this.phone = null; // WhatsApp-style group chat overlay (see 'phone'/'chat' steps)
     this.sushiPs = [];
     this.dawnT = 0;
     this.flashback = false;
@@ -133,10 +143,33 @@ export class CutsceneScreen {
         this.waitFor = Infinity;
         break;
       }
+      case 'sfx': AudioManager.play(a, b || ''); this.nextStep(); break;
+      case 'phone':
+        if (a) { this.phone = { msgs: [], t: 0 }; this.waitFor = 0.55; } // pop-in beat
+        else { this.phone = null; this.nextStep(); }
+        break;
+      case 'chat': {
+        // a = sender id ('sys' = centred date chip), b = text, c = fx ('alert')
+        if (!this.phone) this.phone = { msgs: [], t: 0 };
+        this.phone.msgs.push({ sender: a, text: b, t: 0 });
+        if (c === 'alert') { AudioManager.play('alert'); this.shakeT = 0.5; this.shakeMag = 3; }
+        // pace messages so they land one at a time (Enter still can't rush a phone)
+        this.waitFor = a === 'sys' ? 0.7 : Math.min(2.4, 1.0 + b.length * 0.045);
+        break;
+      }
+      case 'voice_at': {
+        // fire a Vaks voice note from `c` seconds in and keep going — the scene
+        // marches on and stopVoice() (on the next M.replace) cuts it at scene end
+        const vaText = Barks.quote(b, undefined, c || 0);
+        const vaSp = SPEAKERS[a] || { face: 'face_vaks', name: a.toUpperCase() };
+        Barks.note(vaText, vaSp.name);
+        this.nextStep();
+        break;
+      }
       case 'bgset': this.bg = a; this.nextStep(); break;
       case 'flash': this.flashA = 1; this.flashColor = a; this.waitFor = b || 0.3; break;
       case 'shake': this.shakeT = 0.45; this.shakeMag = a; this.nextStep(); break;
-      case 'music': AudioManager.playMusic(a); this.nextStep(); break;
+      case 'music': if (a) AudioManager.playMusic(a); else AudioManager.stopMusic(); this.nextStep(); break;
       case 'smash':
         this.flashA = 1; this.flashColor = '#ffffff';
         this.bg = a;
@@ -253,6 +286,11 @@ export class CutsceneScreen {
       return p.y < View.h + 16;
     });
 
+    if (this.phone) {
+      this.phone.t += dt;
+      for (const m of this.phone.msgs) m.t += dt;
+    }
+
     Particles.update(dt);
     Barks.update(dt);
 
@@ -318,6 +356,9 @@ export class CutsceneScreen {
     ctx.fillRect(0, 0, View.w, lb);
     ctx.fillRect(0, View.h - lb, View.w, lb);
 
+    // phone group-chat overlay (sits above the scene, below dialogue)
+    if (this.phone) this.drawPhone(ctx);
+
     // dialogue box
     if (this.dialogue) this.drawDialogue(ctx);
 
@@ -358,6 +399,71 @@ export class CutsceneScreen {
     }
 
     if (!(this.dialogue && this.dialogue.locked)) drawText(ctx, 'ENTER: NEXT', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
+  }
+
+  // Vaks pulls up the family group on his phone. WhatsApp-ish: dark screen,
+  // green header, incoming bubbles per sender, a date chip for 'sys' lines.
+  drawPhone(ctx) {
+    const ph = this.phone;
+    const pop = Math.min(1, ph.t * 5);
+    const w = 150, h = 210;
+    let px = Math.round((View.w - w) / 2);
+    let py = Math.round((View.h - h) / 2);
+    if (this.shakeT > 0) { // granny's message rattles the handset
+      px += Math.round((Math.random() * 2 - 1) * this.shakeMag);
+      py += Math.round((Math.random() * 2 - 1) * this.shakeMag);
+    }
+    dimScreen(ctx, 0.5 * pop);
+
+    roundedRect(ctx, px - 3, py - 3, w + 6, h + 6, '#05060a'); // bezel
+    roundedRect(ctx, px, py, w, h, '#0b141a');                 // screen (wa dark)
+
+    // header
+    const hb = 18;
+    ctx.fillStyle = '#1f3d36'; ctx.fillRect(px, py, w, hb);
+    R(ctx, px + 5, py + 5, 8, 8, '#3a6b5f');                   // group avatar
+    R(ctx, px + 6, py + 6, 6, 3, '#cfe9df');
+    drawText(ctx, 'FAMILY GROUP', px + 17, py + 4, { color: '#eafff5' });
+    drawText(ctx, 'GOGO, TALLMAN, SHORTY, +3', px + 17, py + 11, { color: '#7fae9f' });
+
+    // messages
+    let cy = py + hb + 6;
+    for (const m of ph.msgs) cy = this.drawChatMsg(ctx, m, px, cy, w);
+
+    // input bar
+    ctx.fillStyle = '#111b21'; ctx.fillRect(px, py + h - 14, w, 14);
+    roundedRect(ctx, px + 4, py + h - 12, w - 26, 10, '#2a3942');
+    drawText(ctx, 'MESSAGE', px + 7, py + h - 10, { color: '#5a6b73' });
+    R(ctx, px + w - 18, py + h - 12, 10, 10, '#21c063');       // send
+    drawText(ctx, '>', px + w - 15, py + h - 10, { color: '#0b141a' });
+  }
+
+  drawChatMsg(ctx, m, px, cy, w) {
+    const inA = Math.min(1, m.t * 6); // fade/slide in
+    if (m.sender === 'sys') {
+      const tw = textWidth(m.text) + 10;
+      const cx = Math.round(px + (w - tw) / 2);
+      roundedRect(ctx, cx, cy, Math.round(tw), 9, '#16242c');
+      drawText(ctx, m.text, px + w / 2, cy + 1, { color: '#9ab0a8', align: 'center' });
+      return cy + 14;
+    }
+    const meta = CHAT_SENDERS[m.sender] || { name: m.sender.toUpperCase(), color: '#cfe9df', bubble: '#202c33' };
+    const maxBW = w - 16;
+    const lines = wrapText(m.text, maxBW - 8);
+    let tw = textWidth(meta.name);
+    for (const l of lines) tw = Math.max(tw, textWidth(l));
+    const bw = Math.min(maxBW, tw + 8);
+    const bh = 10 + lines.length * LINE_H + 2;
+    const slide = Math.round((1 - inA) * 4);
+    const bx = px + 6;
+    ctx.globalAlpha = inA;
+    roundedRect(ctx, bx, cy + slide, bw, bh, meta.bubble);
+    drawText(ctx, meta.name, bx + 3, cy + slide + 2, { color: meta.color });
+    for (let i = 0; i < lines.length; i++) {
+      drawText(ctx, lines[i], bx + 3, cy + slide + 10 + i * LINE_H, { color: '#eaf2ee' });
+    }
+    ctx.globalAlpha = 1;
+    return cy + bh + 4;
   }
 
   drawDialogue(ctx) {

@@ -57,7 +57,9 @@ export class Player {
   }
   speedScale() {
     const base = this.babalas ? CONFIG.babalas.speedMul : 1;
-    return base * (this.hats().chiefs ? CONFIG.hats.chiefs.speedMul : 1);
+    // L4 (the shebeen): Vaks is tipsy the whole level, a notch slower
+    const tipsy = this.level.tipsyMul || 1;
+    return base * tipsy * (this.hats().chiefs ? CONFIG.hats.chiefs.speedMul : 1);
   }
 
   hitbox() {

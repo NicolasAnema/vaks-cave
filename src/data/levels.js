@@ -181,11 +181,15 @@ function buildVertical(o) {
 function buildHorizontal(o) {
   const r = rng(o.seed);
   const G = 232, H = 270, W = o.length;
-  const J2 = jumpStats(CONFIG.player.runSpeed);
+  // L4 (the shebeen) plays the whole level tipsy-slow, so size its jumps/gaps to
+  // that reduced run speed — the same effective speed verify.js proves against.
+  const tipsyMul = o.tipsyMul || 1;
+  const runEff = CONFIG.player.runSpeed * tipsyMul;
+  const J2 = jumpStats(runEff);
   const maxGap = Math.floor(J2.maxJumpDist * 0.72);
 
   const grounds = [], platforms = [], pickups = [], rats = [], sushi = [],
-        props = [], npcs = [], checkpoints = [], tutorials = [], tsotsis = [];
+        props = [], npcs = [], checkpoints = [], tutorials = [], tsotsis = [], hawkers = [];
 
   let gx = 0;       // current ground segment start
   let x = 340;      // build cursor (first stretch is safe)
@@ -224,6 +228,18 @@ function buildHorizontal(o) {
         placed.add(key);
         tsotsis.push({ kind: tp.kind, x: Math.round(x + 70), y: G, minX: Math.round(x + 16), maxX: Math.round(x + 150) });
         x += 190; didPlace = true; break;
+      }
+    }
+    if (didPlace) continue;
+    // L5 hawker gauntlet: a short run of stalls you weave/jump through
+    for (const hf of (o.hawkerPlan || [])) {
+      const key = 'h' + hf;
+      if (!placed.has(key) && frac >= hf) {
+        placed.add(key);
+        const count = 2 + Math.floor(r() * 2); // 2-3 stalls in a row
+        let hxx = x + 36;
+        for (let i = 0; i < count; i++) { hawkers.push({ x: Math.round(hxx), y: G }); hxx += 42 + Math.round(r() * 22); }
+        x = Math.round(hxx) + 34; didPlace = true; break;
       }
     }
     if (didPlace) continue;
@@ -315,8 +331,10 @@ function buildHorizontal(o) {
     width: W, height: H, theme: 'plat_w2', groundY: G, dark: false,
     bottles: false, introTiko: false,
     music: 'world2',
+    tint: o.tint || null,        // 'drunk' -> yellow tipsy overlay (L4)
+    tipsyMul: tipsyMul,          // < 1 slows Vaks for the whole level (L4)
     platforms, ladders: [], pickups, rats, tikos: [], lanterns: [], checkpoints, tutorials,
-    walls: [], grounds, sushi, props, npcs, tsotsis,
+    walls: [], grounds, sushi, props, npcs, tsotsis, hawkers,
     scriptedStallAt: stallX != null ? { x: stallX } : null,
     spawn, exit,
   };
@@ -428,59 +446,80 @@ export const LEVELS = [
     decoyFrac: 0.12, crumbleDecoy: 0.6, crumbleMain: 0.55,
     weedFracs: [0.55],
     ratFracs: [0.16, 0.3, 0.42, 0.56, 0.7, 0.84],
-    shadowFracs: [0.2, 0.34, 0.48, 0.6, 0.74, 0.88], irieFracs: [],
+    shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'TOO DARK FOR PEOPLE EYES. GOOD THING VAKS HAS CAT EYES.' },
       { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS AND THE TIKOLOSH HUNT IN THE DARK. MEOW (M) OFTEN TO KEEP THEM BACK!' },
     ],
   }),
   buildHorizontal({
-    id: 4, seed: 4404, name: 'TOWNSHIP OUTSKIRTS', tagline: "I'M COMING BOSS, I'M COMING BOSS",
-    length: 3400,
-    gap: [40, 64], gapFrac: 0.28, sushiFrac: 0.2, ratFrac: 0.16,
-    tsotsiPlan: [ { frac: 0.24, kind: 'knife' }, { frac: 0.5, kind: 'gun' }, { frac: 0.74, kind: 'viceroy' } ],
+    // L4 THE SHEBEEN: the drink crew chases Vaks to make him buy a round. He's
+    // tipsy the whole level (yellow + slow); drink-pushers force a sip (babalas)
+    // and pickpockets grab his mano. The crew lobs bottles ahead of him.
+    id: 4, seed: 4404, name: 'ONE FOR THE ROAD', tagline: 'JUST ONE, BOSS. JUST ONE...',
+    length: 3400, tint: 'drunk', tipsyMul: 0.85,
+    gap: [40, 60], gapFrac: 0.26, sushiFrac: 0.16, ratFrac: 0.14,
+    tsotsiPlan: [
+      { frac: 0.22, kind: 'viceroy' }, { frac: 0.4, kind: 'knife' }, { frac: 0.56, kind: 'viceroy' },
+      { frac: 0.72, kind: 'knife' }, { frac: 0.86, kind: 'viceroy' },
+    ],
     overpassPlan: [ { frac: 0.62, len: 3, kind: 'knife' } ],
-    weedFracs: [0.5],
+    weedFracs: [0.46],
     propPlan: [
       { kind: 'school', frac: 0.22 }, { kind: 'washing', frac: 0.42 },
       { kind: 'taxi', frac: 0.56 }, { kind: 'washing', frac: 0.78 },
     ],
     tutorials: (spawn, G) => [
-      { x: spawn.x - 40, y: G - 70, w: 240, h: 70, text: "RUN RIGHT! GRANNY IS COMING. DON'T STOP." },
-      { x: spawn.x + 320, y: G - 70, w: 260, h: 70, text: 'TSOTSIS AHEAD: IF ONE GRABS YOU, MASH ARROWS TO BREAK FREE. OR JUMP ON THEM.' },
+      { x: spawn.x - 40, y: G - 70, w: 250, h: 70, text: "RUN RIGHT! THE CREW WANTS YOU TO BUY A ROUND. DON'T STOP." },
+      { x: spawn.x + 320, y: G - 70, w: 270, h: 70, text: 'DRINK-PUSHERS FORCE A SIP (BABALAS). PICKPOCKETS GRAB YOUR MANO. DODGE OR JUMP THEM!' },
     ],
   }),
   buildHorizontal({
-    id: 5, seed: 5505, name: 'KASI MAIN STREET', tagline: 'EVERY TUESDAY',
+    // L5 MAIN STREET: a reckless minibus taxi tears down the road trying to
+    // scoop Vaks up — it HONKS, then horn-dashes. Gunmen hold the corners and a
+    // gauntlet of hawker stalls clogs the road (jump them or stumble).
+    id: 5, seed: 5505, name: 'KASI MAIN STREET', tagline: 'EVERY TUESDAY, A TAXI',
     length: 4200,
-    gap: [50, 76], gapFrac: 0.3, sushiFrac: 0.24, ratFrac: 0.18,
+    gap: [50, 76], gapFrac: 0.28, sushiFrac: 0.18, ratFrac: 0.14,
     tsotsiPlan: [
-      { frac: 0.16, kind: 'knife' }, { frac: 0.34, kind: 'gun' }, { frac: 0.5, kind: 'viceroy' },
-      { frac: 0.66, kind: 'knife' }, { frac: 0.82, kind: 'gun' },
+      { frac: 0.14, kind: 'gun' }, { frac: 0.32, kind: 'knife' }, { frac: 0.52, kind: 'gun' },
+      { frac: 0.78, kind: 'gun' },
     ],
-    overpassPlan: [ { frac: 0.26, len: 3, kind: 'gun' }, { frac: 0.72, len: 4, kind: 'viceroy' } ],
-    weedFracs: [0.6],
+    hawkerPlan: [0.22, 0.46, 0.7],
+    overpassPlan: [ { frac: 0.26, len: 3, kind: 'gun' }, { frac: 0.72, len: 4, kind: 'knife' } ],
+    weedFracs: [0.58],
     scriptedStallAt: 0.64,
     propPlan: [
       { kind: 'taxi', frac: 0.16 }, { kind: 'tv', frac: 0.28 },
       { kind: 'payphone', frac: 0.46 }, { kind: 'billboard', frac: 0.58 },
       { kind: 'washing', frac: 0.4 }, { kind: 'washing', frac: 0.72 }, { kind: 'taxi', frac: 0.86 },
     ],
+    tutorials: (spawn, G) => [
+      { x: spawn.x - 40, y: G - 70, w: 250, h: 70, text: 'TAXI ON YOUR TAIL! WHEN IT HONKS, IT DASHES. KEEP RUNNING!' },
+      { x: spawn.x + 360, y: G - 70, w: 250, h: 70, text: 'HAWKER STALLS BLOCK THE ROAD. JUMP THEM OR STUMBLE.' },
+    ],
   }),
   buildHorizontal({
-    id: 6, seed: 6606, name: 'HOME STRETCH', tagline: 'EK IS DIE BAAS VAN DIE PLAAS',
+    // L6 HOME STRETCH: the tsotsi crew is after his phone. Knife snatchers
+    // everywhere (grab = PHONE SNATCH, mash to keep it), gunmen on the corners,
+    // and the crew chaser keeps flanking fast runners up from behind.
+    id: 6, seed: 6606, name: 'HOME STRETCH', tagline: 'NOT MY PHONE, BOSS!',
     length: 5000,
-    gap: [60, 86], gapFrac: 0.34, sushiFrac: 0.27, ratFrac: 0.2,
+    gap: [60, 86], gapFrac: 0.32, sushiFrac: 0.22, ratFrac: 0.18,
     tsotsiPlan: [
-      { frac: 0.12, kind: 'knife' }, { frac: 0.26, kind: 'gun' }, { frac: 0.38, kind: 'viceroy' },
-      { frac: 0.5, kind: 'gun' }, { frac: 0.62, kind: 'knife' }, { frac: 0.74, kind: 'viceroy' },
+      { frac: 0.12, kind: 'knife' }, { frac: 0.26, kind: 'gun' }, { frac: 0.38, kind: 'knife' },
+      { frac: 0.5, kind: 'knife' }, { frac: 0.62, kind: 'gun' }, { frac: 0.74, kind: 'knife' },
       { frac: 0.86, kind: 'gun' },
     ],
-    overpassPlan: [ { frac: 0.3, len: 4, kind: 'gun' }, { frac: 0.66, len: 5, kind: 'knife' } ],
+    overpassPlan: [ { frac: 0.3, len: 4, kind: 'knife' }, { frac: 0.66, len: 5, kind: 'gun' } ],
     weedFracs: [],
     propPlan: [
       { kind: 'school', frac: 0.24 }, { kind: 'tv', frac: 0.48 },
       { kind: 'taxi', frac: 0.66 }, { kind: 'washing', frac: 0.3 }, { kind: 'washing', frac: 0.8 },
+    ],
+    tutorials: (spawn, G) => [
+      { x: spawn.x - 40, y: G - 70, w: 260, h: 70, text: 'TSOTSIS WANT YOUR PHONE! IF GRABBED, MASH TO KEEP IT.' },
+      { x: spawn.x + 360, y: G - 70, w: 250, h: 70, text: 'RUNNERS FLANK FROM BEHIND. JUMP ON THEM OR OUTRUN THEM.' },
     ],
   }),
 ];

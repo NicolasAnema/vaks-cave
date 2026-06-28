@@ -331,6 +331,60 @@ function drawShorty(g, p = {}) {
 }
 
 // ============================================================
+// THE SHEBEEN CREW — the drunk Friday trio who try to get Vaks to
+// drink (chase_begins cutscene). All red-eyed and tipsy: Masi (fat),
+// Imo (a small boy), and Rasta (dreads + a rasta tam). Face right.
+// ============================================================
+const RED_EYE = '#ef3b3b';
+
+function drawMasi(g, p = {}) {           // big, jovial, quart in hand (cell 21x42)
+  const bob = p.bob | 0, skin = '#8a5a3a', vest = '#c2683a', vestD = '#9c4e2a';
+  R(g, 5, 33, 4, 7, '#33323e'); R(g, 12, 33, 4, 7, '#33323e');           // stout legs
+  R(g, 4, 39, 5, 2, '#1c1c26'); R(g, 12, 39, 5, 2, '#1c1c26');
+  R(g, 2, 15 + bob, 17, 19, vest); R(g, 2, 15 + bob, 1, 19, vestD);      // round belly
+  R(g, 3, 29 + bob, 15, 2, vestD);                                       // belly fold
+  R(g, 0, 17 + bob, 3, 11, skin); R(g, 18, 17 + bob, 3, 11, skin);       // thick arms
+  R(g, 18, 24 + bob, 3, 7, '#2f6a3f'); R(g, 19, 22 + bob, 1, 3, '#cdb36a'); // quart
+  R(g, 5, 5 + bob, 11, 10, skin); R(g, 5, 3 + bob, 11, 3, '#1a140f');    // round head + hair
+  R(g, 6, 14 + bob, 9, 2, '#7a4f30');                                    // double chin
+  R(g, 7, 9 + bob, 2, 2, RED_EYE); R(g, 12, 9 + bob, 2, 2, RED_EYE);     // red drunk eyes
+  R(g, 6, 11 + bob, 1, 1, vest); R(g, 14, 11 + bob, 1, 1, vest);         // flushed cheeks
+  R(g, 9, 12 + bob, 3, 1, '#5a3520');                                    // grin
+}
+
+function drawImo(g, p = {}) {            // small boy, oversized soccer shirt (cell 14x24)
+  const bob = p.bob | 0, skin = '#7a5232';
+  R(g, 3, 18, 2, 5, '#3a4a6a'); R(g, 8, 18, 2, 5, '#3a4a6a');           // skinny legs
+  R(g, 2, 22, 4, 2, '#1c1c26'); R(g, 7, 22, 4, 2, '#1c1c26');
+  R(g, 1, 9 + bob, 11, 9, '#d2a23a'); R(g, 1, 9 + bob, 1, 9, '#a87f28');// baggy shirt
+  R(g, 5, 9 + bob, 1, 9, '#a87f28');                                     // stripe
+  R(g, 0, 10 + bob, 1, 6, skin); R(g, 12, 10 + bob, 1, 6, skin);        // thin arms
+  R(g, 12, 13 + bob, 2, 5, '#2f6a3f');                                   // little bottle
+  R(g, 2, 1 + bob, 9, 9, skin); R(g, 2, 0 + bob, 9, 2, '#1a140f');      // big kid head + hair
+  R(g, 4, 4 + bob, 2, 2, RED_EYE); R(g, 8, 4 + bob, 2, 2, RED_EYE);     // big red eyes
+  R(g, 5, 7 + bob, 3, 1, '#5a3520');                                    // grin
+}
+
+function drawRasta(g, p = {}) {          // dreads + rasta tam, mellow (cell 18x42)
+  const bob = p.bob | 0, skin = '#6e4a2c', lock = '#241509';
+  R(g, 5, 34, 3, 7, '#3a3a2a'); R(g, 10, 34, 3, 7, '#3a3a2a');          // legs
+  R(g, 4, 40, 4, 2, '#1c1c26'); R(g, 10, 40, 4, 2, '#1c1c26');
+  R(g, 4, 16 + bob, 10, 18, '#3a7a3a'); R(g, 4, 16 + bob, 1, 18, '#2c5e2e'); // green shirt
+  R(g, 7, 16 + bob, 1, 18, '#d23a3a'); R(g, 9, 16 + bob, 1, 18, '#e2b83a'); R(g, 11, 16 + bob, 1, 18, '#e6e6e6'); // rasta stripes
+  R(g, 2, 18 + bob, 2, 11, '#2c5e2e'); R(g, 14, 18 + bob, 2, 11, '#2c5e2e'); // arms
+  // dreadlocks hanging down the sides + back
+  R(g, 2, 9 + bob, 2, 15, lock); R(g, 14, 9 + bob, 2, 17, lock);
+  R(g, 1, 13 + bob, 1, 9, lock); R(g, 16, 15 + bob, 1, 8, lock);
+  R(g, 4, 19 + bob, 1, 6, lock); R(g, 13, 21 + bob, 1, 5, lock);
+  R(g, 5, 7 + bob, 8, 8, skin);                                          // head
+  R(g, 6, 11 + bob, 2, 1, RED_EYE); R(g, 11, 11 + bob, 2, 1, RED_EYE);   // red mellow eyes
+  R(g, 8, 13 + bob, 3, 1, '#4a2c18');                                    // chill mouth
+  // rasta tam (knitted, bulging over the dreads): green / gold / red
+  R(g, 3, 2 + bob, 12, 5, '#1f8a36'); R(g, 3, 2 + bob, 12, 2, '#e2b83a'); R(g, 3, 1 + bob, 12, 1, '#d23a3a');
+  R(g, 4, 0 + bob, 2, 1, '#d23a3a'); R(g, 3, 6 + bob, 12, 1, '#145a24'); // pom + brim
+}
+
+// ============================================================
 // TSOTSIS — township gangsters (cell 20x28, face right; the call
 // site flips them toward Vaks). Three kinds: the phone snatcher
 // (knife), the gunman, and the viceroy pusher.
@@ -841,6 +895,13 @@ export async function initSprites() {
                     frame(18, 42, (g) => drawTallman(g, { bob: 1, wave: true }))]);
   sheet('shorty', [frame(16, 26, (g) => drawShorty(g, {})),
                    frame(16, 26, (g) => drawShorty(g, { bob: 1 }))]);
+  // the shebeen crew (chase_begins): Masi (fat), Imo (small boy), Rasta (dreads + tam)
+  sheet('masi',  [frame(21, 42, (g) => drawMasi(g, {})),
+                  frame(21, 42, (g) => drawMasi(g, { bob: 1 }))]);
+  sheet('imo',   [frame(14, 24, (g) => drawImo(g, {})),
+                  frame(14, 24, (g) => drawImo(g, { bob: 1 }))]);
+  sheet('rasta', [frame(18, 42, (g) => drawRasta(g, {})),
+                  frame(18, 42, (g) => drawRasta(g, { bob: 1 }))]);
 
   // township tsotsis (W2 gangsters) + the gunman's bullet
   for (const kind of ['knife', 'gun', 'viceroy']) {
@@ -1089,6 +1150,28 @@ export async function initSprites() {
     R(g, 8, 13, 2, 2, '#22222c'); R(g, 14, 13, 2, 2, '#22222c');
     R(g, 10, 18, 5, 1, '#7a4f30');
     R(g, 4, 21, 16, 3, '#5a8a5a');
+  })]);
+  // shebeen crew portraits — all red-eyed and drunk
+  sheet('face_masi', [frame(24, 24, (g) => {
+    R(g, 3, 7, 18, 15, '#8a5a3a');                                   // big round face
+    R(g, 3, 3, 18, 5, '#1a140f');                                    // hair
+    R(g, 7, 12, 3, 3, RED_EYE); R(g, 14, 12, 3, 3, RED_EYE);         // red eyes
+    R(g, 5, 14, 2, 2, '#c2683a'); R(g, 17, 14, 2, 2, '#c2683a');     // flushed cheeks
+    R(g, 10, 18, 4, 1, '#5a3520'); R(g, 4, 20, 16, 3, '#c2683a');    // grin + vest
+  })]);
+  sheet('face_imo', [frame(24, 24, (g) => {
+    R(g, 5, 6, 14, 14, '#7a5232');                                   // kid face
+    R(g, 5, 2, 14, 4, '#1a140f');                                    // hair
+    R(g, 7, 11, 3, 3, RED_EYE); R(g, 14, 11, 3, 3, RED_EYE);         // big red eyes
+    R(g, 10, 16, 4, 1, '#5a3520'); R(g, 6, 20, 12, 3, '#d2a23a');    // grin + shirt
+  })]);
+  sheet('face_rasta', [frame(24, 24, (g) => {
+    R(g, 3, 9, 3, 13, '#241509'); R(g, 18, 9, 3, 13, '#241509');     // dread sides
+    R(g, 6, 8, 12, 12, '#6e4a2c');                                   // face
+    R(g, 8, 12, 3, 2, RED_EYE); R(g, 14, 12, 3, 2, RED_EYE);         // red eyes
+    R(g, 10, 16, 4, 1, '#4a2c18');                                   // mellow mouth
+    R(g, 5, 2, 14, 6, '#1f8a36'); R(g, 5, 2, 14, 2, '#e2b83a'); R(g, 5, 1, 14, 1, '#d23a3a'); // tam
+    R(g, 4, 20, 16, 3, '#3a7a3a');                                   // shirt
   })]);
 
   // ---- tilesets ----

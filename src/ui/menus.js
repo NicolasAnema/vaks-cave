@@ -109,7 +109,6 @@ export class TitleScreen {
     }
 
     drawText(ctx, 'F: FULLSCREEN', 6, 7, { color: '#7480a0' });
-    drawText(ctx, 'V1.0 - ALL VISUALS GENERATED IN CODE - VAKS SPEAKS', View.w / 2, View.h - 10, { color: '#5a6280', align: 'center' });
     Barks.draw(ctx, null);
   }
 }
@@ -319,20 +318,25 @@ export class JukeboxScreen {
     this.sel = 0;
     this.t = 0;
     this.playing = AudioManager.music;
+    // only list tracks with a real uploaded file — silent slots are hidden
+    this.slots = MUSIC_SLOTS.filter((s) => AudioManager.hasMusic(s.id));
   }
 
   update(dt) {
     this.t += dt;
     Barks.update(dt);
-    if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + MUSIC_SLOTS.length - 1) % MUSIC_SLOTS.length;
-    if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + 1) % MUSIC_SLOTS.length;
-    if (Input.wasPressed('Enter')) {
-      const slot = MUSIC_SLOTS[this.sel];
-      AudioManager.play('jukebox_select', slot.id);
-      AudioManager.playMusic(slot.id);
-      AudioManager.menuTrack = slot.id; // this pick becomes the new title/menu song
-      this.playing = slot.id;
-      barkNewSong({ subtitle: true, speaker: 'VAKS', force: true });
+    const n = this.slots.length;
+    if (n > 0) {
+      if (Input.wasPressed('ArrowUp')) this.sel = (this.sel + n - 1) % n;
+      if (Input.wasPressed('ArrowDown')) this.sel = (this.sel + 1) % n;
+      if (Input.wasPressed('Enter')) {
+        const slot = this.slots[this.sel];
+        AudioManager.play('jukebox_select', slot.id);
+        AudioManager.playMusic(slot.id);
+        AudioManager.menuTrack = slot.id; // this pick becomes the new title/menu song
+        this.playing = slot.id;
+        barkNewSong({ subtitle: true, speaker: 'VAKS', force: true });
+      }
     }
     if (Input.wasPressed('Escape')) this.cb.onBack();
   }
@@ -342,7 +346,10 @@ export class JukeboxScreen {
     dimScreen(ctx, 0.35);
     drawText(ctx, 'JUKEBOX', View.w / 2, 22, { color: '#ffe49a', scale: 2, align: 'center' });
     drawText(ctx, 'ENTER TO SPIN A TRACK. UPLOAD MORE UNDER ASSETS/AUDIO/MUSIC.', View.w / 2, 44, { color: '#8a93b8', align: 'center' });
-    MUSIC_SLOTS.forEach((s, i) => {
+    if (this.slots.length === 0) {
+      drawText(ctx, 'NO TRACKS UPLOADED YET.', View.w / 2, 110, { color: '#9aa3c0', align: 'center' });
+    }
+    this.slots.forEach((s, i) => {
       const y = 70 + i * 18;
       const seld = this.sel === i;
       const isPlaying = this.playing === s.id;
@@ -729,10 +736,14 @@ export class ClearScreen {
 
   update(dt) {
     this.t += dt;
+    // the GTA "mission passed" fanfare belongs to THIS screen only: start it the
+    // first frame it's shown, cut it the instant the player leaves. The "finished"
+    // voice note carried over from the level keeps playing on top.
+    if (!this.fanfareStarted) { this.fanfareStarted = true; AudioManager.playClear(); }
     Particles.update(dt);
     Barks.update(dt);
     if (Math.random() < 0.1) Particles.confetti(Math.random() * View.w, -4, 4);
-    if (Input.wasPressed('Enter') && this.t > 0.6) this.cb.onDone();
+    if (Input.wasPressed('Enter') && this.t > 0.6) { AudioManager.stopClear(); this.cb.onDone(); }
   }
 
   draw(ctx) {

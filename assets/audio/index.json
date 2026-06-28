@@ -6,6 +6,10 @@
     "music/Mkhukhu Echo.mp3",
     "music/Theme Song.mp3",
     "music/Tikolosh Say Shorty.mp3",
+    "music/Vaki Ascends.mp3",
+    "music/dark cave.mp3",
+    "music/township riddem.mp3",
+    "music/township scent.mp3",
     "sfx/3rd dimension.mp3",
     "sfx/America!.opus",
     "sfx/Clarky's Favourite.opus",
@@ -68,6 +72,7 @@
     "sfx/You forget to buy your cat.opus",
     "sfx/You've got a new car.opus",
     "sfx/Your cat.opus",
+    "sfx/alert.mp3",
     "sfx/bombaclaaat.mp3",
     "sfx/death.mp3",
     "sfx/freesound_community-cartoon-jump-6462.mp3",
@@ -76,6 +81,7 @@
     "sfx/jump.mp3",
     "sfx/level_clear.mp3",
     "sfx/live for faam.opus",
-    "sfx/magiaz-smoke-454927.mp3"
+    "sfx/magiaz-smoke-454927.mp3",
+    "sfx/universfield-glass-hit-192119.mp3"
   ]
 }

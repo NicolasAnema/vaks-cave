@@ -33,9 +33,10 @@ import { MuteButton } from './ui/mute_button.js';
 const M = {
   stack: [],
   trans: null,
-  replace(s, wipe = true) {
+  replace(s, wipe = true, keepVoice = false) {
     Barks.clear();
-    AudioManager.stopVoice();
+    if (!keepVoice) AudioManager.stopVoice();   // the level-clear handoff keeps the "finished" voice note playing through
+    AudioManager.stopClear();                   // the GTA "mission passed" fanfare belongs to the LEVEL CLEAR screen only — never let it bleed past
     Particles.clear();
     if (!wipe || this.stack.length === 0) { this.stack = [s]; return; }
     this.trans = { t: 0, phase: 'out', next: s };
@@ -98,6 +99,8 @@ function newRun() {
     lives: livesForLevel(1), score: 0, mano: 0, earned: 0,
     currentLevel: 0,   // which level's lives are loaded (0 = none yet)
     bonusLives: 0,     // permanent +1s bought in the shop / earned at R200 milestones
+    bossAt: -1, bossRound: 0,  // vibe-boss checkpoint: which boss + the round reached
+
     faintCharm: false, rattex: false,
     hats: { propeller: false, beanie: false, chiefs: false },        // equipped (active abilities)
     hatsOwned: { propeller: false, beanie: false, chiefs: false },   // purchased
@@ -126,6 +129,7 @@ function prevLevelNodeBefore(i) {
 // only true GAME OVER.
 function goBackToLevel(prevN) {
   run.currentLevel = 0;            // force a fresh-entry life reload on arrival
+  AudioManager.restartNext = true; // restart the level song from the top, not mid-track
   startRunAt(flowIndexOfLevel(prevN), false);
 }
 function loseAllLives(failedLevelN) {
@@ -162,7 +166,7 @@ function toMenu() {
 }
 
 function toTitle() {
-  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())) }));
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs()), true, true) }));
 }
 
 function goTitleShop() {
@@ -218,38 +222,56 @@ function goFlow(i) {
       Save.data.tutorialSeen = true;
       Save.save();
     }
+    // L2 ganja drill: the very first time the player reaches the weed biome, hold
+    // the climb on a "PRESS G" prompt so they smoke the opening rush themselves.
+    // Later visits / death-restarts skip it and auto skin-up as before.
+    let showGanjaTut = false;
+    if (node.n === 2 && level.irieStart && !Save.data.ganjaTutSeen) {
+      showGanjaTut = true;
+      Save.data.ganjaTutSeen = true;
+      Save.save();
+    }
     const ls = new LevelScreen(level, run, {
       onClear: (stats) => {
         Save.unlockLevel(Math.min(6, node.n + 1));
-        M.replace(new ClearScreen(level.name, stats, { onDone: nextFlow }));
+        // keepVoice: let the "I'M FINISHED, YOUR ROOM" note play on through the wipe into the clear screen
+        M.replace(new ClearScreen(level.name, stats, { onDone: nextFlow }), true, true);
       },
       // a single death restarts THIS level (no checkpoints)
       onRestart: () => goFlow(flowIndexOfLevel(node.n)),
       // out of lives: fall back one level (or GAME OVER if this is the first)
       onGameOver: () => loseAllLives(node.n),
       onPause: () => pushPause(ls, () => goFlow(flowIndexOfLevel(node.n))),
-    }, { tutorial: showTutorial });
+    }, { tutorial: showTutorial, ganjaTut: showGanjaTut });
     M.replace(ls);
   } else if (node.t === 'shop') {
     M.replace(new ShopScreen(run, node.after, { onDone: nextFlow }));
   } else if (node.t === 'boss') {
     const bossIdx = i;
+    // Rounds are checkpoints. A FRESH arrival at this boss starts at round 0; a
+    // retry after being caught resumes from the round reached (run.bossRound).
+    if (run.bossAt !== bossIdx) { run.bossAt = bossIdx; run.bossRound = 0; }
     const cb = {
-      onWin: nextFlow,
-      onCaught: () => {
+      onWin: () => { run.bossAt = -1; run.bossRound = 0; nextFlow(); },
+      onCaught: (round) => {
+        run.bossRound = round || 0;   // checkpoint at the round reached
         run.lives--;
         if (run.lives < 0) {
           // out of lives: fall back to the level that leads into this fight
+          run.bossAt = -1; run.bossRound = 0;
           const pn = prevLevelNodeBefore(bossIdx);
           if (pn) goBackToLevel(pn); else gameOver();
         } else {
-          goFlow(bossIdx);   // still got lives: retry the boss
+          goFlow(bossIdx);   // still got lives: retry from the checkpoint round
         }
       },
       onPause: () => pushPause(bs, () => goFlow(bossIdx)),
     };
-    // the granny finale is a different game (TEND THE PLAAS); the cave boss is the vibe-off
-    const bs = node.variant === 'granny' ? new GardenBossScreen(run, cb) : new BossScreen(run, cb);
+    // the granny finale is a different game (TEND THE PLAAS); the cave boss is the
+    // vibe-off whose rounds are checkpoints (the garden boss has no rounds)
+    const bs = node.variant === 'granny'
+      ? new GardenBossScreen(run, cb)
+      : new BossScreen(run, cb, { startRound: run.bossRound });
     M.replace(bs);
   } else if (node.t === 'credits') {
     M.replace(new CreditsScreen({ onDone: finishRun }));
@@ -372,7 +394,7 @@ async function boot() {
   // query-param jump for automated checks: ?jump=menu|level3|boss|shop|cutscene:ending
   const jump = new URLSearchParams(location.search).get('jump');
 
-  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs())) }), false);
+  M.replace(new TitleScreen({ onStart: () => M.replace(new MainMenuScreen(menuCbs()), true, true) }), false);
 
   if (jump) {
     if (jump === 'menu') M.replace(new MainMenuScreen(menuCbs()), false);

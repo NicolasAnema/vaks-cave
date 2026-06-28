@@ -39,13 +39,17 @@ export class BossScreen {
     this.t = 0;
     this.phase = 'enter'; // enter | round_intro | fight | rest | win | caught
     this.phaseT = 1.2;
-    this.round = 0;
+    // rounds are checkpoints: a retry after being caught resumes from the round
+    // you reached (clamped so a stale checkpoint can't overshoot)
+    this.round = Math.max(0, Math.min(opts.startRound || 0, this.rounds.length - 1));
     this.tikoX = BOSS_ARENA.tikoStartX;
     this.vaksX = BOSS_ARENA.vaksX;
     this.floorY = BOSS_ARENA.floorY;
     this.prompts = [];
     this.totalBeats = this.rounds.reduce((s, r) => s + r.beats, 0);
     this.hits = 0;
+    // the vibe meter already reflects the rounds cleared before the checkpoint
+    for (let i = 0; i < this.round; i++) this.hits += this.rounds[i].beats;
     this.misses = 0;
     this.frozen = false;
     this.invincible = false;
@@ -99,6 +103,7 @@ export class BossScreen {
     if (Input.wasPressed('Escape') && this.cb.onPause) { this.cb.onPause(); return; }
     if (Input.wasPressed('KeyI')) this.invincible = !this.invincible;
     if (Input.wasPressed('KeyT')) this.frozen = !this.frozen;
+    if (Input.wasPressed('KeyK') && !this.isGranny) { this.cb.onWin(); return; } // K = skip the tikolosh vibe-off
 
     this.t += dt;
     this.swayT += dt;
@@ -144,6 +149,8 @@ export class BossScreen {
         // round done?
         if (this.prompts.every((p) => p.state !== 'pending')) {
           this.round++;
+          // clearing a round earns another "VIBE WITH ME" (tikolosh fight only)
+          if (!this.isGranny) barkVibe({ subtitle: true, speaker: 'BIG TIKOLOSH', force: true });
           if (this.round >= this.cfg.rounds.length) {
             this.phase = 'win'; this.phaseT = 1.6;
             AudioManager.play('boss_resolve', 'vibe complete');
@@ -159,7 +166,7 @@ export class BossScreen {
         if (this.phaseT <= 0) this.cb.onWin();
         break;
       case 'caught':
-        if (this.phaseT <= 0) this.cb.onCaught();
+        if (this.phaseT <= 0) this.cb.onCaught(this.round); // checkpoint = the round reached
         break;
     }
 

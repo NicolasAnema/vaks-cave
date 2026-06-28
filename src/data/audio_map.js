@@ -53,6 +53,8 @@ export const VOICE_ALIASES = {
 // descriptively-named upload instead. Same rules as VOICE_ALIASES.
 export const SFX_ALIASES = {
   skin_up: 'sfx/magiaz-smoke-454927.mp3',  // the inhale that plays across the G skin-up ritual
+  clear_fanfare: 'sfx/gta-san-andreas-gorevi-gecme-muzigi-respect-mp3indirdur.mp3', // LEVEL CLEAR screen only: starts when it opens, stops when it closes
+  glass_break: 'sfx/universfield-glass-hit-192119.mp3', // a bottle shatters on Vaks (played from 0.2s in to skip the lead-in)
 };
 
 export const MUSIC_ALIASES = {
@@ -60,6 +62,11 @@ export const MUSIC_ALIASES = {
   irie: 'music/Irie Loop.mp3',   // L2: takes over the level music once Vaks has smoked
   level1: 'music/Tikolosh Say Shorty.mp3',
   level3: 'music/Mkhukhu Echo.mp3',
+  darkcave: 'music/dark cave.mp3', // the in-cave cutscenes (cold_open, doubt1, doubt2)
+  world2: 'music/township riddem.mp3', // every township sprint (L4-L6) runs on this
+  township: 'music/township scent.mp3', // the chase_begins cutscene (shebeen -> the family group)
+
   boss: 'music/Feline_Frequency.mp3',
-  // lobby: 'music/Lobby.mp3',  // removed for now — Lobby.mp3 stays on disk, unwired
+  ascend: 'music/Vaki Ascends.mp3', // plays over the post-vibe-off resolve cutscene
+  lobby: 'music/Lobby.mp3',
 };

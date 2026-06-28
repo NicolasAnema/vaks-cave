@@ -26,9 +26,9 @@ export const CONFIG = {
 
   irie: {
     // nerfed: no longer slows the whole world or boosts run speed. It now just
-    // boosts the jump 1.8x (jumpMul) and makes rats + tikolosh crawl at enemySlow
+    // boosts the jump 1.3x (jumpMul) and makes rats + tikolosh crawl at enemySlow
     // (half speed). Vaks stays invincible for the duration.
-    duration: 4.0, enemySlow: 0.5, jumpMul: 1.8, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7,
+    duration: 4.0, enemySlow: 0.5, jumpMul: 1.3, overstackTime: 2.0, swayAmp: 16, swayHz: 1.7,
     // G "skin up" ritual: Vaks plants his feet, pulls out the blunt, rolls the
     // joint, brings it to his lips and smokes it down to the stinging Rodger
     // (the filter) in one pull. He's untouchable the whole way; the irie rush
@@ -49,7 +49,8 @@ export const CONFIG = {
   // >1 needs Web Audio (HTMLMediaElement.volume caps at 1.0). Vaks's
   // voice notes ("sfx") punch through the music at 2x.
   // eventGain: per-event multiplier layered on sfxGain (1 = default).
-  audio: { sfxGain: 3.0, musicGain: 0.75, eventGain: { jump: 0.28 } },
+  // voiceGain: per-row multiplier on a manifest voice note (keyed by row id).
+  audio: { sfxGain: 3.0, musicGain: 0.75, eventGain: { jump: 0.28 }, voiceGain: { m_garden: 1.5 } },
 
   mist: {
     startGap: 70,                     // mist starts this far below spawn (close — it's on you early)
@@ -63,22 +64,33 @@ export const CONFIG = {
     dangerFracs: [0.5, 0.3, 0.16],    // gauge fractions firing danger_close_1/2/3
   },
 
-  granny: {
-    speed: { 4: 122, 5: 138, 6: 140 }, // base px/s — always < player.runSpeed (L6 at the verifier cap)
-    burstMul: 1.65, burstTime: 0.8, stareTime: 0.6,
-    burstEvery: { 4: 7.2, 5: 5.8, 6: 4.6 },
-    faintEvery: { 4: 12.5, 5: 10.5, 6: 9 },
-    faintLen:   { 4: 3.0, 5: 2.3, 6: 1.7 },
+  // Township chasers — one per level, each a DIFFERENT pursuer with its own
+  // signature move (L4 the shebeen crew, L5 the taxi, L6 the tsotsi crew). They
+  // all share the proven outrun mechanic: base speed and the burst-cycle AVERAGE
+  // stay below the player's effective run speed, so clean running always escapes
+  // (verify.js proves it per level, accounting for L4's tipsy slow).
+  chaser: {
+    kindByLevel: { 4: 'shebeen', 5: 'taxi', 6: 'tsotsi' },
+    label:       { shebeen: 'CREW', taxi: 'TAXI', tsotsi: 'TSOTSIS' },
+    speed:       { 4: 116, 5: 130, 6: 138 }, // base px/s — always < (tipsy) runSpeed
+    burstMul:    { 4: 1.5, 5: 1.95, 6: 1.6 }, // L5 taxi horn-dash hits hardest
+    burstTime:   { 4: 0.8, 5: 0.7, 6: 0.8 },
+    burstEvery:  { 4: 7.6, 5: 6.2, 6: 5.0 },
+    stareTime: 0.6,
     startGap: 215, resetGap: 235, catchDist: 12,
     dangerFracs: [0.5, 0.3, 0.16],
-    charmSlow: 0.85,                  // charm: gogo runs this much slower for the run
+    charmSlow: 0.85,                  // faint charm (shop): the chaser runs this much slower for the run
     // rubber band (same idea as the mist): when Vaks gets more than maxLead
-    // ahead, gogo hurries up proportionally, capped at runSpeed-catchUpCap so a
-    // flat-out runner still slowly escapes but she is always right behind.
+    // ahead, the chaser hurries up proportionally, capped at runSpeed-catchUpCap
+    // so a flat-out runner still slowly escapes but it is always right behind.
     maxLead: 105, catchUpK: 0.9, catchUpCap: 3,
+    // signature gimmicks
+    shebeen: { lobEvery: 4.2, lobSpeed: 120, lobUp: 205 }, // hurls a bottle ahead -> shatters into a babalas hazard
+    taxi:    { swerveAmp: 5, scale: 2.0, driverScale: 1.25 }, // a HUGE minibus driven by a tsotsi; body swerves, the stare wind-up honks
+    tsotsi:  { flankEvery: 8.5, flankSpeed: 132 },         // detaches a fast runner that flanks from behind
   },
 
-  bottles: { speed: 74, interval: { 1: 3.4, 2: 2.4, 3: 1.9 }, maxActive: 9, spinHz: 6 },
+  bottles: { speed: 74, interval: { 1: 3.4, 2: 2.4, 3: 2.4 }, maxActive: 9, spinHz: 6 },
   // rats: patrol their ledge, but CHARGE Vaks when he comes within aggro
   // range (chaseSpeed). Meow makes them flee. Bigger knockback than before.
   // meowScareChance: a meow only scares each in-range rat this often — some
@@ -89,7 +101,7 @@ export const CONFIG = {
   // is still instant death — meow is the counter: it repels them (fleeSpeed).
   // fleeSpeed/fleeTime: a meow only shoves a tikolosh back a little for a short
   // moment (not a full reset) — it comes homing back, so you must meow again.
-  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 78, fleeTime: 1.1, meowRadius: 120 },
+  tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 112, fleeTime: 1.6, meowRadius: 120 },
   crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 2.0, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
@@ -155,21 +167,21 @@ export const CONFIG = {
   },
 
   boss: {
-    // Big Tikolosh vibe-off (the FIRST boss) — eased: 4 shorter rounds with a
-    // gentler tempo ramp, a forgiving hit window, and it creeps in slowly so a
-    // stray miss no longer snowballs into a loss.
-    rounds: [ { beats: 6, bpm: 84 }, { beats: 7, bpm: 96 }, { beats: 8, bpm: 110 }, { beats: 8, bpm: 124 } ],
-    hitWindow: 0.13, perfectWindow: 0.07,
-    startDist: 210, catchDist: 38, advanceMiss: 40, retreatHit: 15, driftSpeed: 11,
+    // Big Tikolosh vibe-off — cranked HARD: 5 rounds with a steep tempo ramp,
+    // tight timing windows, and it creeps in fast while a miss shoves it right up
+    // on you — every beat counts, a sloppy run loses.
+    rounds: [ { beats: 7, bpm: 100 }, { beats: 8, bpm: 118 }, { beats: 9, bpm: 136 }, { beats: 10, bpm: 156 }, { beats: 11, bpm: 176 } ],
+    hitWindow: 0.085, perfectWindow: 0.04,
+    startDist: 210, catchDist: 46, advanceMiss: 72, retreatHit: 10, driftSpeed: 19,
   },
 
   // granny finale — a different game entirely: TEND THE PLAAS. Weeds sprout in
   // the garden plots; pull each (its key) before it overgrows. Too many
   // overgrow and gogo catches you. As hard as the vibe-off that came before.
   gardenBoss: {
-    plots: 5, target: 30, angerMax: 7, maxWeeds: 4,
-    sproutStart: 1.1, sproutEnd: 0.42,   // seconds between sprouts (eases down with progress)
-    growStart: 1.45, growEnd: 0.8,       // seconds for a weed to overgrow (eases down)
+    plots: 5, target: 28, angerMax: 8, maxWeeds: 4,
+    sproutStart: 1.15, sproutEnd: 0.46,  // seconds between sprouts (eases down with progress)
+    growStart: 1.5, growEnd: 0.85,       // seconds for a weed to overgrow (eases down)
     misinputAnger: 0.5,                  // wrong key (no weed in that plot) = this much gogo anger (2 misses = 1 overgrow)
     misinputScore: 20,                   // ...and this much score docked, so mashing actually costs you
   },

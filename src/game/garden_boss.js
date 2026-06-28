@@ -163,7 +163,12 @@ export class GardenBossScreen {
         const f = w.t / w.max;              // 0..1 growth
         const h = Math.round(6 + f * 24);
         const danger = f > 0.62;
-        const col = danger ? (Math.floor(this.t * 12) % 2 ? '#ff8a5a' : '#e0d24a') : '#4a8f4a';
+        const col = danger ? (Math.floor(this.t * 12) % 2 ? '#ff8a5a' : '#ffe24a') : '#7ee64a';
+        // dark outline first so the weed reads against the leafy garden bg
+        ctx.fillStyle = '#15280f';
+        ctx.fillRect(x - 3, y - h - 1, 6, h + 1);
+        ctx.fillRect(x - 7, y - h + 4, 6, 5);
+        ctx.fillRect(x + 1, y - h + 8, 6, 5);
         ctx.fillStyle = col;
         ctx.fillRect(x - 2, y - h, 4, h);
         ctx.fillRect(x - 6, y - h + 5, 4, 3);

@@ -137,6 +137,15 @@ export const MANIFEST = [
   { id: 'm_tsotsi_grab',   event: 'tsotsi_grab',      trigger: 'Tsotsi grabs Vaks (mash to break free)',
     lines: ["HE'S GOT ME, BOSS! HE'S GOT ME!", 'LET GO, BRA! MY BOSS NEEDS ME!'],
     file: 'vo/tsotsi_grab.ogg' },
+  { id: 'm_shebeen_drink', event: 'tsotsi_alert',     trigger: 'L4 shebeen crew shouting as they chase Vaks for a drink',
+    lines: ['VIVO VICEROY!', 'CAN I HEV SAVANA?', 'NDICELA KFC!', 'DRINK OUR ZAMALEKS, MWAHAHA!', 'DOWN THIS VICEROY!'],
+    file: 'vo/shebeen_drink.ogg' },
+  { id: 'm_tsotsi_chase',  event: 'tsotsi_alert',     trigger: 'L6 tsotsi crew taunting as they chase Vaks for the phone',
+    lines: ['GIVE ME YOUR PHONE, MWAHAHA!', 'GONNA BEAT YOU!', "YOU'RE TOO IRIE, TOO STRONG!", "I'LL STEAL IT MY BRU MAN!", 'HOS NONGOLOZ!'],
+    file: 'vo/tsotsi_chase.ogg' },
+  { id: 'm_taxi_shout',    event: 'tsotsi_alert',     trigger: 'L5 taxi tsotsi driver shouting as he chases Vaks',
+    lines: ['TAVI, GIVE YOU YOUR MANO, MWAHAHA!', 'WE GONNA MOER YOU!', 'TSEY, R5!', 'NICE TEKIS MY BRU!', 'YOUR PHONE IS MINE!'],
+    file: 'vo/taxi_shout.ogg' },
 ];
 
 // Required audio events from DESIGN.md — every one must exist and fire.
@@ -148,7 +157,7 @@ export const EVENTS = [
   'granny_chase_start', 'granny_faint', 'granny_caught', 'checkpoint', 'jump',
   'shop_enter', 'shop_browse', 'shop_buy', 'meow', 'idle_checkin', 'npc_tallman', 'npc_shorty',
   'menu_idle', 'tutorial_prompt', 'jukebox_select', 'easter_egg_rare',
-  'glitch_gag', 'ending', 'skin_up',
+  'glitch_gag', 'ending', 'skin_up', 'alert',
   'tsotsi_alert', 'tsotsi_shoot', 'tsotsi_stomp', 'tsotsi_drink', 'tsotsi_grab',
 ];
 
@@ -159,10 +168,13 @@ export const MUSIC_SLOTS = [
   { id: 'level1',  name: 'TIKOLOSH SAY SHORTY', file: 'music/level1.ogg' },
   { id: 'level3',  name: 'MKHUKHU ECHO',       file: 'music/level3.ogg' },
   { id: 'world1',  name: 'DEEP CAVE RIDDIM',   file: 'music/world1.ogg' },
+  { id: 'darkcave', name: 'DARK CAVE',         file: 'music/darkcave.ogg' },
   { id: 'world2',  name: 'KASI SPRINT',        file: 'music/world2.ogg' },
   { id: 'irie',    name: 'IRIE LOOP',          file: 'music/irie.ogg' },
 
   { id: 'boss',    name: 'FELINE FREQUENCY',    file: 'music/feline_frequency.ogg' },
+  { id: 'township', name: 'TOWNSHIP SCENT',    file: 'music/township.ogg' },
+  { id: 'lobby',   name: 'LOBBY',              file: 'music/lobby.ogg' },
   { id: 'ending',  name: 'BAAS VAN DIE PLAAS', file: 'music/ending.ogg' },
 ];
 

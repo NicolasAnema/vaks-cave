@@ -168,6 +168,8 @@ export class Tsotsi {
     this.drainAcc = 0;    // knife: fractional mano drained while holding
     this.seen = false;
     this.bubbleH = 30;
+    this.flank = false; // L6: a phone-snatch runner detached by the tsotsi chaser
+    this.dead = false;  // flank runners despawn once well behind the camera
   }
 
   hitbox() { return { x: this.x - 7, y: this.y - 26, w: 14, h: 26 }; }
@@ -192,6 +194,17 @@ export class Tsotsi {
     if (!this.seen && lr.cam.sees(this.x, this.y - 14, 12)) {
       this.seen = true;
       lr.tsotsiSpotted(this);
+    }
+
+    if (this.flank) {
+      // sprint straight at Vaks (the grab = phone snatch is handled on contact
+      // by the level); despawn once he's left it well behind
+      const fdir = dx >= 0 ? 1 : -1;
+      this.dir = fdir;
+      this.chasing = true;
+      this.x += fdir * CONFIG.chaser.tsotsi.flankSpeed * d;
+      if (this.x < lr.cam.x - 80) this.dead = true;
+      return;
     }
 
     if (this.kind === 'gun') {
@@ -300,16 +313,16 @@ export class Tiko {
     const C = CONFIG.tiko;
     const p = lr.player;
 
-    if (this.fleeT > 0) { // repelled by a meow
+    if (this.fleeT > 0) { // repelled by a meow — glide away smoothly, no snap
       this.fleeT -= dt;
       this.x += this.fleeDir * C.fleeSpeed * d;
-      this.y = this.baseY + Math.sin(this.t * 5) * 3 - 16;
+      const targetY = this.baseY + Math.sin(this.t * 5) * 3 - 16;
+      this.y += (targetY - this.y) * Math.min(1, d * 6); // ease toward bob, don't teleport
       return;
     }
 
     // home in on Vaks once he's within range (contact = death; meow is relief).
-    // not in the dark level — you can't see them coming there, so they only patrol.
-    const near = !p.dead && !lr.level.dark
+    const near = !p.dead
       && Math.abs(p.x - this.x) < C.homeRange && Math.abs(p.y - this.y) < C.homeRange;
     if (near) {
       const sp = (this.kind === 'shadow' ? C.shadowChase : C.homeSpeed) * d;
@@ -319,11 +332,14 @@ export class Tiko {
     }
 
     if (this.kind === 'irie') {
-      // lazy unpredictable drift
+      // lazy unpredictable drift — ease toward the target so a meowed tiko that
+      // got shoved far off glides back into its drift instead of snapping.
       const span = this.maxX - this.minX;
       const u = (Math.sin(this.t * 0.45 + this.phase) + Math.sin(this.t * 0.23 + this.phase * 2) * 0.5) / 1.5;
-      this.x = this.minX + span * (0.5 + u * 0.5);
-      this.y = this.baseY + Math.sin(this.t * 1.1) * C.irieBobAmp - 16;
+      const targetX = this.minX + span * (0.5 + u * 0.5);
+      const targetY = this.baseY + Math.sin(this.t * 1.1) * C.irieBobAmp - 16;
+      this.x += (targetX - this.x) * Math.min(1, d * 1.5);
+      this.y += (targetY - this.y) * Math.min(1, d * 3);
       if (Math.random() < 0.04) Particles.wisp(this.x, this.y + 10, 'rgba(176,127,224,0.4)');
     } else {
       // shadow patrol along its ledge

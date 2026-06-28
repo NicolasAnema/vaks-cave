@@ -137,7 +137,9 @@ function verifyVertical(L, out) {
 
 function verifyHorizontal(L, out) {
   let ok = true;
-  const run = CONFIG.player.runSpeed;
+  // L4 plays tipsy-slow, so prove everything (gaps, platforms, the chaser) against
+  // the player's EFFECTIVE run speed for this level — the same number the builder used.
+  const run = CONFIG.player.runSpeed * (L.tipsyMul || 1);
   const G = L.groundY;
 
   // gaps between ground segments
@@ -172,16 +174,19 @@ function verifyHorizontal(L, out) {
     if (!onGround(cp.x)) { ok = false; out.push(`  L${L.id} FAIL: point x=${cp.x} hangs over a gap`); }
   }
 
-  // granny math: base below run speed; burst-cycle average below too
-  const gs6 = CONFIG.granny;
-  const base = gs6.speed[L.id];
-  const cycle = gs6.burstEvery[L.id];
-  const avg = (gs6.burstTime * base * gs6.burstMul + (cycle - gs6.burstTime) * base) / cycle;
-  if (!(base < run)) { ok = false; out.push(`  L${L.id} FAIL: granny base ${base} >= run ${run}`); }
-  if (!(avg < run * 0.95)) { ok = false; out.push(`  L${L.id} FAIL: granny cycle avg ${avg.toFixed(1)} too close to run ${run}`); }
+  // chaser math (per-level pursuer): base below run speed; burst-cycle average too
+  const C = CONFIG.chaser;
+  const kind = C.kindByLevel[L.id] || 'chaser';
+  const base = C.speed[L.id];
+  const cycle = C.burstEvery[L.id];
+  const bt = C.burstTime[L.id];
+  const bm = C.burstMul[L.id];
+  const avg = (bt * base * bm + (cycle - bt) * base) / cycle;
+  if (!(base < run)) { ok = false; out.push(`  L${L.id} FAIL: ${kind} base ${base} >= run ${run.toFixed(0)}`); }
+  if (!(avg < run * 0.95)) { ok = false; out.push(`  L${L.id} FAIL: ${kind} cycle avg ${avg.toFixed(1)} too close to run ${run.toFixed(0)}`); }
 
   if (ok) {
-    out.push(`  L${L.id} ${L.name}: HORIZONTAL OK — ${gs.length} ground segments, worst gap ${worstGap}px (max ${(run * 2 * CONFIG.player.jumpVel / CONFIG.physics.gravity * 0.92 - 5).toFixed(0)}px), granny ${base}/${avg.toFixed(0)} avg vs vaks ${run}`);
+    out.push(`  L${L.id} ${L.name}: HORIZONTAL OK — ${gs.length} ground segments, worst gap ${worstGap}px (max ${(run * 2 * CONFIG.player.jumpVel / CONFIG.physics.gravity * 0.92 - 5).toFixed(0)}px), ${kind} ${base}/${avg.toFixed(0)} avg vs vaks ${run.toFixed(0)}`);
   }
   return ok;
 }
