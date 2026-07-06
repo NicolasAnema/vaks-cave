@@ -13,7 +13,7 @@ import { drawText } from './engine/font.js';
 import { Particles } from './engine/particles.js';
 import { AudioManager, Barks, coverageReport } from './systems/audio.js';
 import { Save } from './systems/save.js';
-import { getLevel } from './data/levels.js';
+import { getLevel, buildTutorialLevel } from './data/levels.js';
 import { CUTSCENES, SCENE_ORDER } from './data/cutscenes.js';
 import { verifyLevels } from './verify.js';
 import { LevelScreen } from './game/level.js';
@@ -24,7 +24,7 @@ import { ShopScreen } from './game/shop.js?v=2';
 import {
   TitleScreen, MainMenuScreen, LevelSelectScreen, JukeboxScreen, GalleryScreen,
   SettingsScreen, CreditsScreen, LoadingScreen, PauseScreen, GameOverScreen, ClearScreen,
-  InventoryScreen, HowToPlayScreen,
+  InventoryScreen, DevMenuScreen,
 } from './ui/menus.js';
 import { MuteButton } from './ui/mute_button.js';
 
@@ -71,6 +71,7 @@ const M = {
 
 const FLOW = [
   { t: 'cutscene', id: 'cold_open' },
+  { t: 'tutorial' },              // the control drill: its own arena before L1
   { t: 'level', n: 1 },
   { t: 'cutscene', id: 'doubt1' },
   { t: 'shop', after: 1 },
@@ -174,6 +175,7 @@ function goTitleShop() {
     ? { ...newRun(), ...Save.data.runSnapshot }
     : Object.assign(newRun(), { mano: 200 });
   M.replace(new ShopScreen(shopRun, 0, {
+    leaveLabel: 'BACK TO MENU',
     onDone: () => {
       if (Save.data.runSnapshot) { Save.data.runSnapshot = { ...shopRun }; Save.save(); }
       toMenu();
@@ -213,24 +215,6 @@ function goFlow(i) {
       run.currentLevel = node.n;
       run.lives = livesForLevel(node.n) + (run.bonusLives || 0);
     }
-    // The L1 control drill plays once, ever — on the first time the player
-    // reaches L1. A death-restart or a demotion back to L1 (after a wipe)
-    // skips it, since by then it's been seen.
-    let showTutorial = false;
-    if (node.n === 1 && level.liveTutorial && !Save.data.tutorialSeen) {
-      showTutorial = true;
-      Save.data.tutorialSeen = true;
-      Save.save();
-    }
-    // L2 ganja drill: the very first time the player reaches the weed biome, hold
-    // the climb on a "PRESS G" prompt so they smoke the opening rush themselves.
-    // Later visits / death-restarts skip it and auto skin-up as before.
-    let showGanjaTut = false;
-    if (node.n === 2 && level.irieStart && !Save.data.ganjaTutSeen) {
-      showGanjaTut = true;
-      Save.data.ganjaTutSeen = true;
-      Save.save();
-    }
     const ls = new LevelScreen(level, run, {
       onClear: (stats) => {
         Save.unlockLevel(Math.min(6, node.n + 1));
@@ -242,8 +226,19 @@ function goFlow(i) {
       // out of lives: fall back one level (or GAME OVER if this is the first)
       onGameOver: () => loseAllLives(node.n),
       onPause: () => pushPause(ls, () => goFlow(flowIndexOfLevel(node.n))),
-    }, { tutorial: showTutorial, ganjaTut: showGanjaTut });
+    });
     M.replace(ls);
+  } else if (node.t === 'tutorial') {
+    // the standalone control drill: a tiny arena, no threats, no death — the
+    // drill itself clears the screen and the flow marches on to L1
+    const tutIdx = i;
+    const ts = new LevelScreen(buildTutorialLevel(), run, {
+      onClear: () => nextFlow(),
+      onRestart: () => goFlow(tutIdx),
+      onGameOver: () => goFlow(tutIdx),
+      onPause: () => pushPause(ts, () => goFlow(tutIdx)),
+    }, { tutorial: true });
+    M.replace(ts);
   } else if (node.t === 'shop') {
     M.replace(new ShopScreen(run, node.after, { onDone: nextFlow }));
   } else if (node.t === 'boss') {
@@ -289,7 +284,10 @@ function finishRun() {
 function startRunAt(i, freshRun) {
   if (freshRun) run = newRun();
   const node = FLOW[i];
-  const world2 = (node.t === 'level' && node.n >= 4) || i >= 11;
+  // township begins at the chase_begins cutscene (looked up, not hardcoded —
+  // FLOW inserts shift indices)
+  const w2Start = FLOW.findIndex((f) => f.t === 'cutscene' && f.id === 'chase_begins');
+  const world2 = (node.t === 'level' && node.n >= 4) || i >= w2Start;
   M.replace(new LoadingScreen(
     world2 ? 'THE TOWNSHIP WAKES...' : 'THE CAVE CALLS...',
     world2 ? 'world2' : 'world1',
@@ -305,16 +303,41 @@ function openGallery() {
   }));
 }
 
+// ---------------- dev playground (debug builds) ----------------
+
+// reopens itself so a viewed scene / closed shop lands back in the dev hub
+function openDev() {
+  M.replace(new DevMenuScreen({
+    // jump straight to the standalone tutorial arena node
+    onTutorial: () => startRunAt(FLOW.findIndex((f) => f.t === 'tutorial'), true),
+    onLevelSelect: () => M.replace(new LevelSelectScreen({ onPick: startFromSelect, onBack: openDev })),
+    onCutscenes: openDevGallery,
+    onShop: () => { run = newRun(); run.mano = 500; M.replace(new ShopScreen(run, 4, { leaveLabel: 'BACK TO DEV', onDone: openDev })); },
+    onJukebox: () => M.replace(new JukeboxScreen({ onBack: openDev })),
+    onFullRun: () => startRunAt(0, true),
+    onReset: () => { Save.reset(); openDev(); },
+    onBack: toMenu,
+  }));
+}
+
+// dev cutscene viewer: every scene unlocked, backs out to the dev hub
+function openDevGallery() {
+  Save.data.scenes = [...SCENE_ORDER];
+  M.replace(new GalleryScreen({
+    onPlay: (id) => M.replace(new CutsceneScreen(id, { onDone: openDevGallery })),
+    onBack: openDev,
+  }));
+}
+
 function menuCbs() {
   return {
     onContinue: () => {
       run = { ...newRun(), ...(Save.data.runSnapshot || {}) };
       startRunAt(Math.max(0, Save.data.flowNode), false);
     },
-    onNewGame: () => M.replace(new HowToPlayScreen({
-      onStart: () => startRunAt(0, true),
-      onBack: toMenu,
-    })),
+    // straight into the run — the L1 opening now walks the player through every
+    // control live, so there's no static how-to-play card up front anymore.
+    onNewGame: () => startRunAt(0, true),
     onLevelSelect: () => M.replace(new LevelSelectScreen({
       onPick: startFromSelect,
       onBack: toMenu,
@@ -324,6 +347,7 @@ function menuCbs() {
     onGallery: openGallery,
     onSettings: () => M.replace(new SettingsScreen({ onBack: toMenu })),
     onCredits: () => M.replace(new CreditsScreen({ onDone: toMenu })),
+    onDev: openDev,
   };
 }
 

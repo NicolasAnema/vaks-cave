@@ -13,8 +13,8 @@ const DEFAULTS = () => ({
   runSnapshot: null,         // { lives, score, mano, inv } at flow node
   bestScore: 0,
   shopVisited: false,
-  tutorialSeen: false,       // L1 live control drill: shown once, ever (not on a demotion back to L1)
-  ganjaTutSeen: false,       // L2 "PRESS G" ganja prompt: shown once, ever (later visits auto skin-up)
+  // (the control drill is its own flow node before L1 — every NEW GAME runs it;
+  // L2 always opens with the free auto skin-up, no prompt)
   settings: {
     master: 8, music: 8, voice: 8,
     muted: false,

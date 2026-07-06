@@ -32,7 +32,7 @@ export const AudioManager = {
   lastEvent: '-',
   started: false,              // true once the player's first gesture unlocked audio
   music: null,                 // current slot id (the jukebox name source of truth)
-  menuTrack: 'title',          // track the title/main-menu play; jukebox can repoint it
+  menuTrack: 'world2',         // track the title/main-menu play (KASI SPRINT); jukebox can repoint it
   knownEvents: new Set(EVENTS),
   files: new Set(),            // uploaded audio paths, from assets/audio/index.json
   cache: new Map(),            // path -> HTMLAudioElement

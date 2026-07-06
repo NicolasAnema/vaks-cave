@@ -2,7 +2,7 @@
 // THE TIKOLOSH SHOP — a calm shopkeeper in a lantern-lit nook
 // after every level clear. Wares sit on two wooden shelves; spend
 // mano on lives, rat poison, ability caps, or a faint charm.
-// Leave with the LEAVE SHOP button or the Esc key.
+// Leave with the NEXT LEVEL / BACK TO... button or the Esc key.
 // ============================================================
 
 import { CONFIG } from '../config.js';
@@ -42,7 +42,10 @@ export class ShopScreen {
     this.run = run;
     // older run snapshots predate the owned/equipped split
     if (!this.run.hatsOwned) this.run.hatsOwned = { ...this.run.hats };
-    this.cb = cb; // { onDone() }
+    this.cb = cb; // { onDone(), leaveLabel? }
+    // the leave button says where you're going: "NEXT LEVEL" mid-run (the
+    // default), "BACK TO MENU" from the title shop, etc.
+    this.leaveLabel = (cb && cb.leaveLabel) || 'NEXT LEVEL';
     this.t = 0;
     this.items = [
       { id: 'life', name: 'EXTRA LIFE', desc: 'ONE MORE CHANCE, BOSS', price: CONFIG.shop.prices.life, sprite: 'weed' },
@@ -246,7 +249,7 @@ export class ShopScreen {
     ctx.fillStyle = lsel ? '#8a6a3a' : '#5a4630'; ctx.fillRect(bx + 9, by + 4, 11, 16);
     ctx.fillStyle = '#1f1810'; ctx.fillRect(bx + 11, by + 6, 7, 14);
     ctx.fillStyle = lsel ? '#ffe49a' : '#8a7a5a'; ctx.fillRect(bx + 16, by + 12, 1, 2);
-    drawText(ctx, 'LEAVE SHOP', bx + 62, by + 8, { color: lsel ? '#ffe49a' : '#cbb892', align: 'center' });
+    drawText(ctx, this.leaveLabel, bx + 62, by + 8, { color: lsel ? '#ffe49a' : '#cbb892', align: 'center' });
     if (lsel) drawText(ctx, '>', bx - 8, by + 8, { color: '#ffe49a' });
 
     // ---- info panel for the current selection (lifted clear of the
@@ -254,8 +257,8 @@ export class ShopScreen {
     panel(ctx, 12, 192, 300, 44);
     const cur = this.slots[this.sel];
     if (cur.leave) {
-      drawText(ctx, 'LEAVE SHOP', 20, 198, { color: '#ffe49a' });
-      drawText(ctx, 'BACK TO THE ADVENTURE.', 20, 210, { color: '#cfd6ff' });
+      drawText(ctx, this.leaveLabel, 20, 198, { color: '#ffe49a' });
+      drawText(ctx, 'DONE SHOPPING, BOSS?', 20, 210, { color: '#cfd6ff' });
       drawText(ctx, 'PRESS ENTER OR ESC.', 20, 224, { color: '#8ae08a' });
     } else {
       const it = cur.item, owned = this.owned(it);

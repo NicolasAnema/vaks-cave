@@ -88,7 +88,7 @@ export const MANIFEST = [
     lines: ["SHORTY STEAL MY PLATE, HE'S A CROOK."], file: 'vo/shorty.ogg' },
   { id: 'm_stout',         event: 'npc_shorty',       trigger: 'Shorty NPC follow-up',
     lines: ['THAT LYTIE IS STOUT.'], file: 'vo/stout.ogg' },
-  { id: 'm_meow_pool',     event: 'meow',             trigger: 'M key meow, variant pool',
+  { id: 'm_meow_pool',     event: 'meow',             trigger: 'W key meow, variant pool',
     lines: ["I'M A CAT NOW BOSS, MEOW.", 'MEEOWW.', 'YOU FORGET TO BUY YOUR CAT, SAY MEOW.'], file: 'vo/meow.ogg' },
   { id: 'm_meow_combo',    event: 'meow',             trigger: 'EASTER EGG: mash M six times fast',
     lines: ['OK OK I AM A REAL CAT NOW. STOP IT BOSS, HAIBO!', 'MEOW MEOW MEOW MEOW MEOW. YOU HAPPY NOW?', 'NINE LIVES UNLOCKED... JOKING. ONE CAT, ONE VAKS.'], file: 'vo/meow_combo.ogg' },
@@ -182,7 +182,7 @@ export const MUSIC_SLOTS = [
 export const TIPS = [
   'TIP: GOGO NEVER STOPS NOW. KEEP RUNNING, DO NOT LOOK BACK.',
   'TIP: HESITATION FEEDS THE MIST. KEEP CLIMBING.',
-  'TIP: DO NOT FORGET TO MEOW (M)! IT SCATTERS RATS AND SCARES OFF THE TIKOLOSH.',
+  'TIP: DO NOT FORGET TO MEOW (W)! IT SCATTERS RATS AND SCARES OFF THE TIKOLOSH.',
   'TIP: TWO GANJAS AT ONCE IS TOO STRONG, BOSS.',
   'TIP: BOTTLES ROLL DOWNHILL. THURSDAY WAS BIG.',
   'TIP: 25 CEPPIES = ONE EXTRA LIFE.',

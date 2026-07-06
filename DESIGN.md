@@ -10,7 +10,7 @@ Tone: a genuinely good platformer carrying a layer of inside jokes. The comedy l
 
 ## Core loop (locked)
 
-Two movement grammars, one per world. Gameplay inputs: arrow keys, spacebar (jump), M (meow). Enter confirms in menus and skips cutscenes; Esc pauses. Lives: start with 3, mid-level checkpoints, ceppies grant extras.
+Two movement grammars, one per world. Gameplay inputs: arrow keys, spacebar (jump), W (meow). Enter confirms in menus and skips cutscenes; Esc pauses. Lives: start with 3, mid-level checkpoints, ceppies grant extras.
 
 ### World 1: the climb (vertical)
 
@@ -28,7 +28,7 @@ Two movement grammars, one per world. Gameplay inputs: arrow keys, spacebar (jum
 - Granny periodically faints ("granny faints because she works too hard, she needs to rest"), creating a safe window to bank distance or grab pickups.
 - Reach the level exit before she catches you.
 
-Meow (M): Vaks meows. Cosmetic bark, and rats within a small radius flee briefly.
+Meow (W): Vaks meows. Cosmetic bark, and rats within a small radius flee briefly.
 
 Difficulty dials: mist rise speed / granny speed, platform and gap spacing, hazard density, darkness (World 1), faint frequency and length (World 2).
 
@@ -121,7 +121,7 @@ Every row must be wired to a trigger. In debug mode the game logs a coverage rep
 | "Tallman owes me money, he's a crook" | Tallman NPC |
 | "Shorty steal my plate, he's a crook" | Shorty NPC |
 | "That lytie is stout" | Shorty NPC follow-up |
-| "I'm a cat now boss, meow" / "meeoww" / "you forget to buy your cat, say meow" | M key meow, variant pool |
+| "I'm a cat now boss, meow" / "meeoww" / "you forget to buy your cat, say meow" | W key meow, variant pool |
 | "Eyta boss, look at your garden, so beautiful, super day" | Title screen |
 | "Hello boss... I'm good, I'm good, I'm good. Chao." | Idle check-in pool |
 | "It's you" / "what's up boss" / "life update" / "status like" | Idle check-in pool (menus, standing still) |

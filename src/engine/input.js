@@ -1,6 +1,6 @@
 // ============================================================
 // Keyboard input. Locked gameplay controls (CLAUDE.md):
-// arrows, Space (jump), M (meow), Enter (confirm/skip), Esc
+// arrows, Space (jump), W (meow), Enter (confirm/skip), Esc
 // (pause), plus debug keys 1-6, B, C, I, T.
 // ============================================================
 
@@ -60,6 +60,9 @@ export const Input = {
 
   isDown(code) { return this.down.has(code); },
   wasPressed(code) { return this.pressed.has(code); },
+
+  // Meow is W (left hand, alongside G, while the right hand stays on the arrows).
+  meowPressed() { return this.wasPressed('KeyW'); },
 
   dirX() {
     return (this.isDown('ArrowRight') ? 1 : 0) - (this.isDown('ArrowLeft') ? 1 : 0);

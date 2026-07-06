@@ -95,14 +95,14 @@ export const CONFIG = {
   // range (chaseSpeed). Meow makes them flee. Bigger knockback than before.
   // meowScareChance: a meow only scares each in-range rat this often — some
   // rats just don't care, so the meow is a gamble (adds chaos to the climb).
-  rats:    { speed: 48, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 84, meowScareChance: 0.68, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
+  rats:    { speed: 72, fleeSpeed: 130, fleeTime: 1.7, aggroX: 92, aggroY: 26, chaseSpeed: 126, meowScareChance: 0.68, hbW: 16, hbH: 9, sizes: [1.1, 1.4, 1.7, 2.1, 2.5], knockMul: 3.4 },
   // tiko ("birds"): drift/patrol, but HOME toward Vaks within homeRange at
   // homeSpeed (kept well under walkSpeed=105 so clean play escapes). Contact
   // is still instant death — meow is the counter: it repels them (fleeSpeed).
   // fleeSpeed/fleeTime: a meow only shoves a tikolosh back a little for a short
   // moment (not a full reset) — it comes homing back, so you must meow again.
   tiko:    { irieSpeed: 26, irieBobAmp: 9, shadowSpeed: 34, shadowChase: 70, homeRange: 96, homeSpeed: 48, fleeSpeed: 112, fleeTime: 1.6, meowRadius: 120 },
-  crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 2.0, shakeAmp: 1.4 },
+  crumble: { delay: 0.55, delayByLevel: { 1: 0.4 }, respawn: 1.4, shakeAmp: 1.4 },
   sushi:   { stunTime: 0.55 },
 
   // township tsotsis (W2): phone snatcher (knife), gunman, viceroy pusher.
@@ -138,7 +138,7 @@ export const CONFIG = {
     // that overshoots is trimmed (biggest notes drop first), one that
     // undershoots is topped up (coins upgrade up the denomination ladder).
     // See normalizeMoney() in data/levels.js.
-    levelBudget: { 1: 76, 2: 82, 3: 86, 4: 90, 5: 92, 6: 96 }, // mano collectable per level: fairer, fuller early game (was 50..100, too lean up front and too top-heavy)
+    levelBudget: { 1: 85, 2: 92, 3: 96, 4: 100, 5: 104, 6: 108 }, // mano collectable per level (~+12% across the board so the shop stings a little less)
     w1CoinChance: 0.26,   // vertical: chance a wide plank carries an R2 run (was 0.42)
     w1CoinMax: 2,         // vertical: ...of 1..this coins per run (was up to 3)
     w1NoteChance: 0.10,   // vertical: chance a plank carries a lone R10 (was 0.16)
@@ -204,7 +204,6 @@ export const CONFIG = {
     rareBarkMin: 26, rareBarkMax: 50,
     glitchMin: 40, glitchMax: 75, glitchLen: 0.55,
     loading: 1.7, introCard: 2.4,
-    liveTutorial: 20,   // L1: interactive practice window before the mist rises
   },
 
   fx: { hitStop: 0.08, shakeImpact: 3, shakeBurst: 2.4 },

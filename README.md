@@ -24,7 +24,7 @@ Open the printed URL. That's it.
 |---|---|
 | Arrow keys | Move (up/down climbs ladders in the cave) |
 | Space | Jump |
-| M | Meow (rats hate it) |
+| W | Meow (rats hate it) |
 | G | Burn a life for an irie rush (once per level) |
 | Enter | Confirm / skip cutscene |
 | Esc | Pause |

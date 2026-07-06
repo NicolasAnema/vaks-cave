@@ -222,9 +222,9 @@ export class Player {
     if (dir === 0 && dirY === 0 && this.onGround && !this.climbing) this.idleT += dt;
     else this.idleT = 0;
 
-    // meow
-    if (!this.celebrating && Input.wasPressed('KeyM')) {
-      // easter egg: mashing M (faster than the cooldown) builds a combo
+    // meow (W)
+    if (!this.celebrating && Input.meowPressed()) {
+      // easter egg: mashing meow (faster than the cooldown) builds a combo
       this.meowMashT = 2.2;
       this.meowMash = (this.meowMash || 0) + 1;
       if (this.meowMash >= 6) {

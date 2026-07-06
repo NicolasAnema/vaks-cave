@@ -175,6 +175,37 @@ function buildVertical(o) {
 }
 
 // ============================================================
+// TUTORIAL ARENA — its own tiny flow node before L1 (not part of
+// LEVELS, so the completability verifier skips it). A handcrafted
+// one-screen shaft: floor, one jump platform, one ladder platform.
+// The staged control drill (level.js liveTut) runs here and hands
+// straight off to L1 when done — no exit, no threats, no death.
+// ============================================================
+
+export function buildTutorialLevel() {
+  const H = 320, floorY = H - 24;
+  return {
+    id: 0, name: 'MORNING STRETCH', tagline: 'FIRST, THE BASICS, BOSS.',
+    isTutorial: true, world: 1, orientation: 'vertical',
+    width: 480, height: H, theme: 'plat_w1a', dark: false,
+    introTiko: false, bottles: false,
+    liveTutorial: true, irieStart: false, irieMusic: null,
+    music: 'darkcave', // carries the cold-open track through the drill
+    platforms: [
+      { x: 16, y: floorY, w: 448, type: 'solid', main: true },   // floor
+      { x: 56, y: floorY - 38, w: 130, type: 'solid', main: true },  // jump ledge
+      { x: 264, y: floorY - 78, w: 140, type: 'solid', main: true }, // ladder ledge
+    ],
+    ladders: [{ x: 322, y: floorY - 78, h: 78, vine: false }],
+    pickups: [], rats: [], tikos: [], lanterns: [], checkpoints: [], tutorials: [],
+    walls: [{ x: 0, y: 0, w: 16, h: H }, { x: 464, y: 0, w: 16, h: H }],
+    spawn: { x: 240, y: floorY },
+    exit: { x: 216, y: 40, w: 48, h: 44 }, // decorative — the drill clears the screen itself
+    props: [], grounds: [], sushi: [], npcs: [],
+  };
+}
+
+// ============================================================
 // HORIZONTAL SPRINT BUILDER (World 2)
 // ============================================================
 
@@ -409,15 +440,13 @@ export const LEVELS = [
     decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.6,
     weedFracs: [], ratFracs: [0.25, 0.42, 0.58, 0.74, 0.88], shadowFracs: [], irieFracs: [],
     introTiko: true,
-    // L1 opens with a live, interactive 20s control drill (the mist is held
-    // back while Vaks tries the controls) — see CONFIG.timers.liveTutorial.
-    // The bottom move/ladder prompts are taught by that drill now; these
-    // zones cover the threats Vaks meets higher up the shaft.
-    liveTutorial: true,
+    // Controls are taught in the standalone tutorial arena before this level
+    // (buildTutorialLevel, its own flow node); these zones cover the threats
+    // Vaks meets higher up the shaft.
     tutorials: (spawn, ladders, floorY) => {
       return [
         { x: 16, y: floorY - 260, w: 448, h: 60, text: 'THE MIST RISES. IF IT TOUCHES YOU, IT HAS YOU. CLIMB!' },
-        { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS BITE ON THE LEDGES. PRESS M TO MEOW AND SCATTER THEM. DO NOT FORGET THE MEOW!' },
+        { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS BITE ON THE LEDGES. PRESS W TO MEOW AND SCATTER THEM. DO NOT FORGET THE MEOW!' },
         { x: 16, y: floorY - 560, w: 448, h: 60, text: 'CRACKED STEPS GIVE WAY. KEEP CLIMBING.' },
       ].filter(Boolean);
     },
@@ -435,7 +464,7 @@ export const LEVELS = [
     shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'GANJA SLOWS THE WORLD AND POWERS THE LEGS. TWO AT ONCE IS TOO STRONG.' },
-      { x: 16, y: floorY - 420, w: 448, h: 60, text: 'THE TIKOLOSH DRIFTS RIGHT AT YOU NOW. MEOW (M) SCARES IT BACK - USE IT!' },
+      { x: 16, y: floorY - 420, w: 448, h: 60, text: 'THE TIKOLOSH DRIFTS RIGHT AT YOU NOW. MEOW (W) SCARES IT BACK - USE IT!' },
     ],
   }),
   buildVertical({
@@ -449,7 +478,7 @@ export const LEVELS = [
     shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'TOO DARK FOR PEOPLE EYES. GOOD THING VAKS HAS CAT EYES.' },
-      { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS AND THE TIKOLOSH HUNT IN THE DARK. MEOW (M) OFTEN TO KEEP THEM BACK!' },
+      { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS AND THE TIKOLOSH HUNT IN THE DARK. MEOW (W) OFTEN TO KEEP THEM BACK!' },
     ],
   }),
   buildHorizontal({

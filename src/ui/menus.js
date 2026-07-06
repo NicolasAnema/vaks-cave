@@ -113,61 +113,6 @@ export class TitleScreen {
   }
 }
 
-// ---------------- how to play ----------------
-
-// A one-card primer shown before a fresh run: every control (including
-// the G life-burn) and the two-act goal. ENTER drops into the cold open,
-// ESC backs out to the menu.
-export class HowToPlayScreen {
-  constructor(cb) {
-    this.cb = cb; // { onStart(), onBack() }
-    this.t = 0;
-  }
-
-  update(dt) {
-    this.t += dt;
-    if (Math.random() < 0.05) Particles.leaf(120 + Math.random() * 80, 200);
-    Particles.update(dt);
-    Barks.update(dt);
-    if (Input.wasPressed('Enter')) { this.cb.onStart(); return; }
-    if (Input.wasPressed('Escape')) { this.cb.onBack(); return; }
-  }
-
-  draw(ctx) {
-    drawScene(ctx, 'garden', this.t);
-    dimScreen(ctx, 0.74);
-    Particles.draw(ctx, false);
-    drawText(ctx, 'HOW TO PLAY', View.w / 2, 14, { color: '#ffe49a', scale: 2, align: 'center' });
-
-    drawText(ctx, 'CONTROLS', 28, 42, { color: '#8ae08a' });
-    const controls = [
-      ['ARROWS', 'MOVE  (UP / DOWN CLIMB LADDERS)'],
-      ['SPACE', 'JUMP  (HOLD FOR A HIGHER JUMP)'],
-      ['M', 'MEOW - SCATTER RATS & SCARE OFF THE TIKOLOSH'],
-      ['G', 'BURN A LIFE FOR AN IRIE RUSH (ONCE A LEVEL)'],
-      ['ENTER', 'CONFIRM / SKIP A SCENE'],
-      ['ESC', 'PAUSE'],
-      ['F', 'FULLSCREEN'],
-    ];
-    controls.forEach(([k, d], i) => {
-      const y = 56 + i * 12;
-      drawText(ctx, k, 34, y, { color: '#ffe49a' });
-      drawText(ctx, d, 122, y, { color: '#cfd6ff' });
-    });
-
-
-    // standout reminder: people forget the meow exists
-    drawText(ctx, "DON'T FORGET TO MEOW (M)! IT IS YOUR ONLY DEFENCE", View.w / 2, 150, { color: '#ffb84d', align: 'center' });
-    drawText(ctx, 'AGAINST THE RATS AND THE TIKOLOSH. USE IT OFTEN.', View.w / 2, 162, { color: '#ffb84d', align: 'center' });
-
-    if (Math.floor(this.t * 1.6) % 2 === 0) {
-      drawText(ctx, 'PRESS ENTER TO BEGIN', View.w / 2, 230, { color: '#fff', align: 'center' });
-    }
-    drawText(ctx, 'ESC: BACK', View.w / 2, 246, { color: '#5a6280', align: 'center' });
-    Barks.draw(ctx, null);
-  }
-}
-
 // ---------------- generic list menu ----------------
 
 class ListScreen {
@@ -237,6 +182,8 @@ export class MainMenuScreen extends ListScreen {
     items.push({ label: 'SCENE GALLERY', run: () => cb.onGallery() });
     items.push({ label: 'SETTINGS', run: () => cb.onSettings() });
     items.push({ label: 'CREDITS', run: () => cb.onCredits() });
+    // dev playground sits right under credits, only in a debug build
+    if (CONFIG.debug) items.push({ label: 'DEV PLAYGROUND', run: () => cb.onDev() });
     super('MAIN MENU', items, cb);
     this.hintText = 'ARROWS: MOVE   ENTER: SELECT';
     AudioManager.playMusic(AudioManager.menuTrack); // the jukebox pick (or 'title') carries over, no restart
@@ -245,6 +192,30 @@ export class MainMenuScreen extends ListScreen {
   draw(ctx) {
     super.draw(ctx);
     drawSoundButton(ctx, this.t); // shows until the first click unlocks audio
+  }
+}
+
+// ---------------- dev playground (debug builds only) ----------------
+
+// A one-stop test hub, reached from MAIN MENU > DEV PLAYGROUND. Everything a
+// dev wants to jump straight to: level/boss select, the cutscene viewer, the
+// shop, the jukebox, a full run from the intro (to test the opening + L1
+// tutorial), and a save wipe to re-arm first-run flows.
+export class DevMenuScreen extends ListScreen {
+  constructor(cb) {
+    const st = { armed: false }; // RESET SAVE needs a confirm press
+    const items = [
+      { label: 'TUTORIAL DRILL',      run: () => cb.onTutorial() },
+      { label: 'LEVEL / BOSS SELECT', run: () => cb.onLevelSelect() },
+      { label: 'CUTSCENE VIEWER',     run: () => cb.onCutscenes() },
+      { label: 'SHOP (500 MANO)',     run: () => cb.onShop() },
+      { label: 'JUKEBOX',             run: () => cb.onJukebox() },
+      { label: 'FULL RUN FROM INTRO', run: () => cb.onFullRun() },
+      { label: () => st.armed ? 'RESET SAVE - PRESS AGAIN TO WIPE' : 'RESET SAVE',
+        run: () => { if (st.armed) cb.onReset(); else st.armed = true; } },
+    ];
+    super('DEV PLAYGROUND', items, cb);
+    this.hintText = 'DEV TOOLS - JUMP TO ANYTHING   ESC: BACK';
   }
 }
 
@@ -552,8 +523,14 @@ export class LoadingScreen {
     this.t = 0;
     this.dur = CONFIG.timers.loading;
     this.tip = TIPS[Math.floor(Math.random() * TIPS.length)];
-    this.slotName = AudioManager.musicName(musicSlot);
-    AudioManager.playMusic('loading');
+    // the loading screen now runs on KASI SPRINT (the world2 township track)
+    // instead of sitting silent. Preserve a pending restartNext across it so a
+    // lost-lives go-back still restarts the destination LEVEL song from the top
+    // (playMusic would otherwise consume the flag here).
+    const keepRestart = AudioManager.restartNext;
+    AudioManager.playMusic('world2');
+    AudioManager.restartNext = keepRestart;
+    this.slotName = AudioManager.musicName('world2'); // "KASI SPRINT"
   }
 
   update(dt) {
@@ -572,7 +549,7 @@ export class LoadingScreen {
     ctx.fillStyle = '#8ae08a';
     ctx.fillRect(View.w / 2 - w / 2 + 1, 129, Math.round((w - 2) * p), 8);
     drawText(ctx, this.tip, View.w / 2, 156, { color: '#ffe49a', align: 'center' });
-    drawText(ctx, 'MUSIC SLOT: ' + this.slotName + ' (SILENT)', View.w / 2, 176, { color: '#5a6280', align: 'center' });
+    drawText(ctx, 'NOW PLAYING: ' + this.slotName, View.w / 2, 176, { color: '#5a6280', align: 'center' });
     // little running vaks
     const x = View.w / 2 - w / 2 + (w - 26) * p;
     draw(ctx, 'vaks', 2 + Math.floor(this.t * 10) % 4, x, 104);

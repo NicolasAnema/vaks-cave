@@ -92,39 +92,25 @@ export class LevelScreen {
     this.respawnPoint = { x: level.spawn.x, y: level.spawn.y };
     this.ganjaUsed = false; // G: burn a life for an irie rush, once per level
     this.autoIrie = !!level.irieStart; // irie level: auto skin-up into the rush at the open
-    // L2 first visit only: instead of auto skin-up, hold on a "PRESS G" prompt so
-    // the player smokes the opening rush themselves (taught, not granted).
-    this.ganjaTut = (level.irieStart && opts.ganjaTut) ? { done: false } : null;
     this.time = 0;
     this.manoCollected = 0;
     this.deaths = 0;
     this.firstMano = false;
 
-    // L1 only: a live, interactive control drill. The mist is held back while
-    // Vaks tries each control for real; each row ticks off as he does it, and
-    // when the clock runs out (or he's tried them all and confirms) the mist
-    // rises and the climb is on. opts.tutorial gates it so it plays only on the
-    // player's first-ever arrival at L1 — not on a death-restart or a demotion.
+    // L1 only: a live, STAGED control drill — a proper walkthrough, not a wall
+    // of text. The mist is held back while Vaks is taught one thing at a time:
+    // move+jump (batched — that's the basic locomotion), then climb (a ladder
+    // is right there), then meow — introduced the instant a practice tikolosh
+    // drifts onto him, so the lesson lands exactly when it's needed. Purely
+    // gated: each stage waits for Vaks to actually do it, so nobody is rushed.
+    // opts.tutorial gates it to the player's first-ever arrival at L1.
     this.liveTut = (level.liveTutorial && opts.tutorial) ? {
-      t: CONFIG.timers.liveTutorial,
+      stage: 0,            // 0 move+jump -> 1 climb -> 2 meow -> 3 ganja -> 4 outro -> done
       done: false,
-      steps: [
-        { id: 'move',  label: 'MOVE',  hint: 'LEFT / RIGHT',        ok: false },
-        { id: 'jump',  label: 'JUMP',  hint: 'SPACE',               ok: false },
-        { id: 'climb', label: 'CLIMB', hint: 'UP / DOWN ON LADDER', ok: false },
-        { id: 'meow',  label: 'MEOW',  hint: 'M',                   ok: false },
-      ],
-      tiko: null,         // practice tikolosh, sent in once the climb is done
-      cappedNoted: false,
+      moved: false, jumped: false, climbed: false, meowed: false, ganjad: false,
+      tiko: null,          // practice tikolosh, drifts in at the meow stage
+      outroT: 0,           // brief "nice!" beat before the handoff
     } : null;
-
-    // during the control drill Vaks may climb the FIRST ladder but no higher,
-    // so he can't leave the tutorial zone before the mist is loosed. A ladder's
-    // top is its `y`, so the lowest (first) ladder has the largest y — cap his
-    // ascent there (up = smaller y, so this is the minimum y he can reach).
-    this.tutCeilingY = this.liveTut && level.ladders.length
-      ? Math.max(...level.ladders.map((l) => l.y))
-      : null;
 
     this.introT = CONFIG.timers.introCard;
     this.deathT = 0;
@@ -151,6 +137,7 @@ export class LevelScreen {
 
   // entry barks fire on the first update so screen transitions can't clear them
   start() {
+    if (this.level.isTutorial) return; // the drill speaks for itself — no entry bark
     AudioManager.play('level_start', 'L' + this.level.id);
     const useSignature = Math.random() < 0.5;
     if (this.o === 'vertical') (useSignature ? barkStartSafari : barkStartPool)({ subtitle: true, speaker: 'VAKS', force: true });
@@ -207,38 +194,44 @@ export class LevelScreen {
   }
 
   // ---- live control drill (L1) ----
-  // Returns true while the drill is holding the mist back. Each control ticks
-  // off the moment Vaks actually performs it, so the lesson is live, not text.
+  // A staged walkthrough. Returns true while it's holding the mist back. Each
+  // stage waits for Vaks to actually perform the control, then hands off to the
+  // next — the lesson is live and paced, never a timer racing the player.
   updateLiveTutorial(dt) {
     const T = this.liveTut;
     if (!T || T.done) return false;
-    T.t -= dt;
-    for (const s of T.steps) {
-      if (s.ok) continue;
-      const did = (s.id === 'move' && Input.dirX() !== 0)
-        || (s.id === 'jump' && Input.wasPressed('Space'))
-        || (s.id === 'climb' && this.player.climbing)
-        || (s.id === 'meow' && Input.wasPressed('KeyM'));
-      if (did) {
-        s.ok = true;
-        AudioManager.play('tutorial_prompt', s.id);
-        Particles.sparkle(this.player.x, this.player.y - 14, '#8ae08a', 5);
-        // climbing the ladder earns a chaser to practise the meow on
-        if (s.id === 'climb') this.spawnTutorialTiko();
+
+    if (T.stage === 0) {                       // MOVE & JUMP (batched basics)
+      if (Input.dirX() !== 0) T.moved = true;
+      if (Input.wasPressed('Space')) T.jumped = true;
+      if (T.moved && T.jumped) this.advanceTutStage();
+    } else if (T.stage === 1) {                // CLIMB (a ladder is right there)
+      if (this.player.climbing) { T.climbed = true; this.advanceTutStage(); }
+    } else if (T.stage === 2) {                // MEOW (a tikolosh is on him now)
+      if (Input.meowPressed()) { T.meowed = true; this.advanceTutStage(); }
+    } else if (T.stage === 3) {                // GANJA: the taught rush is free
+      if (this.player.irie) { T.ganjad = true; this.advanceTutStage(); }
+      else if (Input.wasPressed('KeyG') && !this.player.smoking) {
+        if (this.player.onGround && !this.player.climbing) this.startSkinUp(false); // no life burned
+        else Barks.note('PLANT YA FEET TO SKIN UP, BOSS', 'VAKS');
       }
+    } else if (T.stage === 4) {                // brief "nice!" beat, then hand off
+      T.outroT -= dt;
+      if (T.outroT <= 0) { this.endLiveTutorial(); return false; }
     }
-    // invisible roof: keep Vaks at or below the first ladder's top (up = smaller
-    // y), so he can't leave the drill arena before the mist is loosed
-    if (this.tutCeilingY != null && this.player.y < this.tutCeilingY) {
-      this.player.y = this.tutCeilingY;
-      if (this.player.vy < 0) this.player.vy = 0;
-      if (this.player.climbing) this.player.climbing = false;
-      if (!T.cappedNoted) { T.cappedNoted = true; Barks.note('STAY LOW TILL THE MIST COMES, BOSS.'); }
-    }
-    const allOk = T.steps.every((s) => s.ok);
-    // time's up, or everything tried and Vaks taps Enter to start early
-    if (T.t <= 0 || (allOk && Input.wasPressed('Enter'))) { this.endLiveTutorial(); return false; }
     return true;
+  }
+
+  // step to the next stage: sparkle + chime; the practice tikolosh drifts in
+  // the moment the meow stage begins (teach the counter as the threat arrives).
+  advanceTutStage() {
+    const T = this.liveTut;
+    if (!T) return;
+    AudioManager.play('tutorial_prompt', 'stage' + T.stage);
+    Particles.sparkle(this.player.x, this.player.y - 14, '#8ae08a', 6);
+    T.stage++;
+    if (T.stage === 2) this.spawnTutorialTiko();
+    if (T.stage === 4) T.outroT = 1.2;
   }
 
   // a single tikolosh drifts in to give the meow a target. It's harmless for
@@ -252,39 +245,28 @@ export class LevelScreen {
     this.tikos.push(t);
     this.liveTut.tiko = t;
     AudioManager.play('hazard_warning', 'tiko');
-    Barks.note('TIKOLOSH! PRESS M TO MEOW AND SCARE IT BACK!');
+    Barks.note('TIKOLOSH! PRESS W TO MEOW AND SCARE IT BACK!');
   }
 
   endLiveTutorial() {
     if (!this.liveTut || this.liveTut.done) return;
     this.liveTut.done = true;
-    this.liveTut.t = 0;
     // the practice tikolosh poofs away — it was never a real threat
     if (this.liveTut.tiko) {
       Particles.sparkle(this.liveTut.tiko.x, this.liveTut.tiko.y - 8, '#b07fe0', 8);
       this.tikos = this.tikos.filter((t) => t !== this.liveTut.tiko);
       this.liveTut.tiko = null;
     }
+    // the standalone tutorial arena is DONE here — hand straight off to L1
+    // (no clear screen, no stats; the flow node's onClear just advances)
+    if (this.level.isTutorial) {
+      AudioManager.play('tutorial_prompt', 'done');
+      this.cb.onClear({ time: this.time, mano: 0, deaths: 0 });
+      return;
+    }
     AudioManager.play('hazard_warning', 'mist_rise');
     Barks.note('MIST RISING! CLIMB, BOSS!');
     this.shake(1.2);
-  }
-
-  // ---- ganja drill (L2 first visit) ----
-  // Holds the mist back while a "PRESS G" prompt teaches the irie rush. The
-  // moment Vaks smokes (G), it's the level's free opening rush (no life burned)
-  // and the climb is on. Returns true while it's holding.
-  updateGanjaTutorial() {
-    const T = this.ganjaTut;
-    if (!T || T.done) return false;
-    if (this.player.smoking || this.player.irie) { T.done = true; return false; }
-    if (Input.wasPressed('KeyG') && this.player.onGround && !this.player.climbing) {
-      T.done = true;
-      this.autoIrie = false;
-      this.startSkinUp(false);   // free opening rush, costs no life
-      return false;
-    }
-    return true;
   }
 
   // ---- tsotsi hooks (called by the entities) ----
@@ -430,8 +412,7 @@ export class LevelScreen {
 
     // the irie level opens with Vaks already skinning up — the rush is how you
     // start the climb, and it costs no life. Fires once, right after the intro.
-    // (Held back on the first-visit ganja drill, where the player smokes it with G.)
-    if (this.autoIrie && !(this.ganjaTut && !this.ganjaTut.done) && !this.player.smoking && !this.player.irie) {
+    if (this.autoIrie && !this.player.smoking && !this.player.irie) {
       this.autoIrie = false;
       this.startSkinUp(false);
     }
@@ -470,9 +451,8 @@ export class LevelScreen {
     // The irie rush lands when it's lit (onSmokeDone). Once per level, never
     // while already irie (burning a life to overstack is a trap), and his
     // feet must be planted (no rolling mid-air or on a ladder).
-    // (skipped while the L2 ganja drill is holding — there G is the free taught
-    // rush, handled by updateGanjaTutorial, so it must not burn a life here)
-    if (Input.wasPressed('KeyG') && !this.player.smoking && !(this.ganjaTut && !this.ganjaTut.done)) {
+    // (in the tutorial arena the drill handles G itself — free, no life burned)
+    if (!this.level.isTutorial && Input.wasPressed('KeyG') && !this.player.smoking) {
       const canBurn = !this.ganjaUsed && !this.player.irie && this.run.lives > 0;
       if (canBurn && this.player.onGround && !this.player.climbing && !this.player.grabbedBy) {
         this.startSkinUp(true);
@@ -489,13 +469,6 @@ export class LevelScreen {
 
     this.player.update(dt);
 
-    // control drill (L1): hold Vaks at the first ladder's top — he can climb
-    // that one ladder but can't ascend past it until the drill ends.
-    if (this.tutCeilingY != null && this.liveTut && !this.liveTut.done && this.player.y < this.tutCeilingY) {
-      this.player.y = this.tutCeilingY;
-      if (this.player.vy < 0) this.player.vy = 0;
-    }
-
     // Skin-up ritual freezes the whole world. Only Vaks's own animation (the
     // burning joint + its smoke) and the inhale SFX keep going — threats,
     // hazards, enemies, projectiles, the clock and the music all hold until the
@@ -508,9 +481,9 @@ export class LevelScreen {
       return;
     }
 
-    // live control drill (L1) / ganja drill (L2): Vaks plays for real but the
-    // mist is held back while either prompt is up
-    const tutHold = this.updateLiveTutorial(dt) || this.updateGanjaTutorial(dt);
+    // live control drill (tutorial arena): Vaks plays for real but the mist is
+    // held back while the drill is up
+    const tutHold = this.updateLiveTutorial(dt);
     if (!tutHold) this.threat.update(dt, this.player, this);
 
     // crumbling platforms (held while Vaks skins up so the ledge under his
@@ -879,7 +852,6 @@ export class LevelScreen {
 
     this.drawHUD(ctx);
     if (this.liveTut && !this.liveTut.done && this.introT <= 0) this.drawLiveTutorial(ctx);
-    if (this.ganjaTut && !this.ganjaTut.done && this.introT <= 0) this.drawGanjaTutorial(ctx);
     Barks.draw(ctx, cam);
 
     if (this.glitchT > 0) this.drawGlitch(ctx);
@@ -1176,39 +1148,35 @@ export class LevelScreen {
 
   drawLiveTutorial(ctx) {
     const T = this.liveTut;
-    const w = 150, h = 64, x = Math.round(View.w / 2 - w / 2), y = 40;
-    // panel + top accent
-    ctx.fillStyle = 'rgba(10,12,20,0.74)';
+    const outro = T.stage === 4;
+    // one focused card per stage — only what Vaks needs to do right now
+    const rows = outro ? []
+      : T.stage === 0 ? [['WALK', 'LEFT / RIGHT', T.moved], ['JUMP', 'HOLD SPACE = HIGHER JUMP', T.jumped]]
+      : T.stage === 1 ? [['CLIMB', 'UP / DOWN', T.climbed]]
+      : T.stage === 2 ? [['MEOW', 'PRESS W', T.meowed]]
+      : [['SKIN UP', 'PRESS G (FREE HERE)', T.ganjad]];
+    const title = outro ? 'NICE, BOSS!'
+      : T.stage === 0 ? 'LEARN THE ROPES'
+      : T.stage === 1 ? 'NOW CLIMB'
+      : T.stage === 2 ? 'SCARE IT OFF'
+      : 'THE IRIE RUSH';
+    const w = 204, h = 16 + rows.length * LINE_H + 12;
+    const x = Math.round(View.w / 2 - w / 2), y = 40;
+    ctx.fillStyle = 'rgba(10,12,20,0.78)';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = 'rgba(138,224,138,0.6)';
     ctx.fillRect(x, y, w, 1);
-    drawText(ctx, 'TRY THE CONTROLS', View.w / 2, y + 5, { color: '#ffe49a', align: 'center' });
-    let ly = y + 17;
-    for (const s of T.steps) {
-      const col = s.ok ? '#8ae08a' : '#f4f0e0';
-      drawText(ctx, (s.ok ? '* ' : '- ') + s.label, x + 9, ly, { color: col });
-      drawText(ctx, s.hint, x + w - 9, ly, { color: s.ok ? '#5a7a5a' : '#8a93b8', align: 'right' });
+    drawText(ctx, title, View.w / 2, y + 5, { color: '#ffe49a', align: 'center' });
+    let ly = y + 16;
+    for (const [label, hint, ok] of rows) {
+      drawText(ctx, (ok ? '* ' : '- ') + label, x + 9, ly, { color: ok ? '#8ae08a' : '#f4f0e0' });
+      drawText(ctx, hint, x + w - 9, ly, { color: ok ? '#5a7a5a' : '#8a93b8', align: 'right' });
       ly += LINE_H;
     }
-    const secs = Math.max(0, Math.ceil(T.t));
-    const allOk = T.steps.every((s) => s.ok);
-    const msg = allOk ? 'ENTER: START NOW   ' + secs : 'MIST RISES IN ' + secs;
-    drawText(ctx, msg, View.w / 2, y + h - 8, { color: secs <= 5 ? '#ff5a5a' : '#7fd0ff', align: 'center' });
-  }
-
-  drawGanjaTutorial(ctx) {
-    const w = 320, h = 64, x = Math.round(View.w / 2 - w / 2), y = 40;
-    ctx.fillStyle = 'rgba(10,12,20,0.74)';
-    ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = 'rgba(138,224,138,0.6)';
-    ctx.fillRect(x, y, w, 1);
-    drawText(ctx, 'THE WEED BIOME', View.w / 2, y + 6, { color: '#ffe49a', align: 'center' });
-    drawText(ctx, 'GANJA SLOWS THE WORLD AND POWERS THE LEGS.', View.w / 2, y + 20, { color: '#f4f0e0', align: 'center' });
-    drawText(ctx, 'YOU NEED THE RUSH TO CLIMB. (FREE HERE - NO LIFE.)', View.w / 2, y + 32, { color: '#8a93b8', align: 'center' });
-    // pulsing call to action
-    if (Math.floor(this.time * 2) % 2 === 0) {
-      drawText(ctx, 'PRESS G TO SKIN UP', View.w / 2, y + h - 11, { color: '#8ae08a', scale: 2, align: 'center' });
-    }
+    const footer = outro
+      ? (this.level.isTutorial ? 'READY - INTO THE SHAFT!' : 'MIST RISING - CLIMB!')
+      : 'STEP ' + (T.stage + 1) + ' OF 4';
+    drawText(ctx, footer, View.w / 2, y + h - 8, { color: outro ? '#ff5a5a' : '#7fd0ff', align: 'center' });
   }
 
   drawIntroCard(ctx) {
@@ -1216,9 +1184,12 @@ export class LevelScreen {
     const a = t < 0.15 ? t / 0.15 : (t > 0.8 ? (1 - t) / 0.2 : 1);
     dimScreen(ctx, 0.78 * a);
     ctx.globalAlpha = a;
-    drawText(ctx, 'WORLD ' + this.level.world + (this.level.world === 1 ? ' - THE CAVE' : ' - THE TOWNSHIP'),
-      View.w / 2, 92, { color: '#8a93b8', align: 'center' });
-    drawText(ctx, 'LEVEL ' + this.level.id + ': ' + this.level.name, View.w / 2, 112, { color: '#f4f0e0', scale: 2, align: 'center' });
+    const kicker = this.level.isTutorial
+      ? 'BEFORE THE CLIMB'
+      : 'WORLD ' + this.level.world + (this.level.world === 1 ? ' - THE CAVE' : ' - THE TOWNSHIP');
+    const title = this.level.isTutorial ? this.level.name : 'LEVEL ' + this.level.id + ': ' + this.level.name;
+    drawText(ctx, kicker, View.w / 2, 92, { color: '#8a93b8', align: 'center' });
+    drawText(ctx, title, View.w / 2, 112, { color: '#f4f0e0', scale: 2, align: 'center' });
     drawText(ctx, '"' + this.level.tagline + '"', View.w / 2, 140, { color: '#ffe49a', align: 'center' });
     ctx.globalAlpha = 1;
   }
