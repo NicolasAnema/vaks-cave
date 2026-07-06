@@ -177,13 +177,38 @@ function buildVertical(o) {
 // ============================================================
 // TUTORIAL ARENA — its own tiny flow node before L1 (not part of
 // LEVELS, so the completability verifier skips it). A handcrafted
-// one-screen shaft: floor, one jump platform, one ladder platform.
-// The staged control drill (level.js liveTut) runs here and hands
-// straight off to L1 when done — no exit, no threats, no death.
+// one-screen shaft: floor, one jump platform, one ladder platform,
+// and a high GOLD-DOOR ledge above the ladder. The staged control
+// drill (level.js liveTut) teaches move/tap-hop/big-jump, climb,
+// meow, then the free irie rush — and the ONLY way up to the gold
+// door is the irie jump. Touch the door -> clear -> hand off to L1.
+// No threats, no death; the mist is held back for the whole drill.
 // ============================================================
 
 export function buildTutorialLevel() {
-  const H = 320, floorY = H - 24;
+  const H = 320, floorY = H - 24;                 // floor top at y=296
+  const jumpLedgeY = floorY - 38;                 // 258
+  const ladderLedgeY = floorY - 78;               // 218 — the highest STANDABLE platform; the
+                                                  // sober-unreachable door invariant is tightest here
+  // GOLD-DOOR ledge: its rise above the ladder ledge is tuned so the exit is
+  // reachable ONLY on the irie jump. Sober full-jump apex is maxJumpH; the
+  // exit-check reaches BAND px above a ledge top (level.js update: the exit fires
+  // when player.y < e.y + e.h + 8, and we seat e.y + e.h on the ledge top). We
+  // put the rise strictly above (maxJumpH + BAND + doorSoberPad) so a sober jump
+  // from the ladder ledge can't touch the band, and strictly below
+  // (irieApex - doorIriePad) so the irie jump clears it with room.
+  // irieApex = maxJumpH * jumpMul^2.
+  const S = jumpStats(CONFIG.player.runSpeed).maxJumpH;             // ~55.56 sober apex
+  const irieApex = S * CONFIG.irie.jumpMul * CONFIG.irie.jumpMul;   // ~93.90 irie apex
+  const BAND = 8;                                                   // exit-check reach above a ledge top
+  const riseLo = S + BAND + CONFIG.tutorial.doorSoberPad;           // ~73.6 — floor of the door rise
+  const riseHi = irieApex - CONFIG.tutorial.doorIriePad;            // ~79.9 — ceiling of the door rise
+  const doorRise = Math.round((riseLo + riseHi) / 2);               // 77
+  const doorLedgeY = ladderLedgeY - doorRise;                       // 141 — top of the gold-door ledge
+  const doorLedgeX = 294, doorLedgeW = 72;                          // 294..366, well inside the ladder
+                                                                    // ledge (264..404) so the irie hop is forgiving
+  const doorH = 44, doorW = 48;
+  const exit = { x: doorLedgeX + (doorLedgeW - doorW) / 2, y: doorLedgeY - doorH, w: doorW, h: doorH };
   return {
     id: 0, name: 'MORNING STRETCH', tagline: 'FIRST, THE BASICS, BOSS.',
     isTutorial: true, world: 1, orientation: 'vertical',
@@ -192,15 +217,16 @@ export function buildTutorialLevel() {
     liveTutorial: true, irieStart: false, irieMusic: null,
     music: 'darkcave', // carries the cold-open track through the drill
     platforms: [
-      { x: 16, y: floorY, w: 448, type: 'solid', main: true },   // floor
-      { x: 56, y: floorY - 38, w: 130, type: 'solid', main: true },  // jump ledge
-      { x: 264, y: floorY - 78, w: 140, type: 'solid', main: true }, // ladder ledge
+      { x: 16, y: floorY, w: 448, type: 'solid', main: true },        // floor
+      { x: 56, y: jumpLedgeY, w: 130, type: 'solid', main: true },    // jump ledge
+      { x: 264, y: ladderLedgeY, w: 140, type: 'solid', main: true }, // ladder ledge
+      { x: doorLedgeX, y: doorLedgeY, w: doorLedgeW, type: 'solid', main: true }, // gold-door ledge (irie-only)
     ],
-    ladders: [{ x: 322, y: floorY - 78, h: 78, vine: false }],
+    ladders: [{ x: 322, y: ladderLedgeY, h: 78, vine: false }],
     pickups: [], rats: [], tikos: [], lanterns: [], checkpoints: [], tutorials: [],
     walls: [{ x: 0, y: 0, w: 16, h: H }, { x: 464, y: 0, w: 16, h: H }],
     spawn: { x: 240, y: floorY },
-    exit: { x: 216, y: 40, w: 48, h: 44 }, // decorative — the drill clears the screen itself
+    exit, // the gold door: touching it (irie only) clears the arena and hands off to L1
     props: [], grounds: [], sushi: [], npcs: [],
   };
 }

@@ -4,7 +4,7 @@
 // card, deaths/respawns, clear sequence, easter-egg triggers.
 // ============================================================
 
-import { CONFIG } from '../config.js';
+import { CONFIG, jumpStats } from '../config.js';
 import { View, dimScreen } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { Camera } from '../engine/camera.js';
@@ -105,11 +105,12 @@ export class LevelScreen {
     // gated: each stage waits for Vaks to actually do it, so nobody is rushed.
     // opts.tutorial gates it to the player's first-ever arrival at L1.
     this.liveTut = (level.liveTutorial && opts.tutorial) ? {
-      stage: 0,            // 0 move+jump -> 1 climb -> 2 meow -> 3 ganja -> 4 outro -> done
+      stage: 0,            // 0 move+hop+bigjump -> 1 climb -> 2 meow -> 3 ganja -> 4 irie->gold door
       done: false,
-      moved: false, jumped: false, climbed: false, meowed: false, ganjad: false,
+      moved: false, hopped: false, bigJumped: false, climbed: false, meowed: false, ganjad: false,
+      // stage-0 jump-height measurement (tap vs hold, taught by doing)
+      wasGround: true, groundY: level.spawn.y, launchY: 0, apexY: 0, tracking: false,
       tiko: null,          // practice tikolosh, drifts in at the meow stage
-      outroT: 0,           // brief "nice!" beat before the handoff
     } : null;
 
     this.introT = CONFIG.timers.introCard;
@@ -201,10 +202,31 @@ export class LevelScreen {
     const T = this.liveTut;
     if (!T || T.done) return false;
 
-    if (T.stage === 0) {                       // MOVE & JUMP (batched basics)
-      if (Input.dirX() !== 0) T.moved = true;
-      if (Input.wasPressed('Space')) T.jumped = true;
-      if (T.moved && T.jumped) this.advanceTutStage();
+    if (T.stage === 0) {                       // MOVE + TAP-HOP + BIG-JUMP (taught by doing)
+      const p = this.player;
+      let feat = false;
+      if (!T.moved && Input.dirX() !== 0) { T.moved = true; feat = true; }
+      // measure jumps: capture the true ground level while grounded, then track
+      // the apex from launch (leaving the ground going UP) to landing, and
+      // classify the apex rise as a fraction of the sober full-jump apex.
+      if (p.onGround && !p.climbing) T.groundY = p.y;
+      if (T.wasGround && !p.onGround && !p.climbing && p.vy < 0 && !T.tracking) {
+        T.tracking = true; T.launchY = T.groundY; T.apexY = p.y;
+      }
+      if (T.tracking) {
+        if (p.y < T.apexY) T.apexY = p.y;        // rising -> smaller y
+        if (p.onGround || p.climbing) {          // landed (or grabbed a ladder mid-air)
+          const rise = T.launchY - T.apexY;
+          const maxH = jumpStats(CONFIG.player.runSpeed).maxJumpH;
+          if (!T.hopped && rise <= maxH * CONFIG.tutorial.hopMaxFrac) { T.hopped = true; feat = true; }
+          else if (!T.bigJumped && rise >= maxH * CONFIG.tutorial.bigMinFrac) { T.bigJumped = true; feat = true; }
+          // the ambiguous middle counts as neither — try again
+          T.tracking = false;
+        }
+      }
+      T.wasGround = p.onGround;
+      if (T.moved && T.hopped && T.bigJumped) this.advanceTutStage();
+      else if (feat) this.tutFeat();             // acknowledge each feat as it registers
     } else if (T.stage === 1) {                // CLIMB (a ladder is right there)
       if (this.player.climbing) { T.climbed = true; this.advanceTutStage(); }
     } else if (T.stage === 2) {                // MEOW (a tikolosh is on him now)
@@ -215,11 +237,22 @@ export class LevelScreen {
         if (this.player.onGround && !this.player.climbing) this.startSkinUp(false); // no life burned
         else Barks.note('PLANT YA FEET TO SKIN UP, BOSS', 'VAKS');
       }
-    } else if (T.stage === 4) {                // brief "nice!" beat, then hand off
-      T.outroT -= dt;
-      if (T.outroT <= 0) { this.endLiveTutorial(); return false; }
+    } else if (T.stage === 4) {                // IRIE! jump to the gold door (exit-check hands off)
+      // no timeout — the drill persists until Vaks touches the door. If the 4s
+      // rush fades, G re-rushes for FREE, indefinitely, so the arena can't soft-lock.
+      if (!this.player.irie && Input.wasPressed('KeyG') && !this.player.smoking) {
+        if (this.player.onGround && !this.player.climbing) this.startSkinUp(false); // free, no life burned
+        else Barks.note('PLANT YA FEET TO SKIN UP, BOSS', 'VAKS');
+      }
     }
     return true;
+  }
+
+  // acknowledge a single completed feat (tap-hop / big-jump / first move) with
+  // the same sparkle + chime a stage completion uses, so each one feels landed.
+  tutFeat() {
+    AudioManager.play('tutorial_prompt', 'feat');
+    Particles.sparkle(this.player.x, this.player.y - 14, '#8ae08a', 6);
   }
 
   // step to the next stage: sparkle + chime; the practice tikolosh drifts in
@@ -231,7 +264,6 @@ export class LevelScreen {
     Particles.sparkle(this.player.x, this.player.y - 14, '#8ae08a', 6);
     T.stage++;
     if (T.stage === 2) this.spawnTutorialTiko();
-    if (T.stage === 4) T.outroT = 1.2;
   }
 
   // a single tikolosh drifts in to give the meow a target. It's harmless for
@@ -246,27 +278,6 @@ export class LevelScreen {
     this.liveTut.tiko = t;
     AudioManager.play('hazard_warning', 'tiko');
     Barks.note('TIKOLOSH! PRESS W TO MEOW AND SCARE IT BACK!');
-  }
-
-  endLiveTutorial() {
-    if (!this.liveTut || this.liveTut.done) return;
-    this.liveTut.done = true;
-    // the practice tikolosh poofs away — it was never a real threat
-    if (this.liveTut.tiko) {
-      Particles.sparkle(this.liveTut.tiko.x, this.liveTut.tiko.y - 8, '#b07fe0', 8);
-      this.tikos = this.tikos.filter((t) => t !== this.liveTut.tiko);
-      this.liveTut.tiko = null;
-    }
-    // the standalone tutorial arena is DONE here — hand straight off to L1
-    // (no clear screen, no stats; the flow node's onClear just advances)
-    if (this.level.isTutorial) {
-      AudioManager.play('tutorial_prompt', 'done');
-      this.cb.onClear({ time: this.time, mano: 0, deaths: 0 });
-      return;
-    }
-    AudioManager.play('hazard_warning', 'mist_rise');
-    Barks.note('MIST RISING! CLIMB, BOSS!');
-    this.shake(1.2);
   }
 
   // ---- tsotsi hooks (called by the entities) ----
@@ -360,7 +371,22 @@ export class LevelScreen {
     this.player.celebrating = true;
     AudioManager.stopMusic();          // cut the level music so the mission-pass jingle plays clean
     AudioManager.play('level_clear', 'L' + this.level.id);
-    barkClear({ anchor: this.player, force: true });
+    if (this.level.isTutorial) {
+      // the drill is DONE — retire it and poof the harmless practice tikolosh.
+      // Reserve the m_finished_room comedy line for real levels; the drill just
+      // chimes its own prompt instead.
+      if (this.liveTut) {
+        this.liveTut.done = true;
+        if (this.liveTut.tiko) {
+          Particles.sparkle(this.liveTut.tiko.x, this.liveTut.tiko.y - 8, '#b07fe0', 8);
+          this.tikos = this.tikos.filter((t) => t !== this.liveTut.tiko);
+          this.liveTut.tiko = null;
+        }
+      }
+      AudioManager.play('tutorial_prompt', 'done');
+    } else {
+      barkClear({ anchor: this.player, force: true });
+    }
     Particles.confetti(this.player.x, this.player.y - 20);
   }
 
@@ -424,6 +450,8 @@ export class LevelScreen {
       Barks.update(dt);
       this.cam.follow(this.player.x, this.player.y, dt);
       if (this.clearT <= 0) {
+        // the tutorial arena has no par time / score — just hand off to L1
+        if (this.level.isTutorial) { this.cb.onClear({ time: this.time, mano: 0, deaths: 0 }); return; }
         const timeBonus = Math.max(0, Math.round((CONFIG.score.parTime[this.level.id] - this.time) * CONFIG.score.timeBonusPerSec));
         this.run.score += CONFIG.score.levelClear + timeBonus;
         this.cb.onClear({ time: this.time, mano: this.manoCollected, deaths: this.deaths, timeBonus });
@@ -934,17 +962,36 @@ export class LevelScreen {
 
   drawExit(ctx) {
     const e = this.level.exit;
-    if (this.o === 'vertical') {
-      // glowing cave opening
-      const g = ctx.createRadialGradient(e.x + e.w / 2, e.y + e.h / 2, 4, e.x + e.w / 2, e.y + e.h / 2, 50);
-      g.addColorStop(0, 'rgba(255,236,170,0.85)');
-      g.addColorStop(1, 'rgba(255,236,170,0)');
+    if (this.o !== 'vertical') return;
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+    if (this.level.isTutorial) {
+      // GOLD DOOR — the irie-only tutorial finish. Warm gold glow + a simple
+      // panelled door with a bright gleam, same pixel-art style as the cave exit.
+      const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, 46);
+      g.addColorStop(0, 'rgba(255,228,154,0.85)');
+      g.addColorStop(1, 'rgba(255,228,154,0)');
       ctx.fillStyle = g;
-      ctx.fillRect(e.x - 40, e.y - 40, e.w + 80, e.h + 80);
-      ctx.fillStyle = '#fff3cc';
-      ctx.fillRect(e.x + 6, e.y + 4, e.w - 12, e.h - 4);
-      drawText(ctx, 'OUT', e.x + e.w / 2, e.y - 10, { color: '#ffe49a', align: 'center' });
+      ctx.fillRect(e.x - 38, e.y - 38, e.w + 76, e.h + 76);
+      ctx.fillStyle = '#8a6a1e'; ctx.fillRect(e.x, e.y, e.w, e.h);                 // frame
+      ctx.fillStyle = '#ffe49a'; ctx.fillRect(e.x + 3, e.y + 3, e.w - 6, e.h - 3); // face
+      const ph = (e.h - 14) / 2 - 2;                                              // two inset panels
+      ctx.fillStyle = '#f2c65a';
+      ctx.fillRect(e.x + 7, e.y + 7, e.w - 14, ph);
+      ctx.fillRect(e.x + 7, e.y + 9 + ph, e.w - 14, ph);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(e.x + 6, e.y + 6, 2, e.h - 12); // gleam
+      ctx.fillStyle = '#fff3cc'; ctx.fillRect(e.x + e.w - 11, cy - 1, 3, 3);      // knob
+      drawText(ctx, 'GOLD DOOR', cx, e.y - 10, { color: '#ffe49a', align: 'center' });
+      return;
     }
+    // glowing cave opening (real levels)
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, 50);
+    g.addColorStop(0, 'rgba(255,236,170,0.85)');
+    g.addColorStop(1, 'rgba(255,236,170,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(e.x - 40, e.y - 40, e.w + 80, e.h + 80);
+    ctx.fillStyle = '#fff3cc';
+    ctx.fillRect(e.x + 6, e.y + 4, e.w - 12, e.h - 4);
+    drawText(ctx, 'OUT', cx, e.y - 10, { color: '#ffe49a', align: 'center' });
   }
 
   drawDarkness(ctx, cam) {
@@ -1148,18 +1195,33 @@ export class LevelScreen {
 
   drawLiveTutorial(ctx) {
     const T = this.liveTut;
-    const outro = T.stage === 4;
+    const irie = this.player.irie;
     // one focused card per stage — only what Vaks needs to do right now
-    const rows = outro ? []
-      : T.stage === 0 ? [['WALK', 'LEFT / RIGHT', T.moved], ['JUMP', 'HOLD SPACE = HIGHER JUMP', T.jumped]]
-      : T.stage === 1 ? [['CLIMB', 'UP / DOWN', T.climbed]]
-      : T.stage === 2 ? [['MEOW', 'PRESS W', T.meowed]]
-      : [['SKIN UP', 'PRESS G (FREE HERE)', T.ganjad]];
-    const title = outro ? 'NICE, BOSS!'
-      : T.stage === 0 ? 'LEARN THE ROPES'
-      : T.stage === 1 ? 'NOW CLIMB'
-      : T.stage === 2 ? 'SCARE IT OFF'
-      : 'THE IRIE RUSH';
+    let rows, title, footer, footerCol;
+    if (T.stage === 0) {                 // move + tap-hop + big-jump, taught by doing
+      rows = [
+        ['WALK', 'LEFT / RIGHT', T.moved],
+        ['SMALL HOP', 'TAP SPACE', T.hopped],
+        ['BIG JUMP', 'HOLD SPACE', T.bigJumped],
+      ];
+      title = 'LEARN THE ROPES'; footer = 'STEP 1 OF 4'; footerCol = '#7fd0ff';
+    } else if (T.stage === 1) {
+      rows = [['CLIMB', 'UP / DOWN', T.climbed]];
+      title = 'NOW CLIMB'; footer = 'STEP 2 OF 4'; footerCol = '#7fd0ff';
+    } else if (T.stage === 2) {
+      rows = [['MEOW', 'PRESS W', T.meowed]];
+      title = 'SCARE IT OFF'; footer = 'STEP 3 OF 4'; footerCol = '#7fd0ff';
+    } else if (T.stage === 3) {
+      rows = [['SKIN UP', 'PRESS G (FREE HERE)', T.ganjad]];
+      title = 'THE IRIE RUSH'; footer = 'STEP 4 OF 4'; footerCol = '#7fd0ff';
+    } else {                             // stage 4 — persists until the gold door
+      rows = irie
+        ? [['IRIE JUMP', 'CLIMB THEN JUMP UP', true]]
+        : [['RE-RUSH', 'PRESS G AGAIN (FREE)', false]];
+      title = 'IRIE!';
+      footer = irie ? 'JUMP TO THE GOLD DOOR!' : 'G AGAIN IF THE RUSH FADES';
+      footerCol = irie ? '#ffe49a' : '#7fd0ff';
+    }
     const w = 204, h = 16 + rows.length * LINE_H + 12;
     const x = Math.round(View.w / 2 - w / 2), y = 40;
     ctx.fillStyle = 'rgba(10,12,20,0.78)';
@@ -1173,10 +1235,7 @@ export class LevelScreen {
       drawText(ctx, hint, x + w - 9, ly, { color: ok ? '#5a7a5a' : '#8a93b8', align: 'right' });
       ly += LINE_H;
     }
-    const footer = outro
-      ? (this.level.isTutorial ? 'READY - INTO THE SHAFT!' : 'MIST RISING - CLIMB!')
-      : 'STEP ' + (T.stage + 1) + ' OF 4';
-    drawText(ctx, footer, View.w / 2, y + h - 8, { color: outro ? '#ff5a5a' : '#7fd0ff', align: 'center' });
+    drawText(ctx, footer, View.w / 2, y + h - 8, { color: footerCol, align: 'center' });
   }
 
   drawIntroCard(ctx) {

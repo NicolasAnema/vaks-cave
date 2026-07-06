@@ -45,6 +45,20 @@ export const CONFIG = {
 
   catEyes: { radius: 82, darkness: 0.93, lanternRadius: 48 },
 
+  // standalone tutorial arena (buildTutorialLevel). The stage-0 tap-vs-hold
+  // jump drill classifies a MEASURED jump by its apex rise as a fraction of the
+  // sober full-jump apex (jumpStats().maxJumpH): a tap lands under hopMaxFrac, a
+  // held jump clears bigMinFrac, the ambiguous middle counts as neither.
+  // doorSoberPad/doorIriePad shape the gold-door ledge height (derived in
+  // levels.js) so its rise from the ladder ledge is unreachable on a sober jump
+  // yet comfortably reachable on the irie jump.
+  tutorial: {
+    hopMaxFrac: 0.8,   // apex rise <= this * maxJumpH counts as the SMALL HOP (tap Space)
+    bigMinFrac: 0.87,  // apex rise >= this * maxJumpH counts as the BIG JUMP (hold Space)
+    doorSoberPad: 10,  // px the door rise clears the sober apex + exit band (unreachable sober)
+    doorIriePad: 14,   // px the irie apex clears the door rise (comfortably reachable irie)
+  },
+
   // Playback gain per channel, multiplied on top of the 0-10 sliders.
   // >1 needs Web Audio (HTMLMediaElement.volume caps at 1.0). Vaks's
   // voice notes ("sfx") punch through the music at 2x.
