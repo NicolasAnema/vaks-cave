@@ -240,7 +240,7 @@ export function drawScene(ctx, name, t) {
     cave_deep: sceneCaveDeep, cave_ganja: sceneCaveGanja,
     cave_mouth: sceneCaveMouth, cave_mouth_dawn: (c, tt) => sceneCaveMouth(c, tt, true),
     ridge: sceneRidge, garden: sceneGarden, garden_thursday: sceneThursday,
-    shop_nook: sceneShop, black: sceneBlack,
+    shop_nook: sceneShop, spaza_street: sceneSpazaStreet, black: sceneBlack,
   };
   (fns[name] || sceneBlack)(ctx, t);
 }
@@ -523,4 +523,103 @@ function sceneShop(g, t) {
   R(g, 90, 86, 6, 10, '#3f7a4a'); R(g, 102, 84, 6, 12, '#7a4a3a'); R(g, 116, 88, 8, 8, '#5ee0a0');
   R(g, 326, 96, 70, 4, '#54482f');
   R(g, 332, 88, 8, 8, '#d04a4a'); R(g, 348, 84, 6, 12, '#c9a86a'); R(g, 362, 86, 6, 10, '#8ae08a');
+  // small hanging lanterns to source the two glow pools (flicker with t)
+  for (const lx of [120, 360]) {
+    R(g, lx - 1, 44, 2, 6, '#2a2114');       // hook
+    R(g, lx - 3, 50, 6, 8, '#3a3026');       // lantern body
+    R(g, lx - 2, 52, 4, 5, `rgba(255,200,90,${0.65 + 0.35 * (0.5 + 0.5 * Math.sin(t * 9) * Math.sin(t * 3.7))})`);
+  }
+  // hand-painted sign hung on the rock (the words are carried by the caption)
+  R(g, 176, 38, 2, 8, '#2a2114');            // nail + string
+  R(g, 152, 46, 56, 20, '#6e5638');          // plank
+  R(g, 152, 46, 56, 2, '#8a6f48');
+  R(g, 152, 64, 56, 2, '#4a3c28');
+  R(g, 158, 51, 30, 2, '#3a2f1e');           // illegible scrawl
+  R(g, 158, 56, 42, 2, '#3a2f1e');
+  R(g, 158, 60, 20, 2, '#3a2f1e');
+  // wooden serving counter along the shop side
+  R(g, 260, 244, 216, 4, '#6e5638');
+  R(g, 260, 248, 216, 3, '#54482f');
+  R(g, 260, 251, 216, 16, '#3a2f1e');
+  for (let cxp = 272; cxp < 476; cxp += 26) R(g, cxp, 251, 1, 16, '#2a2114');
+  // slow-drifting dust motes caught in the lantern light
+  for (let i = 0; i < 5; i++) {
+    const mx = 100 + i * 66 + Math.sin(t * 0.4 + i * 1.7) * 16;
+    const my = 70 + ((t * 6 + i * 44) % 150);
+    R(g, mx, my, 1, 1, `rgba(255,224,150,${0.10 + 0.08 * Math.sin(t * 2 + i)})`);
+  }
+}
+
+// Act 2 — a township container-spaza street corner: corrugated-iron
+// container with a serving hatch, hand-painted price blobs, power lines
+// against a warm daylight sky. Palette borrowed from makeTownLayers.
+function sceneSpazaStreet(g, t) {
+  // warm township daylight
+  vGradient(g, 0, 0, View.w, View.h, [[0, '#6a6a9a'], [0.45, '#dd9a7a'], [0.8, '#ffe0a0'], [1, '#ffe0a0']]);
+  // low sun
+  g.fillStyle = '#ffd84d';
+  g.beginPath(); g.arc(70, 92, 18, 0, 6.2832); g.fill();
+  g.fillStyle = 'rgba(255,220,140,0.22)';
+  g.beginPath(); g.arc(70, 92, 30, 0, 6.2832); g.fill();
+  // a lazy cloud drifting
+  const clx = ((t * 5) % (View.w + 120)) - 60;
+  R(g, clx, 40, 50, 6, 'rgba(255,240,220,0.5)');
+  R(g, clx + 12, 36, 30, 5, 'rgba(255,240,220,0.4)');
+  // power poles + drooping wires against the sky
+  R(g, 40, 70, 3, 120, '#3c3444');
+  R(g, 264, 60, 3, 130, '#3c3444');
+  g.strokeStyle = 'rgba(28,24,40,0.85)'; g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(0, 78); g.quadraticCurveTo(150, 108, 265, 70);
+  g.moveTo(41, 72); g.quadraticCurveTo(160, 102, 265, 64);
+  g.stroke();
+  // far shack silhouettes along the horizon
+  const r = rng(305);
+  for (let i = 0; i < 11; i++) {
+    const x = r() * View.w, w = 16 + r() * 24, h = 10 + r() * 16;
+    R(g, x, 150 - h, w, h, '#7a5a68');
+    if (r() < 0.4) R(g, x + 3, 150 - h + 3, 4, 4, '#ffd88a');
+  }
+  // warm-dirt ground
+  R(g, 0, 238, View.w, View.h - 238, '#8a6a4a');
+  R(g, 0, 238, View.w, 3, '#caa570');
+  speckles(g, 71, 120, { x: 0, y: 242, w: View.w, h: View.h - 242 }, '#6f543a');
+  // ---- the shipping-container spaza (right side) ----
+  const cx = 300, cy = 150, cw = 176, ch = 94;
+  R(g, cx, cy, cw, ch, '#3a7a6a');            // teal corrugated-iron body
+  R(g, cx, cy, cw, 4, '#2c5e52');
+  R(g, cx, cy + ch - 4, cw, 4, '#22463d');
+  for (let x = cx + 2; x < cx + cw; x += 6) R(g, x, cy + 4, 2, ch - 8, '#33705f'); // ridges
+  R(g, cx, cy, 3, ch, '#245046');             // near corner
+  for (let i = 0; i < 8; i++) {               // rust streaks
+    const rx = cx + 8 + ((i * 37) % (cw - 16));
+    R(g, rx, cy + 8 + ((i * 13) % 40), 2, 14 + (i % 3) * 6, 'rgba(120,60,30,0.25)');
+  }
+  // corrugated roof overhang
+  R(g, cx - 6, cy - 6, cw + 12, 8, '#5a5f6a');
+  for (let x = cx - 6; x < cx + cw + 6; x += 4) R(g, x, cy - 6, 1, 8, '#4a4f58');
+  // serving hatch (dark opening + wooden counter ledge)
+  const hx = cx + 40, hy = cy + 28, hw = 84, hh = 44;
+  R(g, hx - 4, hy - 4, hw + 8, hh + 8, '#20423a');
+  R(g, hx, hy, hw, hh, '#10201c');
+  R(g, hx + 4, hy + 8, hw - 8, 3, '#54482f');            // interior shelf
+  R(g, hx + 8, hy + 2, 5, 7, '#d04a4a'); R(g, hx + 18, hy + 3, 4, 6, '#e0a85a'); R(g, hx + 28, hy + 2, 5, 7, '#7ec8ff');
+  R(g, hx - 8, hy + hh, hw + 16, 5, '#8a6f48');           // counter ledge
+  R(g, hx - 8, hy + hh + 5, hw + 16, 3, '#54482f');
+  // ---- hand-painted signage blobs (illegible; the caption carries words) ----
+  R(g, cx + 8, cy + 8, 54, 16, '#e8e4da');               // painted board
+  R(g, cx + 12, cy + 12, 30, 2, '#b0342e');
+  R(g, cx + 12, cy + 17, 40, 2, '#2e5aa0');
+  R(g, cx + 132, cy + 30, 28, 12, '#f2c91e');            // little price tag
+  R(g, cx + 136, cy + 34, 18, 2, '#7c2a2a'); R(g, cx + 136, cy + 38, 14, 2, '#7c2a2a');
+  R(g, cx + 96, cy - 6, 2, 10, '#3c3444');               // hanging sign on a wire
+  R(g, cx + 86, cy + 4, 24, 10, '#4a9a4a'); R(g, cx + 90, cy + 7, 16, 2, '#e8e4da');
+  R(g, cx - 2, cy + 30, 10, 50, '#d04a4a');              // vertical cooldrink banner
+  R(g, cx - 1, cy + 34, 8, 3, '#ffe4a0'); R(g, cx - 1, cy + 42, 8, 3, '#ffe4a0'); R(g, cx - 1, cy + 50, 8, 3, '#ffe4a0');
+  // litter/dust drifting across the corner (subtle animation)
+  for (let i = 0; i < 3; i++) {
+    const bx = ((t * 24 + i * 180) % (View.w + 40)) - 20;
+    const by = 212 + Math.sin(t * 2 + i) * 6;
+    R(g, bx, by, 3, 2, 'rgba(230,230,220,0.25)');
+  }
 }

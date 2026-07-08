@@ -26,6 +26,12 @@ const CHAT_SENDERS = {
 };
 
 function resolveFrames(sheet, anim) {
+  // a numeric anim pins a single frame (static props: upright bottles, a
+  // resting rake, coins) so a multi-frame sheet doesn't loop-spin.
+  if (typeof anim === 'number') {
+    const n = spr(sheet) ? spr(sheet).n : 1;
+    return { frames: [((anim % n) + n) % n], fps: 1 };
+  }
   if (sheet === 'vaks') {
     const m = { idle: [VAKS.idle, 3], run: [VAKS.run, 10], babalas: [VAKS.babalas, 3], celeb: [VAKS.celeb, 5], climb: [VAKS.climb, 6] };
     if (m[anim]) return { frames: [].concat(m[anim][0]), fps: m[anim][1] };
@@ -181,7 +187,8 @@ export class CutsceneScreen {
       case 'fx':
         if (a === 'flashback') { this.flashback = true; this.nextStep(); break; }
         if (a === 'flashback_end') { this.flashback = false; this.nextStep(); break; }
-        this.fx = { name: a, t: b || 1 };
+        // optional c,d = an explicit sparkle position (defaults to Vaks)
+        this.fx = { name: a, t: b || 1, x: c, y: d };
         this.waitFor = b || 1;
         break;
       default: this.nextStep();
@@ -268,7 +275,9 @@ export class CutsceneScreen {
         this.dawnT = Math.min(1, this.dawnT + dt * 0.6);
       } else if (n === 'sparkle' && Math.random() < 0.6) {
         const v = this.actors.vaks;
-        Particles.sparkle(v.x, v.y - 16, '#ffe98a', 2);
+        const sx = this.fx.x !== undefined ? this.fx.x : v.x;
+        const sy = this.fx.y !== undefined ? this.fx.y : v.y - 16;
+        Particles.sparkle(sx, sy, '#ffe98a', 2);
       } else if (n === 'confetti' && Math.random() < 0.3) {
         Particles.confetti(100 + Math.random() * 280, 80, 6);
       } else if (n === 'sushi' && Math.random() < 0.5) {
