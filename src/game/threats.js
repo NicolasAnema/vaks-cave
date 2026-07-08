@@ -156,6 +156,16 @@ export class Chaser {
   // scripted beat: Tallman & Shorty stall the chaser over their debts
   stall(secs) { this.state = 'stalled'; this.stateT = secs; }
 
+  // mid-level side-scene breather: on resume, shove the chaser back to the
+  // fresh-start gap (never FORWARD) and clear any wind-up/burst so the chase
+  // resumes calm. Only ever helps the player, so verify.js is unaffected.
+  breather(playerX) {
+    this.x = Math.min(this.x, playerX - CONFIG.chaser.startGap);
+    this.state = 'chase';
+    this.stateT = 0;
+    this.burstTimer = CONFIG.chaser.burstEvery[this.level.id];
+  }
+
   speed() {
     const C = CONFIG.chaser;
     if (this.state === 'stalled') return 0;          // only the scripted stall fully stops it

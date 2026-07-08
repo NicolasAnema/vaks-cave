@@ -1056,6 +1056,25 @@ export async function initSprites() {
     for (let t = 0; t < 4; t++) R(g, t * 2, 18, 1, 2, '#54482f');
   })]);
 
+  // Teacup + saucer (granny's peace offering, ending TEA scene). Two frames
+  // for a gentle drift of steam wisps.
+  sheet('teacup', [0, 1].map((i) => frame(16, 14, (g) => {
+    // steam wisps (drift a pixel each frame)
+    R(g, 6 + i, 1, 1, 2, 'rgba(255,255,255,0.5)');
+    R(g, 9 - i, 0, 1, 2, 'rgba(255,255,255,0.4)');
+    R(g, 8, 3, 1, 1, 'rgba(255,255,255,0.3)');
+    // saucer
+    R(g, 2, 11, 12, 2, '#dcd6c6');
+    R(g, 3, 12, 10, 1, '#b9b3a2');
+    // cup body
+    R(g, 4, 5, 8, 6, '#f2ece0');
+    R(g, 4, 5, 8, 1, '#ffffff');
+    R(g, 5, 6, 6, 2, '#7a4a1e');                  // tea
+    R(g, 4, 10, 8, 1, '#c9c2b2');
+    // handle
+    R(g, 12, 6, 2, 1, '#d8d2c4'); R(g, 13, 7, 1, 2, '#d8d2c4'); R(g, 12, 9, 2, 1, '#d8d2c4');
+  })));
+
   // Washing line (sways)
   sheet('washing', [0, 1].map((i) => frame(46, 16, (g) => {
     R(g, 0, 2, 46, 1, '#9a9aa8');

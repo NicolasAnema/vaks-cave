@@ -22,7 +22,7 @@ const CHAT_SENDERS = {
   vaks:    { name: 'VAKS',    color: '#8ae08a', bubble: '#103a26' },
   shorty:  { name: 'SHORTY',  color: '#7fd0ff', bubble: '#202c33' },
   tallman: { name: 'TALLMAN', color: '#c0a6ff', bubble: '#202c33' },
-  granny:  { name: 'GOGO',    color: '#ff8a8a', bubble: '#41232a' },
+  granny:  { name: 'GRANNY',  color: '#ff8a8a', bubble: '#41232a' },
 };
 
 function resolveFrames(sheet, anim) {
@@ -72,7 +72,10 @@ export class CutsceneScreen {
       this._clickHandler = () => { if (!this.done) this._clicked = true; };
       document.addEventListener('pointerdown', this._clickHandler);
     }
-    AudioManager.playMusic(this.scene.music);
+    // Side scenes (mid-level breathers) declare NO music, so the level's track
+    // keeps playing underneath the pushed overlay — only start music when the
+    // scene actually names a slot. Story scenes all declare one.
+    if (this.scene.music) AudioManager.playMusic(this.scene.music);
     this.nextStep();
   }
 
@@ -424,7 +427,7 @@ export class CutsceneScreen {
     R(ctx, px + 5, py + 5, 8, 8, '#3a6b5f');                   // group avatar
     R(ctx, px + 6, py + 6, 6, 3, '#cfe9df');
     drawText(ctx, 'FAMILY GROUP', px + 17, py + 4, { color: '#eafff5' });
-    drawText(ctx, 'GOGO, TALLMAN, SHORTY, +3', px + 17, py + 11, { color: '#7fae9f' });
+    drawText(ctx, 'GRANNY, TALLMAN, SHORTY, +3', px + 17, py + 11, { color: '#7fae9f' });
 
     // messages
     let cy = py + hb + 6;

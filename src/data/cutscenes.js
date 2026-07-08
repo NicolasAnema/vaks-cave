@@ -247,9 +247,9 @@ export const CUTSCENES = {
 
   chase_begins: {
     // Township Scent plays the whole scene (Township Riddem takes over in L4-L6).
-    // Granny NEVER shows up in person — she
-    // strikes through the family WhatsApp group: Shorty, then Tallman, then GOGO,
-    // whose message fires alert.mp3 and shakes the screen. Then it's a runner.
+    // Granny NEVER shows up in person — she strikes through the family WhatsApp
+    // group, her message firing alert.mp3 and rattling the handset. Then it's a
+    // runner: Vaks records a voice note and bolts.
     id: 'chase_begins', name: 'ONE FOR THE ROAD', music: 'township', bg: 'ridge',
     actors: {
       vaks:  { sheet: 'vaks', anim: 'idle', x: 210, y: 230, flip: false },
@@ -260,110 +260,281 @@ export const CUTSCENES = {
     steps: [
       ['letterbox', true],
       ['fade', 'in', 1.0],
-      ['note', 'OUT THE CAVE, STRAIGHT INTO THE DRUNK CREW: MASI, IMO AND RASTA.'],
-      ['say', 'masi', 'EYTA VAKS! YOU MADE IT OUT, MY BRA! SIT, DRINK OUR ZAMALEKS, MWAHAHA!'],
-      ['say', 'rasta', 'IRIE, BREDREN... DOWN THIS VICEROY WITH I AND I. JAH BLESS.'],
-      ['say', 'imo', 'CAN I HEV SAVANA, BHUTI VAKS? AND NDICELA KFC!'],
-      ['say', 'vaks', "NO MAN, BOSS... MY GOGO IS WAITING. SHE'S GONNA MOER ME."],
-      ['say', 'masi', 'AG, VIVO VICEROY! JUST ONE SIP, MY BRA. RELAX.'],
-      ['say', 'vaks', 'WAIT... LET ME JUST CHECK MY PHONE QUICK.'],
-      // the family group blows up
+      ['note', 'OUT OF THE CAVE. STRAIGHT INTO THE DRINK CREW.'],
+      ['say', 'masi', 'EYTA VAKS! YOU MADE IT OUT, MY BRA! SIT! DRINK! MWAHAHA!'],
+      ['say', 'rasta', 'IRIE, BREDREN. DOWN THIS ONE WITH I AND I. JAH BLESS.'],
+      ['say', 'imo', 'CAN I HAVE SAVANNA, BHUTI VAKS? AND NDICELA KFC!'],
+      ['say', 'vaks', "NO MAN, BOSS. MY GRANNY IS WAITING. SHE'S GOING TO MOER ME INTO NEXT WEEK."],
+      ['say', 'masi', "ONE FOR THE ROAD, BRA. IT'S TRADITION. IT'S THE LAW."],
+      // the tipsy hit — Vaks caves and takes a huge sip
+      ['shake', 2.6],
+      ['flash', '#ffd86a', 0.5],
+      ['sprite', 'vaks', 'vaks', 'babalas'],
+      ['note', 'VAKS TAKES A HUGE SIP. THE WHOLE RIDGE TILTS.'],
+      ['wait', 0.5],
+      ['sprite', 'vaks', 'vaks', 'idle'],
+      ['say', 'vaks', 'WAIT. WAIT. I NEED TO DO SOMETHING.'],
+      // he pulls up the family group and records a voice note
       ['phone', true],
-      ['chat', 'sys', "IT'S FRIDAY!"],
-      ['chat', 'shorty', 'WHERE IS MY BOSS?'],
-      ['chat', 'tallman', 'YOU MUST KNOW'],
-      ['chat', 'granny', "I'M GONNA BEAT YOU", 'alert'],
+      ['say', 'vaks', "GRANNY. IT'S VAKS. VIBE WITH ME, GRANNY."],
+      ['chat', 'sys', 'GRANNY IS TYPING...'],
+      ['wait', 1.5],
+      ['chat', 'granny', 'WHERE ARE YOU VAKS. HOME. NOW.', 'alert'],
       ['wait', 0.9],
       ['phone', false],
-      ['say', 'vaks', "HAIBO! GOGO IS ON THE GROUP! SHE KNOWS! I'M FINISHED... I MUST RUN!"],
+      ['say', 'vaks', 'm_coming_boss', "SHIT... I'M COMING BOSS I'M COMING BOSS I'M COMING BOSSSS."],
       ['anim', 'vaks', 'run'],
       ['move', 'vaks', 540, 228, 1.0],
       ['fade', 'out', 0.7],
     ],
   },
 
-  ending: {
-    id: 'ending', name: 'BAAS VAN DIE PLAAS', music: 'ending', bg: 'garden',
+  // S9 — spaza window. Vetkoek (the shopkeeper body) fronts a debt-economy gag
+  // with Tallman & Shorty, then warns Vaks about the tsotsis and taxis ahead.
+  babalas_economics: {
+    id: 'babalas_economics', name: 'BABALAS ECONOMICS', music: 'township', bg: 'shop_nook',
     actors: {
-      vaks: { sheet: 'vaks', anim: 'run', x: -20, y: 252, flip: false },
-      granny: { sheet: 'granny', anim: 'run', x: -60, y: 248, flip: false },
-      rake: { sheet: 'rake', anim: 'loop', x: 250, y: 252, flip: false },
+      vaks:    { sheet: 'vaks', anim: 'idle', x: 150, y: 236, flip: false },
+      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true },
+      tallman: { sheet: 'tallman', anim: 'idle', x: 540, y: 226, flip: true },
+      shorty:  { sheet: 'shorty', anim: 'idle', x: 566, y: 232, flip: true },
     },
     steps: [
       ['letterbox', true],
-      ['fade', 'in', 0.6],
-      ['move', 'vaks', 238, 252, 1.0],
-      ['show', 'rake', false],
-      ['sprite', 'vaks', 'vaks_rake', 'loop'],
-      ['fx', 'sparkle', 0.4],
-      ['note', 'RAKE: ACQUIRED. INNOCENCE: MAXIMUM.'],
-      ['move', 'granny', 150, 248, 1.1],
-      ['anim', 'granny', 'stare'],
-      ['wait', 1.2],
-      ['note', 'GRANNY FINDS VAKS HARD AT WORK. EVERY DAY BOSS.'],
-      ['anim', 'granny', 'idle'],
-      ['say', 'granny', 'HMMPH. ...GOOD BOY, VAKS.'],
-      ['say', 'vaks', 'm_baas_plaas'],
-      ['fx', 'confetti', 1.0],
-      ['wait', 0.8],
-      ['smash', 'garden_thursday'],
-      ['sprite', 'vaks', 'vaks', 'idle'],
-      ['teleport', 'vaks', 180, 252],
-      ['show', 'granny', false],
-      ['face', 'vaks', 1],
-      ['note', 'THURSDAY. AGAIN.'],
-      ['say', 'vaks', 'm_spying'],
-      ['wait', 1.0],
-      ['fade', 'out', 1.4],
+      ['fade', 'in', 0.8],
+      ['move', 'vaks', 214, 236, 1.0],
+      ['say', 'vetkoek', 'AWEH. YOU MUST BE THE VAKS.'],
+      ['say', 'vaks', '...WHAT IS THIS PLACE?'],
+      ['note', 'TALLMAN AND SHORTY SLIDE IN.'],
+      ['move', 'tallman', 300, 226, 1.0],
+      ['move', 'shorty', 336, 232, 1.1],
+      ['say', 'tallman', 'VAKS! MY BRA! LOOKING STRONG! LOOKING FAST!'],
+      ['say', 'vaks', "TALLMAN. YOU OWE ME. WHERE'S MY FIFTY RAND. NO STORIES."],
+      ['say', 'tallman', 'MONTH END, BRA. MONTH END. YIMA BHUTI.'],
+      ['say', 'vaks', "IT'S BEEN MONTH END SINCE FEBRUARY, BOSS."],
+      ['face', 'shorty', 1],
+      ['say', 'shorty', "I'LL EFT YOU."],
+      ['move', 'shorty', 566, 232, 1.2],
+      ['say', 'vetkoek', 'BEWARE OF THE TSOTSIS, MY BOSS. AND TAXIS - REMEMBER THEY OWN THE ROAD.'],
+      ['say', 'vaks', 'SHAP. EK IS DIE BAAS REMEMBER. VAKS ALWAYS HAS RIGHT OF WAY.'],
+      ['fade', 'out', 0.7],
     ],
   },
 
-  granny_corner: {
-    id: 'granny_corner', name: 'CORNERED AT THE PLAAS', music: 'level1', bg: 'garden',
+  // S10 — a quiet corner. 74 unread, granny spamming, the crew "helping", and a
+  // tsotsi in the alley eyeing the phone. Vaks swears by the phone.
+  airtime: {
+    id: 'airtime', name: 'AIRTIME', music: 'township', bg: 'ridge',
     actors: {
-      vaks: { sheet: 'vaks', anim: 'run', x: -20, y: 252, flip: false },
-      granny: { sheet: 'granny', anim: 'run', x: 540, y: 248, flip: true },
+      vaks:   { sheet: 'vaks', anim: 'idle', x: 220, y: 230, flip: false },
+      tsotsi: { sheet: 'tsotsi_knife', anim: 'idle', x: -60, y: 236, flip: false },
     },
     steps: [
       ['letterbox', true],
+      ['fade', 'in', 0.8],
+      ['note', 'A QUIET CORNER BETWEEN THE SHACKS. THE PHONE IS ON 2%.'],
+      ['phone', true],
+      ['chat', 'sys', '74 UNREAD'],
+      ['chat', 'granny', 'where are you'],
+      ['chat', 'granny', 'where are you'],
+      ['chat', 'granny', 'WHERE ARE YOU'],
+      ['chat', 'tallman', "he's coming granny. i saw him. very fast. like a bullet."],
+      ['chat', 'shorty', 'i saw him by the shebeen'],
+      ['chat', 'vaks', 'SHORTY YOU SNAKE.'],
+      ['wait', 0.8],
+      ['phone', false],
+      // an alley silhouette watching the phone
+      ['teleport', 'tsotsi', 42, 236],
+      ['shake', 1.2],
+      ['note', 'IN THE ALLEY, SOMETHING WATCHES THE PHONE.'],
+      ['say', 'vetkoek', 'HOLD THAT PHONE TIGHT ON THE HOME STRETCH, MY BOSS.'],
+      ['say', 'vaks', 'LET THEM TRY, BOSS. THIS PHONE IS MY WHOLE FAMILY.'],
+      ['say', 'vaks', "...AND IF IT BREAKS, SHORTY'S BUYING ME A NEW ONE."],
+      ['fade', 'out', 0.7],
+    ],
+  },
+
+  // ---- SIDE SCENES (mid-level breathers; M.push overlay, no music) ----
+
+  // SS1 (L4) — the crew's live match commentary in the group chat, granny
+  // typing then nothing, and the bottles clink as the chase resumes.
+  ss_commentary: {
+    id: 'ss_commentary', name: 'THE COMMENTARY', bg: 'ridge',
+    actors: {
+      vaks: { sheet: 'vaks', anim: 'idle', x: 220, y: 230, flip: false },
+    },
+    steps: [
+      ['letterbox', true],
+      ['fade', 'in', 0.5],
+      ['note', 'VAKS BENDS OVER, CATCHING HIS BREATH. THE PHONE BUZZES.'],
+      ['phone', true],
+      ['chat', 'tallman', "granny relax, he's coming. i can see him from the roof. he's looking strong and irie."],
+      ['chat', 'shorty', 'also just saw him, he jumped a fence and did a backflip. 8/10. small wobble on the landing.'],
+      ['chat', 'sys', 'GRANNY IS TYPING...'],
+      ['wait', 1.6],
+      ['chat', 'sys', '...'],
+      ['wait', 0.8],
+      ['phone', false],
+      ['say', 'vaks', 'm_granny_spy', "JY GRANNY'S SPYING ON ME."],
+      ['sfx', 'glass_break'],
+      ['shake', 1.6],
+      ['note', 'BOTTLES CLINK OFFSCREEN.'],
+      ['say', 'vaks', 'NDIYABALEKA BOSS.'],
+      ['fade', 'out', 0.5],
+    ],
+  },
+
+  // SS2 (L5) — the crew flag the taxi and try to pay Vaks's fare in 5c coins.
+  // A tikolosh rides the roof, waving.
+  ss_small_change: {
+    id: 'ss_small_change', name: 'SMALL CHANGE', bg: 'ridge',
+    actors: {
+      vaks:    { sheet: 'vaks', anim: 'idle', x: 200, y: 230, flip: false },
+      taxi:    { sheet: 'taxi', anim: 'loop', x: 404, y: 234, flip: true },
+      tallman: { sheet: 'tallman', anim: 'idle', x: 300, y: 226, flip: true },
+      shorty:  { sheet: 'shorty', anim: 'idle', x: 336, y: 232, flip: true },
+      tiko:    { sheet: 'tiko', anim: 'loop', x: 404, y: 206, flip: true },
+    },
+    steps: [
+      ['letterbox', true],
+      ['fade', 'in', 0.5],
+      ['sfx', 'granny_chase_start', 'horn'],
+      ['shake', 2.0],
+      ['note', 'A HOOTER BLARES. TALLMAN AND SHORTY STEP INTO THE ROAD AND FLAG THE TAXI.'],
+      ['say', 'tallman', "GO, BRA. WE'LL HANDLE THIS. ONE LOCAL, DRIVER!"],
+      ['say', 'shorty', 'FIVE... TEN... EISH, DROPPED ONE. STARTING OVER.'],
+      ['say', 'vaks', "THAT'S NOT FIFTY, BOSS."],
+      ['say', 'tallman', "WE DON'T HAVE YOUR FIFTY, BRA. WE WORKING ON IT."],
+      ['note', 'ON THE TAXI ROOF, UNNOTICED: TIKOLOSH RIDING ALONG. IT WAVES.'],
+      ['wait', 0.8],
+      ['note', 'VAKS BLINKS. SAYS NOTHING.'],
+      ['note', 'THE TAXI WAITS.'],
+      ['fade', 'out', 0.5],
+    ],
+  },
+
+  // SS3 (L6) — Tallman blocks the alley while Shorty hawks a "fresh phone".
+  // The fifty remains theoretical.
+  ss_the_wall: {
+    id: 'ss_the_wall', name: 'THE WALL', bg: 'ridge',
+    actors: {
+      vaks:    { sheet: 'vaks', anim: 'idle', x: 220, y: 230, flip: false },
+      tallman: { sheet: 'tallman', anim: 'idle', x: 96, y: 226, flip: false },
+      shorty:  { sheet: 'shorty', anim: 'idle', x: 128, y: 232, flip: false },
+    },
+    steps: [
+      ['letterbox', true],
+      ['fade', 'in', 0.5],
+      ['note', 'FAST FOOTSTEPS BEHIND. TALLMAN STEPS INTO THE ALLEY MOUTH AND JUST... STANDS.'],
+      ['say', 'shorty', 'FRESH PHONE HERE, GENTS! BARELY STOLEN!'],
+      ['face', 'shorty', -1],
+      ['move', 'shorty', -40, 232, 1.0],
+      ['note', 'SILHOUETTES PEEL OFF AFTER SHORTY. HE BOLTS, CACKLING.'],
+      ['say', 'vaks', "THAT'S A CHAPPIES BOX WITH A SCREEN PROTECTOR."],
+      ['say', 'tallman', 'WE TRYING TO GET YOUR 50.'],
+      ['say', 'vaks', "...SO WE'RE EVEN, BOSS?"],
+      ['say', 'tallman', 'MONTH END, BRA. MONTH END.'],
+      ['note', 'THE FIFTY REMAINS THEORETICAL.'],
+      ['fade', 'out', 0.5],
+    ],
+  },
+
+  // S11 — home gate, golden hour, GRANNY still. No music (the boss track is
+  // stopped). Vaks blusters, granny says nothing and points at the rake and the
+  // unraked rows; Vaks concedes, picks up the rake and steps through the gate.
+  granny_corner: {
+    id: 'granny_corner', name: 'CORNERED AT THE PLAAS', bg: 'garden',
+    actors: {
+      vaks:   { sheet: 'vaks', anim: 'run', x: -20, y: 252, flip: false },
+      granny: { sheet: 'granny', anim: 'idle', x: 300, y: 248, flip: true },
+    },
+    steps: [
+      ['letterbox', true],
+      ['music', null],
       ['fade', 'in', 0.7],
       ['move', 'vaks', 180, 252, 1.0],
       ['anim', 'vaks', 'idle'],
-      ['say', 'vaks', 'THE PLAAS! I MADE IT! NOW LET ME LOOK BUSY, QUICK...'],
-      ['move', 'granny', 340, 248, 1.0],
+      ['say', 'vaks', 'GRANNY! HEY! HAIBO! YOU LOOK... RESTED!'],
+      ['wait', 1.2],
+      ['say', 'vaks', 'LOOK GRANNY. THERE WAS A CAVE. THERE WAS A MIST. THERE WAS A VERY BIG GUY, LOVELY GUY ACTUALLY...'],
+      ['wait', 1.2],
+      ['anim', 'vaks', 'celeb'],
+      ['fx', 'sparkle', 0.8],
+      ['say', 'vaks', '...VIBE WITH ME, GRANNY?'],
+      ['anim', 'vaks', 'idle'],
       ['anim', 'granny', 'stare'],
-      ['shake', 1.8],
-      ['note', 'GOGO BLOCKS THE GATE. NO ESCAPE NOW.'],
-      ['say', 'granny', 'NOT SO FAST, VAKS. YOU THINK GOGO IS SLOW?'],
-      ['say', 'vaks', 'HAIBO. OK GOGO... ONE MORE VIBE.'],
-      ['fade', 'out', 0.6],
+      ['shake', 1.2],
+      ['note', 'GRANNY RAISES ONE ARM AND POINTS. AT THE RAKE. AND THE UNRAKED ROWS.'],
+      ['say', 'vaks', '...THE PLAAS NEEDS ITS BAAS, BOSS.'],
+      ['sprite', 'vaks', 'vaks_rake', 'loop'],
+      ['fx', 'sparkle', 0.4],
+      ['move', 'vaks', 250, 252, 1.0],
+      ['fade', 'out', 0.8],
     ],
   },
 
-  granny_outro: {
-    id: 'granny_outro', name: 'GOGO IS SATISFIED', music: 'level1', bg: 'garden',
+  // S12 — THE TEA. Wordless but for two scripted lines: the plaas is tended,
+  // granny inspects, hands Vaks a cup of tea and walks to the stoep; the
+  // tikolosh pops up behind the fence, SMASH CUT to Thursday, and snoring.
+  ending: {
+    id: 'ending', name: 'BAAS VAN DIE PLAAS', music: 'ending', bg: 'garden',
     actors: {
-      vaks: { sheet: 'vaks', anim: 'idle', x: 200, y: 252, flip: false },
-      granny: { sheet: 'granny', anim: 'idle', x: 320, y: 248, flip: true },
+      vaks:   { sheet: 'vaks_rake', anim: 'loop', x: 150, y: 252, flip: false },
+      granny: { sheet: 'granny', anim: 'idle', x: 430, y: 248, flip: true },
+      teacup: { sheet: 'teacup', anim: 'loop', x: 196, y: 250, flip: false },
+      tiko:   { sheet: 'tiko', anim: 'loop', x: 360, y: 250, flip: true },
     },
     steps: [
+      ['show', 'teacup', false],
+      ['show', 'tiko', false],
       ['letterbox', true],
-      ['fade', 'in', 0.6],
-      ['anim', 'granny', 'stare'],
+      ['fade', 'in', 1.0],
+      ['note', 'THE PLAAS, TENDED. VAKS RAKES THE ROWS, CAP SKEW.'],
       ['wait', 0.8],
-      ['note', 'VAKS HELD THE VIBE. EVEN GOGO CANNOT STAY CROSS.'],
-      ['say', 'granny', 'HMMPH. YOU STILL GOT THE RHYTHM, BOY.'],
+      ['move', 'granny', 250, 248, 1.6],
+      ['anim', 'granny', 'stare'],
+      ['note', 'GRANNY WALKS THE ROWS. SHE STOPS AT A CROOKED ONE. SHE LOOKS AT HIM.'],
+      ['move', 'vaks', 232, 252, 0.7],
+      ['fx', 'sparkle', 0.4],
+      ['note', 'VAKS HURRIES OVER AND RE-RAKES IT. GRANNY CONTINUES.'],
       ['anim', 'granny', 'idle'],
-      ['say', 'vaks', 'ALWAYS, GOGO. ALWAYS.'],
+      ['move', 'granny', 208, 248, 1.0],
+      ['wait', 1.2],
+      ['say', 'granny', 'HMMPH. ...GOOD BOY, VAKS.'],
+      ['say', 'vaks', 'm_baas_plaas'],
+      // she hands him the tea and walks to the stoep
+      ['show', 'teacup', true],
       ['fx', 'sparkle', 0.5],
-      ['wait', 0.6],
-      ['fade', 'out', 1.0],
+      ['move', 'granny', 470, 248, 1.6],
+      ['show', 'granny', false],
+      ['fx', 'dawn', 2.0],
+      ['wait', 0.8],
+      // behind the fence, the tikolosh pops up holding a ceppie
+      ['teleport', 'tiko', 360, 250],
+      ['show', 'tiko', true],
+      ['flash', '#fff8e0', 0.3],
+      ['shake', 2],
+      ['say', 'tiko', 'm_spying', "MY BOSS! I'M SPYING ON YOU BOSS!"],
+      ['wait', 0.5],
+      ['smash', 'garden_thursday'],
+      ['show', 'tiko', false],
+      ['show', 'teacup', false],
+      ['sprite', 'vaks', 'vaks', 'idle'],
+      ['teleport', 'vaks', 200, 252],
+      ['note', 'THURSDAY.'],
+      ['fx', 'zzz', 2.6],
+      ['wait', 1.4],
+      ['fade', 'out', 1.4],
     ],
   },
 };
 
-// gallery order (story order)
-export const SCENE_ORDER = ['cold_open', 'hole_wall', 'green_lung', 'follower', 'load_shedding', 'boss_intro', 'boss_resolve', 'chase_begins', 'granny_corner', 'granny_outro', 'ending'];
+// gallery order (story order). Side scenes sit at the level where they fire.
+export const SCENE_ORDER = [
+  'cold_open', 'hole_wall', 'green_lung', 'follower', 'load_shedding',
+  'boss_intro', 'boss_resolve', 'chase_begins', 'ss_commentary', 'babalas_economics',
+  'ss_small_change', 'airtime', 'ss_the_wall', 'granny_corner', 'ending',
+];
 
 // actor id -> portrait + display name for dialogue boxes
 export const SPEAKERS = {
@@ -373,6 +544,7 @@ export const SPEAKERS = {
   tiko: { face: 'face_tiko', name: 'TIKOLOSH' },     // the recurring small tikolosh
   spaza: { face: 'face_shop', name: 'SPAZA' },        // the shopkeeper businessman
   shopkeeper: { face: 'face_shop', name: 'SHOPKEEPER' },
+  vetkoek: { face: 'face_shop', name: 'VETKOEK' },    // spaza-window shopkeeper (W2)
   tallman: { face: 'face_tallman', name: 'TALLMAN' },
   shorty: { face: 'face_shorty', name: 'SHORTY' },
   masi: { face: 'face_masi', name: 'MASI' },

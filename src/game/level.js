@@ -123,6 +123,7 @@ export class LevelScreen {
     this.idleBarkAlt = false;
     this.fishWarned = false;
     this.stallDone = false;
+    this.sideSceneFired = false;   // mid-level cutscene breather (once per instance)
     this.catEyesAnnounced = false;
     this.bottleTimer = 1.5;
     this.rareTimer = CONFIG.timers.rareBarkMin + Math.random() * (CONFIG.timers.rareBarkMax - CONFIG.timers.rareBarkMin);
@@ -506,6 +507,18 @@ export class LevelScreen {
       Particles.update(dt);
       Barks.update(dt);
       this.cam.follow(this.player.x, this.player.y, dt);
+      return;
+    }
+
+    // mid-level cutscene breather (W2): the first time Vaks crosses the mark,
+    // push a cutscene overlay. M.update only ticks the top of the stack, so the
+    // level and its chaser freeze for free while it plays; the done-callback
+    // grants a breather (shoves the chaser back). Fires once per level instance;
+    // a death-restart rebuilds the LevelScreen and may re-trigger — acceptable.
+    if (this.level.sideScene && !this.sideSceneFired && this.cb.onSideScene &&
+        this.player.x >= this.level.sideScene.frac * this.level.width) {
+      this.sideSceneFired = true;
+      this.cb.onSideScene(this.level.sideScene.id, () => this.threat.breather(this.player.x));
       return;
     }
 

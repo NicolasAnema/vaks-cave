@@ -85,15 +85,16 @@ const FLOW = [
   { t: 'boss' },
   { t: 'cutscene', id: 'boss_resolve' },
   { t: 'cutscene', id: 'chase_begins' },
-  { t: 'level', n: 4 },
+  { t: 'level', n: 4 },                    // ss_commentary fires mid-level
+  { t: 'cutscene', id: 'babalas_economics' },
   { t: 'shop', after: 4 },
-  { t: 'level', n: 5 },
+  { t: 'level', n: 5 },                    // ss_small_change fires mid-level
+  { t: 'cutscene', id: 'airtime' },
   { t: 'shop', after: 5 },
-  { t: 'level', n: 6 },
+  { t: 'level', n: 6 },                    // ss_the_wall fires mid-level
   { t: 'cutscene', id: 'granny_corner' },
   { t: 'boss', variant: 'granny' },
-  { t: 'cutscene', id: 'granny_outro' },
-  { t: 'cutscene', id: 'ending' },
+  { t: 'cutscene', id: 'ending' },         // S12: the TEA scene (folds the old outro in)
   { t: 'credits' },
 ];
 
@@ -228,6 +229,16 @@ function goFlow(i) {
       // out of lives: fall back one level (or GAME OVER if this is the first)
       onGameOver: () => loseAllLives(node.n),
       onPause: () => pushPause(ls, () => goFlow(flowIndexOfLevel(node.n))),
+      // mid-level breather: push the scene as an overlay (freezes the level +
+      // chaser), unlock it in the gallery, then grant the breather on resume.
+      // Barks are shared globally, so clear them around the push so neither
+      // screen's leftover subtitle bleeds into the other.
+      onSideScene: (id, done) => {
+        Barks.clear();
+        M.push(new CutsceneScreen(id, {
+          onDone: () => { M.pop(); Barks.clear(); Save.unlockScene(id); done(); },
+        }));
+      },
     });
     M.replace(ls);
   } else if (node.t === 'tutorial') {

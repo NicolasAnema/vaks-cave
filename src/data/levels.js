@@ -393,6 +393,10 @@ function buildHorizontal(o) {
     platforms, ladders: [], pickups, rats, tikos: [], lanterns: [], checkpoints, tutorials,
     walls: [], grounds, sushi, props, npcs, tsotsis, hawkers,
     scriptedStallAt: stallX != null ? { x: stallX } : null,
+    // mid-level cutscene breather: when Vaks first crosses frac x length the
+    // level pushes this scene as an overlay (freezing the chase) and grants
+    // room on resume. Purely helps the player — verify.js is unaffected.
+    sideScene: o.sideScene || null,
     spawn, exit,
   };
 }
@@ -513,6 +517,7 @@ export const LEVELS = [
     // and pickpockets grab his mano. The crew lobs bottles ahead of him.
     id: 4, seed: 4404, name: 'ONE FOR THE ROAD', tagline: 'JUST ONE, BOSS. JUST ONE...',
     length: 3400, tint: 'drunk', tipsyMul: 0.85,
+    sideScene: { frac: 0.55, id: 'ss_commentary' },
     gap: [40, 60], gapFrac: 0.26, sushiFrac: 0.16, ratFrac: 0.14,
     tsotsiPlan: [
       { frac: 0.22, kind: 'viceroy' }, { frac: 0.4, kind: 'knife' }, { frac: 0.56, kind: 'viceroy' },
@@ -535,6 +540,7 @@ export const LEVELS = [
     // gauntlet of hawker stalls clogs the road (jump them or stumble).
     id: 5, seed: 5505, name: 'KASI MAIN STREET', tagline: 'EVERY TUESDAY, A TAXI',
     length: 4200,
+    sideScene: { frac: 0.5, id: 'ss_small_change' },
     gap: [50, 76], gapFrac: 0.28, sushiFrac: 0.18, ratFrac: 0.14,
     tsotsiPlan: [
       { frac: 0.14, kind: 'gun' }, { frac: 0.32, kind: 'knife' }, { frac: 0.52, kind: 'gun' },
@@ -560,6 +566,7 @@ export const LEVELS = [
     // and the crew chaser keeps flanking fast runners up from behind.
     id: 6, seed: 6606, name: 'HOME STRETCH', tagline: 'NOT MY PHONE, BOSS!',
     length: 5000,
+    sideScene: { frac: 0.5, id: 'ss_the_wall' },
     gap: [60, 86], gapFrac: 0.32, sushiFrac: 0.22, ratFrac: 0.18,
     tsotsiPlan: [
       { frac: 0.12, kind: 'knife' }, { frac: 0.26, kind: 'gun' }, { frac: 0.38, kind: 'knife' },

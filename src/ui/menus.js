@@ -367,10 +367,14 @@ export class GalleryScreen {
     drawScene(ctx, 'cave_mouth', this.t);
     dimScreen(ctx, 0.55);
     drawText(ctx, 'SCENE GALLERY', View.w / 2, 22, { color: '#ffe49a', scale: 2, align: 'center' });
+    // step shrinks as the list grows so it always fits between the title and hint
+    const n = SCENE_ORDER.length;
+    const top = 48;
+    const step = Math.max(9, Math.min(16, Math.floor((246 - top) / n)));
     SCENE_ORDER.forEach((id, i) => {
       const unlocked = Save.data.scenes.includes(id);
       const seld = this.sel === i;
-      const y = 56 + i * 16;
+      const y = top + i * step;
       const name = unlocked ? CUTSCENES[id].name : '? ? ? ? ?';
       drawText(ctx, (i + 1) + '. ' + name, View.w / 2, y, {
         color: unlocked ? (seld ? '#fff' : '#9aa3c0') : '#4a4f63', align: 'center',
