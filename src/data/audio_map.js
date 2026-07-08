@@ -62,7 +62,7 @@ export const MUSIC_ALIASES = {
   irie: 'music/Irie Loop.mp3',   // L2: takes over the level music once Vaks has smoked
   level1: 'music/Tikolosh Say Shorty.mp3',
   level3: 'music/Mkhukhu Echo.mp3',
-  darkcave: 'music/dark cave.mp3', // the in-cave cutscenes (cold_open, doubt1, doubt2)
+  darkcave: 'music/dark cave.mp3', // the in-cave cutscenes (cold_open, hole_wall, green_lung, follower, load_shedding)
   world2: 'music/township riddem.mp3', // every township sprint (L4-L6) runs on this
   township: 'music/township scent.mp3', // the chase_begins cutscene (shebeen -> the family group)
 
