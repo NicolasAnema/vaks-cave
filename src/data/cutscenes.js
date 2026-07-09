@@ -545,7 +545,7 @@ export const CUTSCENES = {
     id: 'babalas_economics', name: 'BABALAS ECONOMICS', music: 'township', bg: 'spaza_street',
     actors: {
       vaks:    { sheet: 'vaks', anim: 'idle', x: 120, y: 236, flip: false },
-      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true, head: 'tiko_shop' },
+      vetkoek: { sheet: 'vetkoek', anim: 'loop', x: 382, y: 240, flip: true },
       tallman: { sheet: 'tallman', anim: 'idle', x: 540, y: 226, flip: true },
       shorty:  { sheet: 'shorty', anim: 'idle', x: 566, y: 232, flip: true },
     },
@@ -593,7 +593,7 @@ export const CUTSCENES = {
     actors: {
       vaks:    { sheet: 'vaks', anim: 'idle', x: 220, y: 230, flip: false },
       tsotsi:  { sheet: 'tsotsi_knife', anim: 'idle', x: -60, y: 236, flip: false },
-      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true, head: 'tiko_shop' }, // leans from the hatch
+      vetkoek: { sheet: 'vetkoek', anim: 'loop', x: 382, y: 240, flip: true }, // leans from the hatch
     },
     steps: [
       ['show', 'vetkoek', false],
@@ -888,7 +888,7 @@ export const SPEAKERS = {
   tiko: { face: 'face_tiko', name: 'TIKOLOSH' },     // the recurring small tikolosh
   spaza: { face: 'face_shop', name: 'SPAZA' },        // the shopkeeper businessman
   shopkeeper: { face: 'face_shop', name: 'SHOPKEEPER' },
-  vetkoek: { face: 'face_shop', name: 'VETKOEK' },    // spaza-window shopkeeper (W2)
+  vetkoek: { face: 'face_vetkoek', name: 'VETKOEK' }, // spaza-window fat-cake vendor (W2), his own man
   tallman: { face: 'face_tallman', name: 'TALLMAN' },
   shorty: { face: 'face_shorty', name: 'SHORTY' },
   masi: { face: 'face_masi', name: 'MASI' },

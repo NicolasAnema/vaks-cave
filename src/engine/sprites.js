@@ -334,6 +334,37 @@ function drawShorty(g, p = {}) {
   R(g, 8, 8 + bob, 2, 1, '#7a4f30');
 }
 
+// Vetkoek — the township spaza-window vendor: heavyset, cream apron, maroon
+// flat cap, a moustache, a fresh fat-cake in hand. His own man, not the cave
+// shopkeeper. Faces right (cell 21x32).
+function drawVetkoek(g, p = {}) {
+  const bob = p.bob | 0;
+  const skin = '#8a5a38', skinD = '#6e4529', apron = '#e6ddc8', apronD = '#c9bfa4',
+        shirt = '#3a6ea5', shirtD = '#2c568a', cap = '#7a2e2e', dough = '#d9a441', doughHi = '#eec06a';
+  // stout legs
+  R(g, 6, 26, 3, 6, '#33323e'); R(g, 11, 26, 3, 6, '#33323e');
+  R(g, 5, 31, 5, 1, '#1c1c26'); R(g, 11, 31, 5, 1, '#1c1c26');
+  // wide body (shirt)
+  R(g, 2, 12 + bob, 16, 15, shirt); R(g, 2, 12 + bob, 1, 15, shirtD);
+  // apron over the belly
+  R(g, 6, 14 + bob, 8, 13, apron); R(g, 6, 14 + bob, 1, 13, apronD);
+  R(g, 6, 24 + bob, 8, 1, apronD);           // pocket seam
+  R(g, 8, 12 + bob, 4, 3, apron);            // bib
+  // thick arms
+  R(g, 0, 14 + bob, 3, 9, skin); R(g, 17, 14 + bob, 3, 9, skin);
+  // a fresh fat-cake in the near hand
+  R(g, 17, 21 + bob, 4, 4, dough); R(g, 18, 21 + bob, 2, 2, doughHi);
+  // head + neck
+  R(g, 5, 3 + bob, 10, 9, skin); R(g, 5, 11 + bob, 10, 1, skinD);
+  // maroon flat cap
+  R(g, 4, 1 + bob, 12, 3, cap); R(g, 4, 1 + bob, 12, 1, '#8f3a3a');
+  R(g, 14, 3 + bob, 3, 1, cap);              // peak (faces right)
+  // face: eyes, moustache, warm smile
+  R(g, 7, 6 + bob, 2, 1, '#1c1620'); R(g, 11, 6 + bob, 2, 1, '#1c1620');
+  R(g, 7, 9 + bob, 6, 1, '#4a2c18');
+  R(g, 8, 10 + bob, 4, 1, '#5a3520');
+}
+
 // ============================================================
 // THE SHEBEEN CREW — the drunk Friday trio who try to get Vaks to
 // drink (chase_begins cutscene). All red-eyed and tipsy: Masi (fat),
@@ -920,6 +951,8 @@ export async function initSprites() {
                     frame(18, 42, (g) => drawTallman(g, { bob: 1, wave: true }))]);
   sheet('shorty', [frame(16, 26, (g) => drawShorty(g, {})),
                    frame(16, 26, (g) => drawShorty(g, { bob: 1 }))]);
+  sheet('vetkoek', [frame(21, 32, (g) => drawVetkoek(g, {})),
+                    frame(21, 32, (g) => drawVetkoek(g, { bob: 1 }))]);
   // the shebeen crew (chase_begins): Masi (fat), Imo (small boy), Rasta (dreads + tam)
   sheet('masi',  [frame(21, 42, (g) => drawMasi(g, {})),
                   frame(21, 42, (g) => drawMasi(g, { bob: 1 }))]);
@@ -1187,6 +1220,16 @@ export async function initSprites() {
     R(g, 8, 12, 2, 2, '#22222c'); R(g, 14, 12, 2, 2, '#22222c');
     R(g, 10, 17, 4, 1, '#7a4f30');
     R(g, 5, 21, 14, 3, '#6a5a42');
+  })]);
+  sheet('face_vetkoek', [frame(24, 24, (g) => {
+    R(g, 4, 7, 16, 15, '#8a5a38');                                  // round face
+    R(g, 4, 20, 16, 2, '#6e4529');                                  // jaw shade
+    R(g, 3, 2, 18, 5, '#7a2e2e'); R(g, 3, 2, 18, 1, '#8f3a3a');     // maroon flat cap
+    R(g, 3, 6, 18, 1, '#5a2020');                                   // cap brim
+    R(g, 8, 12, 2, 2, '#1c1620'); R(g, 14, 12, 2, 2, '#1c1620');    // eyes
+    R(g, 7, 16, 10, 2, '#4a2c18');                                  // thick moustache
+    R(g, 9, 18, 6, 1, '#5a3520');                                   // smile
+    R(g, 4, 21, 16, 3, '#e6ddc8');                                  // apron collar
   })]);
   sheet('face_shorty', [frame(24, 24, (g) => {
     R(g, 4, 9, 16, 13, '#9a6a42');
