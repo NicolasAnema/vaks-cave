@@ -514,9 +514,16 @@ export class CutsceneScreen {
     drawText(ctx, 'FAMILY GROUP', px + 17, py + 4, { color: '#eafff5' });
     drawText(ctx, 'GRANNY, TALLMAN, SHORTY, +3', px + 17, py + 11, { color: '#7fae9f' });
 
-    // messages
-    let cy = py + hb + 6;
+    // messages — newest anchored near the bottom; older ones scroll off the
+    // top once the thread outgrows the screen (clipped to the phone body)
+    const top = py + hb + 6, bot = py + h - 16;
+    let total = 0;
+    for (const m of ph.msgs) total += this.chatMsgH(m, w);
+    let cy = total > bot - top ? bot - total : top;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(px, top - 3, w, bot - top + 3); ctx.clip();
     for (const m of ph.msgs) cy = this.drawChatMsg(ctx, m, px, cy, w);
+    ctx.restore();
 
     // input bar
     ctx.fillStyle = '#111b21'; ctx.fillRect(px, py + h - 14, w, 14);
@@ -524,6 +531,13 @@ export class CutsceneScreen {
     drawText(ctx, 'MESSAGE', px + 7, py + h - 10, { color: '#5a6b73' });
     R(ctx, px + w - 18, py + h - 12, 10, 10, '#21c063');       // send
     drawText(ctx, '>', px + w - 15, py + h - 10, { color: '#0b141a' });
+  }
+
+  // vertical space a chat message consumes (mirrors drawChatMsg's advance)
+  chatMsgH(m, w) {
+    if (m.sender === 'sys') return 14;
+    const lines = wrapText(m.text, (w - 16) - 8);
+    return 16 + lines.length * LINE_H;
   }
 
   drawChatMsg(ctx, m, px, cy, w) {

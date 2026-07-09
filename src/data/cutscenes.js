@@ -41,8 +41,11 @@ export const CUTSCENES = {
       ['sfx', 'alert'],
       ['shake', 2],
       ['note', 'GRANNY CALLING...'],
-      ['say', 'vaks', 'NOT NOW, BOSS. NOT NOW.'],
-      // he records a voice note instead — the locked LISTEN box is the joke
+      ['wait', 0.5],
+      // he jabs it dead — declines her without a word
+      ['sfx', 'alert'],
+      ['note', 'VAKS DECLINES.'],
+      // ...and records a rambling voice note instead — the locked LISTEN box is the joke
       ['voice_note', 'vaks', 'm_big_days'],
       // JUMP SCARE — the small tikolosh rushes in from the dark; camera punches in
       ['teleport', 'tiko', 560, 240],
@@ -64,6 +67,9 @@ export const CUTSCENES = {
       ['wire', 'm_going_deep'],
       ['note', 'BELOW: THE CAVE RUMBLES. THE GROUND SHAKES.'],
       ['say', 'vaks', 'YOH... WE CLIMB, BOSS. WE CLIMB NOW.'],
+      // the tikolosh, thrilled, bounces after him
+      ['dance', 'tiko', true, 8],
+      ['say', 'tiko', 'RUN MY BOSS!'],
       // runs to the wall and starts climbing as it fades
       ['camreset', 0.8],
       ['move', 'vaks', 44, 220, 0.8],
@@ -77,13 +83,15 @@ export const CUTSCENES = {
     actors: {
       vaks:  { sheet: 'vaks', anim: 'idle', x: 70, y: 268, flip: false },
       spaza: { sheet: 'tiko_shop', anim: 'loop', x: 360, y: 238, flip: true, head: 'tiko_shop' },
+      cig:   { sheet: 'spliff', anim: 'loop', x: 187, y: 222, flip: false }, // the ceppie he's puffing
     },
     // the actual hand-painted sign, hung on the back wall — the words live on
     // the plank now, not just in a caption
     props: [
-      { type: 'sign', x: 240, y: 60, w: 152, hang: 12, text: 'SMOKING ALLOWED IN THE SHOP. ONLY IF YOU OFFER ME.' },
+      { type: 'sign', x: 240, y: 60, w: 152, hang: 12, text: 'SMOKING ALLOWED ONLY IF YOU OFFER OWNER A PUFF' },
     ],
     steps: [
+      ['show', 'cig', false],
       ['letterbox', true],
       ['fade', 'in', 0.8],
       // Vaks hauls onto the ledge from the bottom-left edge, wheezing
@@ -91,25 +99,26 @@ export const CUTSCENES = {
       ['move', 'vaks', 118, 236, 1.0],
       ['sprite', 'vaks', 'vaks', 'babalas'],
       ['move', 'vaks', 176, 236, 0.8],
-      // he squints up at the sign — the camera drifts up so we read it with him
+      // he's puffing a ceppie as he squints up at the sign — camera drifts up to read it
+      ['teleport', 'cig', 188, 222],
+      ['show', 'cig', true],
       ['camera', 240, 76, 2.0, 1.1],
       ['wait', 1.7],
       // a voice from the dark — the camera whips down to the shopkeeper's face
       ['camera', 320, 214, 1.7, 0.55],
       ['say', 'spaza', 'AWEH. A CUSTOMER.'],
-      // Vaks screams, jumps back, half-hides at the frame edge
+      // Vaks SHRIEKS and drops the ceppie, jumps back
       ['flash', '#fff8e0', 0.3],
       ['sfx', 'hazard_warning'],
       ['shake', 2.5],
       ['camera', 150, 214, 1.6, 0.5],   // cut back to Vaks recoiling
+      ['move', 'cig', 181, 240, 0.35],  // the ceppie tumbles to the dirt
       ['move', 'vaks', 92, 236, 0.3],
       ['face', 'vaks', 1],
-      // lights a cigarette with shaking hands (babalas read + a spark)
-      ['fx', 'sparkle', 0.6, 92, 224],
       ['wait', 0.6],
-      ['say', 'spaza', "SIGN SAYS YOU OFFER ME ONE, BOSS. AND WHY YOU SCREAMING? I'M THE ONE WHO SHOULD SCREAM. LOOK AT YOU."],
+      ['say', 'spaza', "WHY YOU SCREAMING? I'M THE ONE WHO SHOULD SCREAM. LOOK AT YOU."],
       ['say', 'vaks', '...YOU LOOK LIKE A TIKOLOSH.'],
-      ['say', 'spaza', "NO, MAN. I'M A BUSINESSMAN. BIG DIFFERENCE."],
+      ['say', 'spaza', "NO, MAN. I'M A BUSINESSMAN."],
       ['say', 'spaza', 'YOU BUYING OR BROWSING BHUTI?'],
       // creeps forward toward the counter — camera eases back to hold both
       ['camera', 244, 206, 1.4, 1.0],
@@ -119,8 +128,8 @@ export const CUTSCENES = {
       ['say', 'spaza', 'HUNDRED MANO.'],
       ['say', 'vaks', "YOH THAT'S A LOT OF MANO?!"],
       ['move', 'vaks', 236, 236, 0.5],
-      ['say', 'vaks', '...THIS BETTER BE WORTH IT.'],
-      ['say', 'spaza', "THAT OTHER TIKOLOSH IS THE ONE YOU NEED TO WORRY ABOUT. IT'S A LONG WAY UP BHUTI. SHOP SMARTLY."],
+      ['say', 'vaks', '...BETTER BE WORTH IT.'],
+      ['say', 'spaza', "IT'S A LONG WAY UP BHUTI. SHOP SMARTLY."],
       ['fade', 'out', 0.7],
     ],
   },
@@ -141,7 +150,8 @@ export const CUTSCENES = {
       // push in so the counter — and the two of them — actually fill the frame
       ['camera', 258, 208, 1.65, 1.2],
       ['note', 'VAKS PACKS HIS BUYS. SPAZA LEANS ON THE COUNTER.'],
-      ['say', 'spaza', "UP FROM HERE IS YOUR GARDEN, MY BOSS. THE AIR UP THERE IS HEAVY. YOU DON'T WALK IT SOBER."],
+      ['say', 'spaza', 'THE WAY TO YOUR GARDEN IS UP.'],
+      ['say', 'spaza', 'TO GET THERE, YOU NEED TO BE IRIE.'],
       // Spaza rolls a fat one on the counter — it appears in his hand
       ['show', 'spliff', true],
       ['fx', 'sparkle', 0.4, 300, 232],
@@ -157,7 +167,8 @@ export const CUTSCENES = {
       ['show', 'spliff', false],
       ['wait', 0.3],
       ['anim', 'vaks', 'idle'],
-      ['say', 'vaks', "YOU MUST KNOW DANKO. JAH PROVIDES. IT'S TIME TO PRAY."],
+      ['say', 'vaks', 'SHO. YOU MUST KNOW DANKO.'],
+      ['say', 'vaks', "JAH PROVIDES. IT'S TIME TO PRAY."],
       // the tikolosh peeks in at the frame edge, then ducks when Vaks turns
       ['camera', 200, 210, 1.25, 1.0],
       ['teleport', 'tiko', 60, 246],
@@ -179,7 +190,9 @@ export const CUTSCENES = {
       ['move', 'tiko', 120, 246, 0.9],
       ['camera', 120, 236, 1.4, 0.8],
       ['wait', 0.6],
-      ['say', 'tiko', '...MY BOSS.'],
+      // it watches him go, chuckling to itself
+      ['dance', 'tiko', true, 6],
+      ['say', 'tiko', '...BOSS.'],
       ['wait', 0.5],
       ['fade', 'out', 0.7],
     ],
@@ -204,7 +217,7 @@ export const CUTSCENES = {
       ['note', 'A TRAIL OF COINS. SOMETHING AT THE TOP, WAVING.'],
       // frame the whole trail — the wall of coins and the thing at the top
       ['camera', 322, 204, 1.35, 1.0],
-      ['say', 'tiko', 'JY BOSS!'],
+      ['say', 'tiko', "YOU DROPPED SOMETHING. ALL OF IT. I'LL HOLD IT FOR YOU."],
       // THE SNATCH — it races down the trail, each coin winks out
       ['move', 'tiko', 398, 200, 0.2],
       ['show', 'c5', false], ['fx', 'sparkle', 0.2, 398, 200], ['sfx', 'shop_buy'],
@@ -228,10 +241,11 @@ export const CUTSCENES = {
       // the mock-off — Vaks shouts, the tiko mirrors, cackling
       ['anim', 'vaks', 'celeb'],
       ['shake', 1],
-      ['say', 'tiko', '"I\'M WATCHING YOU! I\'M WATCHING YOU!"'],
+      ['say', 'tiko', 'NO, I\'M WATCHING YOU!'],
       ['shake', 1],
       ['anim', 'vaks', 'idle'],
       ['shake', 2],
+      ['say', 'vaks', 'TJERR, THIS GUY IS SCARING ME.'],
       ['say', 'vaks', 'SIYAHAMBA NGOKU MEFTU.'],
       ['camreset', 0.6],
       ['anim', 'vaks', 'run'],
@@ -272,7 +286,7 @@ export const CUTSCENES = {
       ['shake', 2.5],
       ['sfx', 'hazard_warning'],
       ['move', 'tiko', 300, 240, 0.25],
-      ['say', 'tiko', 'MY BOSS! LIGHT, MY BOSS!'],
+      ['say', 'tiko', 'ME BOSS!!'],
       ['say', 'vaks', 'JY STAY BACK, WENA!'],
       // Vaks hurls his zamalek — it arcs across, misses, hits the chain
       ['teleport', 'bot', 230, 205],
@@ -307,7 +321,7 @@ export const CUTSCENES = {
       ['camera', 240, 208, 1.7, 0.5],   // push onto the two glowing cat-eyes
       ['fx', 'sparkle', 0.3, 236, 200],
       ['fx', 'sparkle', 0.3, 246, 200],
-      ['say', 'vaks', 'GOOD THING VAKS IS HALF CAT.'],
+      ['say', 'vaks', 'GOOD THING VAKS HAS CAT EYES.'],
       ['camreset', 0.8],
       ['say', 'vaks', 'FINAL LEVEL, BOSS. WE CLIMB. NOW IN THE DARK.'],
       ['fade', 'out', 0.7],
@@ -332,7 +346,7 @@ export const CUTSCENES = {
       ['fade', 'in', 0.8],
       ['camera', 344, 214, 1.35, 1.0],
       ['note', 'THE TOP OF THE CAVE. ALMOST OUT.'],
-      ['say', 'vaks', 'THIS IS THE END, BOSS.'],
+      ['say', 'vaks', 'THIS IS THE END.'],
       // the tikoloshes file in from both edges to a seated row — pan to the queue
       ['camera', 150, 222, 1.2, 1.2],
       ['teleport', 't1', -40, 251], ['move', 't1', 40, 251, 0.6],
@@ -340,11 +354,12 @@ export const CUTSCENES = {
       ['teleport', 't3', -40, 251], ['move', 't3', 74, 251, 0.6],
       ['teleport', 't4', 540, 251], ['move', 't4', 142, 251, 0.7],
       ['teleport', 't5', -40, 251], ['move', 't5', 108, 251, 0.7],
+      ['say', 'vaks', "WHAT ARE THOSE TIKOLOSHES DOIN'?"],
       // spaza strolls in slow from the left
       ['teleport', 'spaza', -40, 230],
       ['move', 'spaza', 300, 230, 1.6],
-      ['say', 'spaza', "THEY'RE NOT HUNTING, MY BRA. THEY'RE QUEUEING."],
-      ['say', 'vaks', 'QUEUEING FOR WHAT?'],
+      ['say', 'spaza', "THEY'RE QUEUEING."],
+      ['say', 'vaks', 'FOR WHAT?'],
       ['say', 'spaza', 'THE BOSS LEVEL.'],
       // THE BIG ONE rises from below — the ground shakes, the camera holds on
       // the spot where his huge face crests into view
@@ -361,20 +376,21 @@ export const CUTSCENES = {
       ['shake', 5],
       // pull back to take in the whole arena — the crowd, Vaks, the boss
       ['camera', 214, 214, 1.12, 0.9],
-      ['say', 'spaza', 'HE JUST WANTS TO VIBE.'],
-      // front row: the little tikolosh loses his mind, a proud fan
+      ['say', 'spaza', 'HE NEVER WANTED TO FIGHT.'],
+      ['say', 'spaza', 'HE JUST WANTED TO VIBE.'],
+      // front row: the little tikolosh loses his mind, a proud fan (silent bounce)
       ['teleport', 'tiko', 210, 251],
       ['move', 'tiko', 210, 243, 0.15],
       ['move', 'tiko', 210, 251, 0.15],
       ['move', 'tiko', 210, 243, 0.15],
       ['move', 'tiko', 210, 251, 0.15],
-      ['say', 'tiko', "THAT'S MY BOSS! THAT'S MY BOSS!!"],
-      ['say', 'vaks', 'THE VIBE? BOSS... I ONLY KNOW ONE MOVE.'],
+      ['say', 'vaks', 'VIBE? VIBE WITH ME?'],
       ['wire', 'm_vibe'],    // the vibe-off row keeps its scene home (audio fires in the fight)
       ['wire', 'm_cat_die'], // rehomed: this was boss_intro's only reference
-      ['say', 'spaza', 'THEN DALA, MY BRA. DALA WHAT YOU MUST.'],
+      ['say', 'spaza', 'DALA VAKS. DALA WHAT YOU MUST.'],
       ['move', 'vaks', 320, 226, 0.8],
       ['note', 'VAKS PLANTS HIS FEET. THE CROWD GOES QUIET.'],
+      ['note', 'TIME TO VIBE...'],
       ['music', null],
       ['fade', 'out', 0.6],
     ],
@@ -435,27 +451,34 @@ export const CUTSCENES = {
       ['wire', 'm_wind_malawi'], // preserve the boss-resolution follow-up row
       ['dance', 'tiko', false],
       ['anim', 'vaks', 'idle'],
-      // the tsotsi gives it all back — a coin passed to Vaks
+      // the little tsotsi speaks its heart — camera pushes in close on it
+      ['camera', 226, 214, 1.7, 0.8],
+      ['say', 'tiko', 'I CHASED YOU UP MY WHOLE CAVE THINKING YOU WERE A STRANGER.'],
+      ['say', 'tiko', "BUT STRANGERS DON'T VIBE LIKE THAT, BOSS."],
+      ['say', 'tiko', 'YOU WERE ONE OF US FROM THE START. WELCOME HOME, MY SON.'],
+      // it hands every coin back — the whole pile passes into Vaks's hands
+      ['say', 'tiko', 'HERE, BOSS. TAKE YOUR MONEY BACK. ALL OF IT...'],
       ['fx', 'sparkle', 0.4, 214, 228],
-      ['say', 'tiko', 'MY BOSS.'],
       ['teleport', 'coin', 214, 228],
       ['show', 'coin', true],
       ['move', 'coin', 248, 224, 0.5],
       ['sfx', 'shop_buy'],
+      ['say', 'tiko', 'WELL. MOST OF IT. BUY A ZAMALEK FOR THE ROAD.'],
       ['show', 'coin', false],
-      ['say', 'vaks', '...KEEP HALF. YOU EARNED IT, TSOTSI.'],
+      ['say', 'vaks', 'I WAS ALSO WRONG ABOUT YOU. KEEP HALF OF MY MANO.'],
+      ['say', 'vaks', 'PAYING RESPECT TO THE CAVE.'],
       // the Big One points one huge arm at the dawn
       ['camera', 205, 206, 1.35, 1.0],
       ['move', 'big', 132, 238, 1.0],
       ['face', 'big', -1],
       ['note', 'THE BIG ONE POINTS ONE HUGE ARM AT THE DAWN.'],
       ['fx', 'dawn', 2.0],
-      ['say', 'vaks', '...OK, BOSS. WE GO BEFORE YOU CHANGE YOUR MIND.'],
       // Vaks walks into the light
       ['camreset', 1.0],
       ['move', 'vaks', 380, 226, 1.2],
       ['sfx', 'alert'],                // the phone buzzing again — granny
-      ['say', 'vaks', 'THE SUN. THE SUN IS UP, BOSS. GRANNY...'],
+      ['say', 'vaks', 'THE SUN. THE SUN IS UP, BOSS.'],
+      ['say', 'vaks', 'GRANNY...'],
       ['fade', 'out', 0.6],
     ],
   },
@@ -521,7 +544,7 @@ export const CUTSCENES = {
   babalas_economics: {
     id: 'babalas_economics', name: 'BABALAS ECONOMICS', music: 'township', bg: 'spaza_street',
     actors: {
-      vaks:    { sheet: 'vaks', anim: 'idle', x: 150, y: 236, flip: false },
+      vaks:    { sheet: 'vaks', anim: 'idle', x: 120, y: 236, flip: false },
       vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true, head: 'tiko_shop' },
       tallman: { sheet: 'tallman', anim: 'idle', x: 540, y: 226, flip: true },
       shorty:  { sheet: 'shorty', anim: 'idle', x: 566, y: 232, flip: true },
@@ -529,28 +552,34 @@ export const CUTSCENES = {
     steps: [
       ['letterbox', true],
       ['fade', 'in', 0.8],
-      ['move', 'vaks', 214, 236, 1.0],
-      ['say', 'vetkoek', 'AWEH. YOU MUST BE THE VAKS.'],
+      // hold on the open street in front of the hatch — keep them clear of the shop
+      ['camera', 250, 214, 1.3, 1.0],
+      ['move', 'vaks', 190, 236, 1.0],
+      ['say', 'vetkoek', 'AWEH. YOU MUST BE VAKS.'],
       ['say', 'vaks', '...WHAT IS THIS PLACE?'],
       ['note', 'TALLMAN AND SHORTY SLIDE IN.'],
-      // the two of them slide in, casual, overlapping
-      ['move', 'tallman', 300, 226, 1.0],
-      ['move', 'shorty', 336, 232, 1.1],
+      // the two slide in from the right, casual, stopping in the street (not the shop)
+      ['move', 'tallman', 244, 226, 1.0],
+      ['move', 'shorty', 282, 232, 1.1],
       ['say', 'tallman', 'VAKS! MY BRA! LOOKING STRONG! LOOKING FAST!'],
       ['say', 'vaks', "TALLMAN. YOU OWE ME. WHERE'S MY FIFTY RAND. NO STORIES."],
-      ['say', 'tallman', 'MONTH END, BRA. MONTH END. YIMA BHUTI.'],
+      ['say', 'tallman', 'MONTH END, BRA. YIMA BHUTI.'],
       ['say', 'vaks', "IT'S BEEN MONTH END SINCE FEBRUARY, BOSS."],
       ['face', 'shorty', 1],
       ['say', 'shorty', "I'LL EFT YOU."],
-      // Shorty bolts off, cackling
-      ['move', 'shorty', 600, 232, 1.0],
+      // both of them bolt off together, cackling — Tallman right behind Shorty
+      ['face', 'tallman', 1],
+      ['move', 'shorty', 600, 232, 0.9],
+      ['move', 'tallman', 600, 226, 1.0],
       ['shake', 1],
-      ['say', 'vetkoek', 'BEWARE OF THE TSOTSIS, MY BOSS. AND TAXIS - REMEMBER THEY OWN THE ROAD.'],
+      ['say', 'vetkoek', 'BEWARE OF THE TSOTSIS, MY BOSS. AND TAXIS - THEY WILL RUN YOU OVER.'],
       // a distant hooter — Vaks flinches
       ['sfx', 'granny_chase_start', 'horn'],
       ['shake', 1.5],
-      ['say', 'vaks', 'SHAP. EK IS DIE BAAS REMEMBER. VAKS ALWAYS HAS RIGHT OF WAY.'],
+      ['say', 'vaks', 'SHAP. VAKS IS STRONG.'],
+      ['say', 'vaks', 'VAKS ALWAYS HAS RIGHT OF WAY.'],
       // exits frame right on his last word
+      ['camreset', 0.5],
       ['anim', 'vaks', 'run'],
       ['move', 'vaks', 560, 236, 1.0],
       ['fade', 'out', 0.7],
@@ -577,9 +606,9 @@ export const CUTSCENES = {
       ['chat', 'granny', 'where are you'],
       ['chat', 'granny', 'where are you'],
       ['chat', 'granny', 'WHERE ARE YOU'],
-      ['chat', 'tallman', "he's coming granny. i saw him. very fast. like a bullet."],
+      ['chat', 'tallman', "he's coming granny. i saw him. very fast. like a tikoloshh."],
       ['chat', 'shorty', 'i saw him by the shebeen'],
-      ['chat', 'vaks', 'SHORTY YOU SNAKE.'],
+      ['chat', 'vaks', 'SHORTY YOU SNITCH.'],
       ['wait', 0.8],
       ['phone', false],
       // an alley silhouette watching the phone — it takes one slow step closer
@@ -590,8 +619,8 @@ export const CUTSCENES = {
       // Vetkoek leans out from the hatch
       ['show', 'vetkoek', true],
       ['say', 'vetkoek', 'HOLD THAT PHONE TIGHT ON THE HOME STRETCH, MY BOSS.'],
-      ['say', 'vaks', 'LET THEM TRY, BOSS. THIS PHONE IS MY WHOLE FAMILY.'],
-      ['say', 'vaks', "...AND IF IT BREAKS, SHORTY'S BUYING ME A NEW ONE."],
+      ['say', 'vaks', 'LET THEM TRY, BOSS.'],
+      ['say', 'vaks', '...AND IF THEY STEAL IT, SHORTY WILL BUY ME A NEW ONE.'],
       // pockets the phone and walks off
       ['fx', 'sparkle', 0.3, 220, 222],
       ['anim', 'vaks', 'run'],
@@ -614,8 +643,13 @@ export const CUTSCENES = {
       ['fade', 'in', 0.5],
       ['note', 'VAKS BENDS OVER, CATCHING HIS BREATH. THE PHONE BUZZES.'],
       ['phone', true],
-      ['chat', 'tallman', "granny relax, he's coming. i can see him from the roof. he's looking strong and irie."],
-      ['chat', 'shorty', 'also just saw him, he jumped a fence and did a backflip. 8/10. small wobble on the landing.'],
+      // the crew's live commentary — one text per line, that WhatsApp rhythm
+      ['chat', 'tallman', "granny relax, he's coming."],
+      ['chat', 'tallman', 'i can see him from the roof.'],
+      ['chat', 'tallman', "he's looking strong and irie."],
+      ['chat', 'shorty', 'also just saw him'],
+      ['chat', 'shorty', 'he jumped a fence and did a backflip.'],
+      ['chat', 'shorty', 'small wobble on the landing.'],
       ['chat', 'sys', 'GRANNY IS TYPING...'],
       ['wait', 1.6],
       ['chat', 'sys', '...'],
@@ -624,7 +658,6 @@ export const CUTSCENES = {
       ['say', 'vaks', 'm_granny_spy', "JY GRANNY'S SPYING ON ME."],
       ['sfx', 'glass_break'],
       ['shake', 1.6],
-      ['note', 'BOTTLES CLINK OFFSCREEN.'],
       ['say', 'vaks', 'NDIYABALEKA BOSS.'],
       ['fade', 'out', 0.5],
     ],
@@ -640,24 +673,42 @@ export const CUTSCENES = {
       tallman: { sheet: 'tallman', anim: 'idle', x: 300, y: 226, flip: true },
       shorty:  { sheet: 'shorty', anim: 'idle', x: 336, y: 232, flip: true },
       tiko:    { sheet: 'tiko', anim: 'loop', x: 404, y: 206, flip: true, head: 'tiko' },
+      coin:    { sheet: 'r2', anim: 0, x: 330, y: 224, flip: false, scale: 1.3 }, // the 5c fare
     },
     steps: [
+      ['show', 'coin', false],
       ['letterbox', true],
       ['fade', 'in', 0.5],
       ['sfx', 'granny_chase_start', 'horn'],
       ['shake', 2.0],
-      ['note', 'A HOOTER BLARES. TALLMAN AND SHORTY STEP INTO THE ROAD AND FLAG THE TAXI.'],
+      // frame the taxi and the crew flagging it down
+      ['camera', 320, 224, 1.35, 0.9],
+      ['note', 'A HOOTER BLARES. TALLMAN AND SHORTY FLAG THE TAXI.'],
       ['say', 'tallman', "GO, BRA. WE'LL HANDLE THIS. ONE LOCAL, DRIVER!"],
-      // Shorty counts out the fare in five-cent coins
-      ['fx', 'sparkle', 0.3, 330, 224], ['sfx', 'shop_buy'],
-      ['fx', 'sparkle', 0.3, 342, 224], ['sfx', 'shop_buy'],
+      // Shorty counts the fare into his palm, five cents at a time — push in close
+      ['camera', 328, 226, 1.75, 0.6],
+      ['show', 'coin', true],
+      ['teleport', 'coin', 320, 224],
+      ['fx', 'sparkle', 0.25, 320, 224], ['sfx', 'shop_buy'],
+      ['move', 'coin', 332, 224, 0.3],
+      ['fx', 'sparkle', 0.25, 332, 224], ['sfx', 'shop_buy'],
+      // ...and fumbles one — it tumbles to the dirt
+      ['move', 'coin', 342, 240, 0.35],
+      ['sfx', 'shop_buy'],
       ['say', 'shorty', 'FIVE... TEN... EISH, DROPPED ONE. STARTING OVER.'],
-      ['fx', 'sparkle', 0.3, 336, 228], ['sfx', 'shop_buy'],
+      ['show', 'coin', false],
       ['say', 'vaks', "THAT'S NOT FIFTY, BOSS."],
       ['say', 'tallman', "WE DON'T HAVE YOUR FIFTY, BRA. WE WORKING ON IT."],
-      ['note', 'ON THE TAXI ROOF, UNNOTICED: TIKOLOSH RIDING ALONG. IT WAVES.'],
-      ['wait', 0.8],
+      // the camera drifts up to the taxi roof — a tikolosh is riding along, waving
+      ['camera', 404, 208, 1.7, 0.9],
+      ['dance', 'tiko', true, 6],
+      ['note', 'ON THE TAXI ROOF, UNNOTICED: A TIKOLOSH, RIDING ALONG. IT WAVES.'],
+      ['wait', 1.0],
+      // back to Vaks, who has clearly seen it
+      ['dance', 'tiko', false],
+      ['camera', 224, 224, 1.5, 0.7],
       ['note', 'VAKS BLINKS. SAYS NOTHING.'],
+      ['camreset', 0.6],
       ['note', 'THE TAXI WAITS.'],
       ['fade', 'out', 0.5],
     ],
@@ -693,7 +744,6 @@ export const CUTSCENES = {
       ['say', 'tallman', 'WE TRYING TO GET YOUR 50.'],
       ['say', 'vaks', "...SO WE'RE EVEN, BOSS?"],
       ['say', 'tallman', 'MONTH END, BRA. MONTH END.'],
-      ['note', 'THE FIFTY REMAINS THEORETICAL.'],
       ['fade', 'out', 0.5],
     ],
   },
@@ -720,20 +770,22 @@ export const CUTSCENES = {
       ['anim', 'vaks', 'idle'],
       ['say', 'vaks', 'GRANNY! HEY! HAIBO! YOU LOOK... RESTED!'],
       ['wait', 1.2],
-      ['say', 'vaks', 'LOOK GRANNY. THERE WAS A CAVE. THERE WAS A MIST. THERE WAS A VERY BIG GUY, LOVELY GUY ACTUALLY...'],
-      ['wait', 1.2],
+      ['say', 'vaks', 'LOOK GRANNY. THERE WAS A CAVE.'],
+      ['say', 'vaks', 'THERE WAS A TIKOLOSH.'],
+      ['say', 'vaks', 'THERE WERE TAXIS AND TSOTSIS. WAIT...'],
+      ['wait', 0.6],
       // the weak dance — up and immediately stopped
       ['anim', 'vaks', 'celeb'],
       ['fx', 'sparkle', 0.8],
-      ['say', 'vaks', '...VIBE WITH ME, GRANNY?'],
+      ['say', 'vaks', '...VIBE WITH ME GRANNY?'],
       ['anim', 'vaks', 'idle'],
-      // THE POINT — granny stares, one sparkle on the rake, silence
+      // THE POINT — granny stares, one sparkle on the rake, then finally speaks
       ['anim', 'granny', 'stare'],
       ['shake', 1.2],
       ['fx', 'sparkle', 0.5, 330, 240],
       ['wait', 0.8],
-      ['note', 'GRANNY RAISES ONE ARM AND POINTS. AT THE RAKE. AND THE UNRAKED ROWS.'],
-      ['say', 'vaks', '...THE PLAAS NEEDS ITS BAAS, BOSS.'],
+      ['say', 'granny', 'TIME TO VIBE VAKS.'],
+      ['say', 'vaks', 'OKAY... THE PLAAS NEEDS ITS BAAS.'],
       // walks to the rake, picks it up, steps through the gate
       ['move', 'vaks', 326, 252, 1.2],
       ['fx', 'sparkle', 0.4, 330, 240],
@@ -774,13 +826,12 @@ export const CUTSCENES = {
       ['anim', 'granny', 'stare'],
       ['wait', 0.6],
       ['face', 'granny', -1],
-      ['note', 'GRANNY WALKS THE ROWS. SHE STOPS AT A CROOKED ONE. SHE LOOKS AT HIM.'],
+      ['note', 'GRANNY WALKS THE ROWS.'],
       // Vaks hurries over and re-rakes it
       ['camera', 236, 236, 1.4, 0.9],
       ['move', 'vaks', 232, 252, 0.6],
       ['sprite', 'vaks', 'vaks_rake', 'loop'],
       ['fx', 'sparkle', 0.4, 244, 240],
-      ['note', 'VAKS HURRIES OVER AND RE-RAKES IT. GRANNY CONTINUES.'],
       ['anim', 'granny', 'idle'],
       ['move', 'granny', 208, 248, 1.0],
       ['wait', 1.2],

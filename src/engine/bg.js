@@ -5,6 +5,7 @@
 // ============================================================
 
 import { View, vGradient } from './render.js';
+import { drawText } from './font.js';
 
 function rng(seed) {
   return function () {
@@ -518,18 +519,47 @@ function sceneShop(g, t) {
   R(g, 0, 216, View.w, 54, '#2c2218');
   R(g, 0, 216, View.w, 3, '#43321f');
   speckles(g, 8, 40, { x: 0, y: 220, w: View.w, h: 48 }, '#1d1710');
-  // shelves with wares
-  R(g, 84, 96, 70, 4, '#54482f');
-  R(g, 90, 86, 6, 10, '#3f7a4a'); R(g, 102, 84, 6, 12, '#7a4a3a'); R(g, 116, 88, 8, 8, '#5ee0a0');
-  R(g, 326, 96, 70, 4, '#54482f');
-  R(g, 332, 88, 8, 8, '#d04a4a'); R(g, 348, 84, 6, 12, '#c9a86a'); R(g, 362, 86, 6, 10, '#8ae08a');
+  // dried-herb bundles hanging from the arch
+  for (const [bx, len] of [[92, 20], [300, 26], [332, 16]]) {
+    R(g, bx, 26, 1, len, '#3c2a18');                 // twine
+    R(g, bx - 4, 26 + len, 9, 9, '#3f6a3a');         // leafy bundle
+    R(g, bx - 3, 26 + len + 7, 7, 5, '#2f5a2e');
+    R(g, bx - 2, 26 + len + 2, 3, 4, '#4f8a4a');
+  }
+  // stocked shelves (fuller: jars, bottles, tins in a row)
+  R(g, 84, 96, 78, 4, '#54482f'); R(g, 84, 100, 78, 2, '#3a2f1e');
+  R(g, 88, 84, 7, 12, '#3f7a4a'); R(g, 98, 82, 6, 14, '#7a4a3a'); R(g, 108, 86, 8, 10, '#5ee0a0');
+  R(g, 120, 83, 7, 13, '#6a8fd0'); R(g, 132, 85, 8, 11, '#c9a86a'); R(g, 146, 84, 6, 12, '#b06ad0');
+  R(g, 326, 96, 78, 4, '#54482f'); R(g, 326, 100, 78, 2, '#3a2f1e');
+  R(g, 330, 88, 8, 8, '#d04a4a'); R(g, 344, 82, 6, 14, '#c9a86a'); R(g, 356, 86, 6, 10, '#8ae08a');
+  R(g, 368, 84, 7, 12, '#e0a85a'); R(g, 382, 86, 8, 10, '#4f8ad0');
+  // a lower-left shelf of sacks + tins
+  R(g, 40, 152, 70, 4, '#54482f'); R(g, 40, 156, 70, 2, '#3a2f1e');
+  R(g, 46, 142, 12, 10, '#7a5f40'); R(g, 62, 144, 10, 8, '#8a6a44'); R(g, 78, 140, 10, 12, '#6a8f4a');
+  R(g, 92, 143, 8, 9, '#b0562e');
+  // CEPPIE display on the wall: a rack of ceppies with a painted price
+  const cbx = 286, cby = 148;
+  R(g, cbx - 2, cby - 2, 52, 36, '#2a2114');          // frame
+  R(g, cbx, cby, 48, 32, '#5a4a30');                  // board
+  for (let i = 0; i < 5; i++) {                       // upright ceppies for sale
+    const ccx = cbx + 6 + i * 8;
+    R(g, ccx, cby + 5, 2, 13, '#e8e2d0');             // paper
+    R(g, ccx, cby + 3, 2, 2, '#ff8a3a');             // tip
+  }
+  R(g, cbx + 9, cby + 21, 30, 9, '#c43a3a');          // price tag
+  drawText(g, 'R100', cbx + 13, cby + 23, { color: '#fff2d0' });
+  // crates of stock on the floor (bottom-left)
+  R(g, 8, 220, 34, 20, '#5a4530'); R(g, 8, 220, 34, 2, '#7a5f40');
+  R(g, 15, 222, 2, 16, '#3c2f1e'); R(g, 24, 222, 2, 16, '#3c2f1e'); R(g, 33, 222, 2, 16, '#3c2f1e');
+  R(g, 14, 206, 22, 14, '#64502f'); R(g, 14, 206, 22, 2, '#84683f');
+  R(g, 20, 208, 2, 10, '#3c2f1e'); R(g, 28, 208, 2, 10, '#3c2f1e');
   // small hanging lanterns to source the two glow pools (flicker with t)
   for (const lx of [120, 360]) {
     R(g, lx - 1, 44, 2, 6, '#2a2114');       // hook
     R(g, lx - 3, 50, 6, 8, '#3a3026');       // lantern body
     R(g, lx - 2, 52, 4, 5, `rgba(255,200,90,${0.65 + 0.35 * (0.5 + 0.5 * Math.sin(t * 9) * Math.sin(t * 3.7))})`);
   }
-  // hand-painted sign hung on the rock (the words are carried by the caption)
+  // a second illegible notice pinned near the big sign
   R(g, 176, 38, 2, 8, '#2a2114');            // nail + string
   R(g, 152, 46, 56, 20, '#6e5638');          // plank
   R(g, 152, 46, 56, 2, '#8a6f48');
@@ -542,6 +572,12 @@ function sceneShop(g, t) {
   R(g, 260, 248, 216, 3, '#54482f');
   R(g, 260, 251, 216, 16, '#3a2f1e');
   for (let cxp = 272; cxp < 476; cxp += 26) R(g, cxp, 251, 1, 16, '#2a2114');
+  // glass jars of wares on the counter
+  for (const [jx, jc] of [[300, '#6a8f4a'], [408, '#8ae08a']]) {
+    R(g, jx, 232, 12, 12, 'rgba(180,200,180,0.22)');  // glass
+    R(g, jx + 1, 234, 10, 9, jc);                     // contents
+    R(g, jx + 2, 230, 8, 2, '#8a7a5a');               // lid
+  }
   // slow-drifting dust motes caught in the lantern light
   for (let i = 0; i < 5; i++) {
     const mx = 100 + i * 66 + Math.sin(t * 0.4 + i * 1.7) * 16;
