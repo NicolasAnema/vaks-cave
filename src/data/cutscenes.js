@@ -13,7 +13,7 @@ export const CUTSCENES = {
     id: 'cold_open', name: 'COLD OPEN', music: 'darkcave', bg: 'cave_floor', noSkip: true,
     actors: {
       vaks: { sheet: 'vaks_sleep', anim: 'loop', x: 210, y: 218, flip: false },
-      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 244, flip: false }, // offscreen until the jump scare
+      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 244, flip: false, head: 'tiko' }, // offscreen until the jump scare
       // last night's dead soldiers, scattered around the sleeper (frame 0 = upright)
       bot1: { sheet: 'bottle', anim: 0, x: 178, y: 219, flip: false },
       bot2: { sheet: 'bottle', anim: 0, x: 258, y: 219, flip: false },
@@ -22,12 +22,15 @@ export const CUTSCENES = {
     steps: [
       ['letterbox', true],
       ['fade', 'in', 1.4],
+      // slow push onto the sleeper — settle into the hangover
+      ['camera', 214, 210, 1.8, 2.6],
       ['fx', 'zzz', 2.4],
       ['note', 'VAKS SLEPT PEACEFULLY AT THE BOTTOM OF A CAVE.'],
       ['note', 'ONE TOO MANY ZAMALEKS LAST NIGHT.'],
       ['wait', 0.9],
-      // wakes, hauls himself up, paces in a hungover panic
+      // wakes, hauls himself up, paces in a hungover panic — ease back to watch
       ['sprite', 'vaks', 'vaks', 'babalas'],
+      ['camera', 220, 214, 1.35, 0.8],
       ['move', 'vaks', 226, 218, 0.5],
       ['move', 'vaks', 196, 218, 0.5],
       ['move', 'vaks', 236, 218, 0.6],
@@ -41,9 +44,10 @@ export const CUTSCENES = {
       ['say', 'vaks', 'NOT NOW, BOSS. NOT NOW.'],
       // he records a voice note instead — the locked LISTEN box is the joke
       ['voice_note', 'vaks', 'm_big_days'],
-      // JUMP SCARE — the small tikolosh rushes in from offscreen right
+      // JUMP SCARE — the small tikolosh rushes in from the dark; camera punches in
       ['teleport', 'tiko', 560, 240],
-      ['move', 'tiko', 288, 240, 0.35],
+      ['camera', 252, 224, 2.1, 0.12],
+      ['move', 'tiko', 300, 240, 0.3],
       ['flash', '#fff8e0', 0.4],
       ['shake', 3],
       ['sfx', 'hazard_warning'],
@@ -51,6 +55,7 @@ export const CUTSCENES = {
       ['say', 'tiko', 'YOU MAY BE DIE BAAS VAN DIE PLAAS. BUT EK IS DIE BAAS VAN DIE CAVE.'],
       ['say', 'vaks', "HAIBO, WENA. I'LL MOER YOU."],
       // scrambles back, knocks a bottle rolling — the cave answers
+      ['camera', 200, 216, 1.5, 0.6],
       ['move', 'vaks', 150, 218, 0.4],
       ['move', 'bot1', 148, 221, 0.25],
       ['sfx', 'glass_break'],
@@ -60,6 +65,7 @@ export const CUTSCENES = {
       ['note', 'BELOW: THE CAVE RUMBLES. THE GROUND SHAKES.'],
       ['say', 'vaks', 'YOH... WE CLIMB, BOSS. WE CLIMB NOW.'],
       // runs to the wall and starts climbing as it fades
+      ['camreset', 0.8],
       ['move', 'vaks', 44, 220, 0.8],
       ['sprite', 'vaks', 'vaks', 'climb'],
       ['fade', 'out', 0.9],
@@ -183,7 +189,7 @@ export const CUTSCENES = {
     id: 'follower', name: 'THE FOLLOWER', music: 'darkcave', bg: 'cave_ganja',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 210, y: 220, flip: false },
-      tiko: { sheet: 'tiko', anim: 'loop', x: 400, y: 198, flip: true }, // waving from the top
+      tiko: { sheet: 'tiko', anim: 'loop', x: 400, y: 198, flip: true, head: 'tiko' }, // waving from the top
       // a rising trail of coins up the wall
       c1: { sheet: 'ceppy', anim: 0, x: 252, y: 216, flip: false },
       c2: { sheet: 'ceppy', anim: 0, x: 290, y: 210, flip: false },
@@ -196,6 +202,8 @@ export const CUTSCENES = {
       ['fade', 'in', 0.8],
       ['say', 'vaks', "YOH BOSS I'M RICHH."],
       ['note', 'A TRAIL OF COINS. SOMETHING AT THE TOP, WAVING.'],
+      // frame the whole trail — the wall of coins and the thing at the top
+      ['camera', 322, 204, 1.35, 1.0],
       ['say', 'tiko', 'JY BOSS!'],
       // THE SNATCH — it races down the trail, each coin winks out
       ['move', 'tiko', 398, 200, 0.2],
@@ -210,6 +218,7 @@ export const CUTSCENES = {
       ['show', 'c1', false], ['fx', 'sparkle', 0.2, 252, 216], ['sfx', 'tsotsi_grab'],
       // hugs the whole pile and races back to the top
       ['move', 'tiko', 400, 198, 0.5],
+      ['camera', 300, 210, 1.2, 0.6],
       ['say', 'vaks', 'NO MAN. THIS BLOODY TIKOLOSH IS A TSOTSI.'],
       // Vaks chases two steps and stops dead
       ['move', 'vaks', 250, 220, 0.4],
@@ -224,6 +233,7 @@ export const CUTSCENES = {
       ['anim', 'vaks', 'idle'],
       ['shake', 2],
       ['say', 'vaks', 'SIYAHAMBA NGOKU MEFTU.'],
+      ['camreset', 0.6],
       ['anim', 'vaks', 'run'],
       ['move', 'vaks', 540, 220, 1.0],
       ['fade', 'out', 0.7],
@@ -234,7 +244,7 @@ export const CUTSCENES = {
     id: 'load_shedding', name: 'LOAD SHEDDING', music: 'darkcave', bg: 'cave_deep',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 230, y: 222, flip: false },
-      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 240, flip: false }, // approaches from the dark
+      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 240, flip: false, head: 'tiko' }, // approaches from the dark
       // the chain of lanterns along the wall — the only light
       l1: { sheet: 'lantern', anim: 'loop', x: 70, y: 132, flip: false },
       l2: { sheet: 'lantern', anim: 'loop', x: 150, y: 120, flip: false },
@@ -249,6 +259,7 @@ export const CUTSCENES = {
       ['letterbox', true],
       ['fade', 'in', 0.8],
       ['note', 'DEEPER. A CHAIN OF LANTERNS. THE ONLY LIGHT.'],
+      ['camera', 236, 202, 1.3, 1.0],
       // he brandishes the lucky stick as he shouts
       ['move', 'stick', 222, 214, 0.2],
       ['move', 'stick', 222, 222, 0.2],
@@ -256,6 +267,7 @@ export const CUTSCENES = {
       // the tiko comes SLOWLY out of the dark right, then LUNGES
       ['teleport', 'tiko', 540, 240],
       ['move', 'tiko', 360, 240, 2.4],
+      ['camera', 300, 226, 1.6, 0.14],  // hard punch on the lunge
       ['flash', '#fff8e0', 0.4],
       ['shake', 2.5],
       ['sfx', 'hazard_warning'],
@@ -270,7 +282,9 @@ export const CUTSCENES = {
       ['sfx', 'glass_break'],
       ['flash', '#ffffff', 0.4],
       ['show', 'bot', false],
-      // THE LANTERNS DIE ONE BY ONE — the load-shedding money shot
+      // pull wide and up to watch the whole chain go dark — the money shot
+      ['camera', 232, 152, 1.12, 0.6],
+      // THE LANTERNS DIE ONE BY ONE
       ['show', 'l5', false], ['wait', 0.3],
       ['show', 'l4', false], ['wait', 0.3],
       ['show', 'l3', false], ['wait', 0.3],
@@ -280,7 +294,8 @@ export const CUTSCENES = {
       ['wait', 0.9],
       ['wait', 0.9],
       ['note', 'EISH.'],
-      // the tiko's little lantern flickers and dies
+      // the tiko's little lantern flickers and dies — the camera finds it in the black
+      ['camera', 300, 224, 1.55, 0.8],
       ['teleport', 'tl', 300, 236],
       ['show', 'tl', true], ['wait', 0.3],
       ['show', 'tl', false], ['wait', 0.3],
@@ -289,9 +304,11 @@ export const CUTSCENES = {
       ['say', 'tiko', '...MY BOSS.'],
       // Vaks's cat eyes light the dark
       ['bgset', 'cave_deep'],
+      ['camera', 240, 208, 1.7, 0.5],   // push onto the two glowing cat-eyes
       ['fx', 'sparkle', 0.3, 236, 200],
       ['fx', 'sparkle', 0.3, 246, 200],
       ['say', 'vaks', 'GOOD THING VAKS IS HALF CAT.'],
+      ['camreset', 0.8],
       ['say', 'vaks', 'FINAL LEVEL, BOSS. WE CLIMB. NOW IN THE DARK.'],
       ['fade', 'out', 0.7],
     ],
@@ -301,21 +318,23 @@ export const CUTSCENES = {
     id: 'boss_intro', name: 'THE CAVE MOUTH', music: 'boss', bg: 'cave_mouth',
     actors: {
       vaks:  { sheet: 'vaks', anim: 'idle', x: 360, y: 226, flip: true },
-      spaza: { sheet: 'tiko_shop', anim: 'loop', x: 440, y: 230, flip: true }, // strolls in
-      big:   { sheet: 'tiko_big', anim: 'loop', x: -80, y: 240, flip: true, scale: 3 },
-      t1:    { sheet: 'tiko', anim: 'loop', x: 40, y: 251, flip: false },       // the queue
-      t2:    { sheet: 'tiko', anim: 'loop', x: 74, y: 251, flip: false },
-      t3:    { sheet: 'tiko', anim: 'loop', x: 108, y: 251, flip: false },
-      t4:    { sheet: 'tiko', anim: 'loop', x: 142, y: 251, flip: false },
-      t5:    { sheet: 'tiko', anim: 'loop', x: 176, y: 251, flip: false },
-      tiko:  { sheet: 'tiko', anim: 'loop', x: 210, y: 251, flip: false }, // the fan, front row
+      spaza: { sheet: 'tiko_shop', anim: 'loop', x: 440, y: 230, flip: true, head: 'tiko_shop' }, // strolls in
+      big:   { sheet: 'tiko_big', anim: 'loop', x: -80, y: 240, flip: true, scale: 3, head: 'tiko_big' },
+      t1:    { sheet: 'tiko', anim: 'loop', x: 40, y: 251, flip: false, head: 'tiko' },       // the queue
+      t2:    { sheet: 'tiko', anim: 'loop', x: 74, y: 251, flip: false, head: 'tiko' },
+      t3:    { sheet: 'tiko', anim: 'loop', x: 108, y: 251, flip: false, head: 'tiko' },
+      t4:    { sheet: 'tiko', anim: 'loop', x: 142, y: 251, flip: false, head: 'tiko' },
+      t5:    { sheet: 'tiko', anim: 'loop', x: 176, y: 251, flip: false, head: 'tiko' },
+      tiko:  { sheet: 'tiko', anim: 'loop', x: 210, y: 251, flip: false, head: 'tiko' }, // the fan, front row
     },
     steps: [
       ['letterbox', true],
       ['fade', 'in', 0.8],
+      ['camera', 344, 214, 1.35, 1.0],
       ['note', 'THE TOP OF THE CAVE. ALMOST OUT.'],
       ['say', 'vaks', 'THIS IS THE END, BOSS.'],
-      // the tikoloshes file in from both edges to a seated row
+      // the tikoloshes file in from both edges to a seated row — pan to the queue
+      ['camera', 150, 222, 1.2, 1.2],
       ['teleport', 't1', -40, 251], ['move', 't1', 40, 251, 0.6],
       ['teleport', 't2', 540, 251], ['move', 't2', 176, 251, 0.7],
       ['teleport', 't3', -40, 251], ['move', 't3', 74, 251, 0.6],
@@ -327,7 +346,9 @@ export const CUTSCENES = {
       ['say', 'spaza', "THEY'RE NOT HUNTING, MY BRA. THEY'RE QUEUEING."],
       ['say', 'vaks', 'QUEUEING FOR WHAT?'],
       ['say', 'spaza', 'THE BOSS LEVEL.'],
-      // the Big One rises from below, the shake building as he climbs
+      // THE BIG ONE rises from below — the ground shakes, the camera holds on
+      // the spot where his huge face crests into view
+      ['camera', 150, 224, 1.4, 0.6],
       ['teleport', 'big', 150, 340],
       ['sfx', 'boss_vibe'],
       ['shake', 2],
@@ -338,6 +359,8 @@ export const CUTSCENES = {
       ['move', 'big', 150, 238, 0.9],
       ['flash', '#fff8e0', 0.4],
       ['shake', 5],
+      // pull back to take in the whole arena — the crowd, Vaks, the boss
+      ['camera', 214, 214, 1.12, 0.9],
       ['say', 'spaza', 'HE JUST WANTS TO VIBE.'],
       // front row: the little tikolosh loses his mind, a proud fan
       ['teleport', 'tiko', 210, 251],
@@ -499,7 +522,7 @@ export const CUTSCENES = {
     id: 'babalas_economics', name: 'BABALAS ECONOMICS', music: 'township', bg: 'spaza_street',
     actors: {
       vaks:    { sheet: 'vaks', anim: 'idle', x: 150, y: 236, flip: false },
-      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true },
+      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true, head: 'tiko_shop' },
       tallman: { sheet: 'tallman', anim: 'idle', x: 540, y: 226, flip: true },
       shorty:  { sheet: 'shorty', anim: 'idle', x: 566, y: 232, flip: true },
     },
@@ -541,7 +564,7 @@ export const CUTSCENES = {
     actors: {
       vaks:    { sheet: 'vaks', anim: 'idle', x: 220, y: 230, flip: false },
       tsotsi:  { sheet: 'tsotsi_knife', anim: 'idle', x: -60, y: 236, flip: false },
-      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true }, // leans from the hatch
+      vetkoek: { sheet: 'tiko_shop', anim: 'loop', x: 372, y: 238, flip: true, head: 'tiko_shop' }, // leans from the hatch
     },
     steps: [
       ['show', 'vetkoek', false],
@@ -616,7 +639,7 @@ export const CUTSCENES = {
       taxi:    { sheet: 'taxi', anim: 'loop', x: 404, y: 234, flip: true },
       tallman: { sheet: 'tallman', anim: 'idle', x: 300, y: 226, flip: true },
       shorty:  { sheet: 'shorty', anim: 'idle', x: 336, y: 232, flip: true },
-      tiko:    { sheet: 'tiko', anim: 'loop', x: 404, y: 206, flip: true },
+      tiko:    { sheet: 'tiko', anim: 'loop', x: 404, y: 206, flip: true, head: 'tiko' },
     },
     steps: [
       ['letterbox', true],
@@ -730,7 +753,7 @@ export const CUTSCENES = {
       vaks:   { sheet: 'vaks_rake', anim: 'loop', x: 150, y: 252, flip: false },
       granny: { sheet: 'granny', anim: 'idle', x: 430, y: 248, flip: true },
       teacup: { sheet: 'teacup', anim: 'loop', x: 196, y: 250, flip: false },
-      tiko:   { sheet: 'tiko', anim: 'loop', x: 360, y: 250, flip: true },
+      tiko:   { sheet: 'tiko', anim: 'loop', x: 360, y: 250, flip: true, head: 'tiko' },
     },
     steps: [
       ['show', 'teacup', false],
@@ -738,8 +761,10 @@ export const CUTSCENES = {
       ['letterbox', true],
       ['fade', 'in', 1.0],
       ['note', 'THE PLAAS, TENDED. VAKS RAKES THE ROWS, CAP SKEW.'],
+      ['camera', 202, 232, 1.3, 2.2],   // slow, warm push on the tended plaas
       ['wait', 0.8],
       // granny walks the rows, pausing to inspect
+      ['camera', 300, 236, 1.15, 1.2],
       ['move', 'granny', 340, 248, 1.0],
       ['anim', 'granny', 'stare'],
       ['wait', 0.7],
@@ -751,6 +776,7 @@ export const CUTSCENES = {
       ['face', 'granny', -1],
       ['note', 'GRANNY WALKS THE ROWS. SHE STOPS AT A CROOKED ONE. SHE LOOKS AT HIM.'],
       // Vaks hurries over and re-rakes it
+      ['camera', 236, 236, 1.4, 0.9],
       ['move', 'vaks', 232, 252, 0.6],
       ['sprite', 'vaks', 'vaks_rake', 'loop'],
       ['fx', 'sparkle', 0.4, 244, 240],
@@ -760,15 +786,21 @@ export const CUTSCENES = {
       ['wait', 1.2],
       ['say', 'granny', 'HMMPH. ...GOOD BOY, VAKS.'],
       ['say', 'vaks', 'm_baas_plaas'],
-      // she hands him the tea and walks to the stoep
+      // she hands him the tea — the cup passes from her hand into his
+      ['camera', 220, 236, 1.6, 0.9],
+      ['teleport', 'teacup', 214, 248],
       ['show', 'teacup', true],
-      ['fx', 'sparkle', 0.5, 196, 240],
+      ['fx', 'sparkle', 0.3, 214, 244],
+      ['move', 'teacup', 228, 250, 0.6],
+      ['fx', 'sparkle', 0.4, 228, 244],
       ['move', 'granny', 470, 248, 1.6],
       ['show', 'granny', false],
-      // golden hold on Vaks alone
+      // golden hold on Vaks alone with his tea
+      ['camera', 232, 232, 1.7, 1.6],
       ['fx', 'dawn', 2.0],
       ['wait', 1.6],
       // behind the fence, the tikolosh springs up holding a ceppie
+      ['camera', 298, 234, 1.35, 0.3],
       ['teleport', 'tiko', 360, 260],
       ['show', 'tiko', true],
       ['move', 'tiko', 360, 248, 0.2],
@@ -777,6 +809,7 @@ export const CUTSCENES = {
       ['say', 'tiko', 'm_spying', "MY BOSS! I'M SPYING ON YOU BOSS!"],
       ['wait', 0.5],
       ['smash', 'garden_thursday'],
+      ['camreset', 0.01],
       ['show', 'tiko', false],
       ['show', 'teacup', false],
       ['sprite', 'vaks', 'vaks', 'idle'],
