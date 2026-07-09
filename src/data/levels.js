@@ -110,7 +110,17 @@ function buildVertical(o) {
         pickups.push({ x: p.x + p.w / 2, y: p.y - 15, kind: 'weed' });
       }
     }
-    // (no checkpoints: a death restarts the whole level from the bottom)
+    // checkpoint lanterns at planned fractions — dying resumes from the last one
+    // reached (the mist resets to CONFIG.mist.resetGap below it). The verifier
+    // re-proves every checkpoint's route to the exit still outruns that mist.
+    if (o.checkpointFracs) for (let i = 0; i < o.checkpointFracs.length; i++) {
+      const key = 'cp' + i;
+      if (!placedFrac.has(key) && frac >= o.checkpointFracs[i] && p.w >= 60) {
+        placedFrac.add(key);
+        p.type = 'solid';
+        checkpoints.push({ x: Math.round(p.x + p.w / 2), y: p.y });
+      }
+    }
     // rats on wider ledges (host stays solid: a rat never rides a falling step)
     if (o.ratFracs.some((rf, i) => !placedFrac.has('r' + i) && frac >= rf && p.w >= 80 && placedFrac.add('r' + i))) {
       p.type = 'solid';
@@ -469,6 +479,7 @@ export const LEVELS = [
     gap: [35, 40], w: [104, 175], dx: [58, 98], ladderEvery: 6,
     decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.6,
     weedFracs: [], ratFracs: [0.25, 0.42, 0.58, 0.74, 0.88], shadowFracs: [], irieFracs: [],
+    checkpointFracs: [0.5],
     introTiko: true,
     // Controls are taught in the standalone tutorial arena before this level
     // (buildTutorialLevel, its own flow node); these zones cover the threats
@@ -492,6 +503,7 @@ export const LEVELS = [
     decoyFrac: 0.12, crumbleDecoy: 0.55, crumbleMain: 0.5,
     weedFracs: [0.3, 0.72], ratFracs: [0.3, 0.5, 0.68, 0.85],
     shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
+    checkpointFracs: [0.36, 0.68],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'GANJA SLOWS THE WORLD AND POWERS THE LEGS. TWO AT ONCE IS TOO STRONG.' },
       { x: 16, y: floorY - 420, w: 448, h: 60, text: 'THE TIKOLOSH DRIFTS RIGHT AT YOU NOW. MEOW (W) SCARES IT BACK - USE IT!' },
@@ -506,6 +518,7 @@ export const LEVELS = [
     weedFracs: [0.55],
     ratFracs: [0.16, 0.3, 0.42, 0.56, 0.7, 0.84],
     shadowFracs: [], irieFracs: [0.24, 0.42, 0.6, 0.78],
+    checkpointFracs: [0.34, 0.66],
     tutorials: (spawn, ladders, floorY) => [
       { x: spawn.x - 110, y: floorY - 70, w: 240, h: 70, text: 'TOO DARK FOR PEOPLE EYES. GOOD THING VAKS HAS CAT EYES.' },
       { x: 16, y: floorY - 380, w: 448, h: 60, text: 'RATS AND THE TIKOLOSH HUNT IN THE DARK. MEOW (W) OFTEN TO KEEP THEM BACK!' },

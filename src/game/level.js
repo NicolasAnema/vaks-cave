@@ -90,6 +90,7 @@ export class LevelScreen {
     this.crumbleState = new Map(); // platform -> { timer, gone, respawn }
 
     this.respawnPoint = { x: level.spawn.x, y: level.spawn.y };
+    this.checkpointActive = false; // flips true once a checkpoint lantern is lit
     this.ganjaUsed = false; // G: burn a life for an irie rush, once per level
     this.autoIrie = !!level.irieStart; // irie level: auto skin-up into the rush at the open
     this.time = 0;
@@ -357,6 +358,7 @@ export class LevelScreen {
 
   doRespawn() {
     this.player.respawn(this.respawnPoint.x, this.respawnPoint.y);
+    this.crumbleState.clear();          // restore any steps that crumbled on the way up
     if (this.o === 'vertical') this.threat.resetTo(this.respawnPoint.y);
     else this.threat.resetTo(this.respawnPoint.x);
     this.cam.snapTo(this.player.x, this.player.y);
@@ -465,9 +467,10 @@ export class LevelScreen {
       Particles.update(dt);
       Barks.update(dt);
       if (this.deathT <= 0) {
-        // no checkpoints: a death restarts the level from the top; running out
-        // of lives restarts the whole game (both handled by main.js).
+        // out of lives -> the whole game restarts (main.js); otherwise resume
+        // from the last checkpoint reached, or restart the level if none is lit.
         if (this.run.lives < 0) this.cb.onGameOver();
+        else if (this.checkpointActive) this.doRespawn();
         else this.cb.onRestart();
       }
       return;
@@ -696,8 +699,21 @@ export class LevelScreen {
       if (dx * dx + dy * dy < 15 * 15) this.collect(pk);
     }
 
+    // checkpoints: passing a lantern lights it and makes it the resume point.
+    // The mist resets to CONFIG.mist.resetGap below it on the next death.
+    for (const cp of this.checkpoints) {
+      cp.update(dt);
+      if (!cp.active && Math.abs(this.player.x - cp.x) < 40 && Math.abs(this.player.y - cp.y) < 30) {
+        cp.active = true;
+        this.checkpointActive = true;
+        this.respawnPoint = { x: cp.x, y: cp.y };
+        AudioManager.play('shop_buy', 'checkpoint L' + this.level.id);
+        Particles.sparkle(cp.x, cp.y - 6, '#ffc86e', 10);
+        barkCheckpoint({ anchor: this.player, force: true });
+      }
+    }
+
     // scripted Tallman & Shorty beat: they stall granny when Vaks passes the spot
-    // (no checkpoints anymore — this is a plain position trigger)
     if (this.level.scriptedStallAt && !this.stallDone &&
         this.player.x > this.level.scriptedStallAt.x) {
       this.stallDone = true;
