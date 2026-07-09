@@ -70,8 +70,13 @@ export const CUTSCENES = {
     id: 'hole_wall', name: 'THE HOLE IN THE WALL', music: 'darkcave', bg: 'shop_nook',
     actors: {
       vaks:  { sheet: 'vaks', anim: 'idle', x: 70, y: 268, flip: false },
-      spaza: { sheet: 'tiko_shop', anim: 'loop', x: 360, y: 238, flip: true },
+      spaza: { sheet: 'tiko_shop', anim: 'loop', x: 360, y: 238, flip: true, head: 'tiko_shop' },
     },
+    // the actual hand-painted sign, hung on the back wall — the words live on
+    // the plank now, not just in a caption
+    props: [
+      { type: 'sign', x: 240, y: 60, w: 152, hang: 12, text: 'SMOKING ALLOWED IN THE SHOP. ONLY IF YOU OFFER ME.' },
+    ],
     steps: [
       ['letterbox', true],
       ['fade', 'in', 0.8],
@@ -80,30 +85,34 @@ export const CUTSCENES = {
       ['move', 'vaks', 118, 236, 1.0],
       ['sprite', 'vaks', 'vaks', 'babalas'],
       ['move', 'vaks', 176, 236, 0.8],
-      ['note', 'A HAND-PAINTED SIGN: "SMOKING ALLOWED IN THE SHOP. ONLY IF YOU OFFER ME."'],
+      // he squints up at the sign — the camera drifts up so we read it with him
+      ['camera', 240, 76, 2.0, 1.1],
+      ['wait', 1.7],
+      // a voice from the dark — the camera whips down to the shopkeeper's face
+      ['camera', 320, 214, 1.7, 0.55],
       ['say', 'spaza', 'AWEH. A CUSTOMER.'],
       // Vaks screams, jumps back, half-hides at the frame edge
       ['flash', '#fff8e0', 0.3],
       ['sfx', 'hazard_warning'],
       ['shake', 2.5],
+      ['camera', 150, 214, 1.6, 0.5],   // cut back to Vaks recoiling
       ['move', 'vaks', 92, 236, 0.3],
       ['face', 'vaks', 1],
       // lights a cigarette with shaking hands (babalas read + a spark)
-      ['fx', 'sparkle', 0.6, 92, 222],
-      ['wait', 0.7],
+      ['fx', 'sparkle', 0.6, 92, 224],
+      ['wait', 0.6],
       ['say', 'spaza', "SIGN SAYS YOU OFFER ME ONE, BOSS. AND WHY YOU SCREAMING? I'M THE ONE WHO SHOULD SCREAM. LOOK AT YOU."],
-      // spaza taps the sign
-      ['fx', 'sparkle', 0.4, 180, 50],
       ['say', 'vaks', '...YOU LOOK LIKE A TIKOLOSH.'],
       ['say', 'spaza', "NO, MAN. I'M A BUSINESSMAN. BIG DIFFERENCE."],
       ['say', 'spaza', 'YOU BUYING OR BROWSING BHUTI?'],
-      // creeps forward toward the counter, step by step
-      ['move', 'vaks', 138, 236, 0.5],
+      // creeps forward toward the counter — camera eases back to hold both
+      ['camera', 244, 206, 1.4, 1.0],
+      ['move', 'vaks', 150, 236, 0.5],
       ['say', 'vaks', '...HOW MUCH FOR THE CEPPIE?'],
-      ['move', 'vaks', 178, 236, 0.5],
+      ['move', 'vaks', 196, 236, 0.5],
       ['say', 'spaza', 'HUNDRED MANO.'],
       ['say', 'vaks', "YOH THAT'S A LOT OF MANO?!"],
-      ['move', 'vaks', 224, 236, 0.5],
+      ['move', 'vaks', 236, 236, 0.5],
       ['say', 'vaks', '...THIS BETTER BE WORTH IT.'],
       ['say', 'spaza', "THAT OTHER TIKOLOSH IS THE ONE YOU NEED TO WORRY ABOUT. IT'S A LONG WAY UP BHUTI. SHOP SMARTLY."],
       ['fade', 'out', 0.7],
@@ -113,25 +122,39 @@ export const CUTSCENES = {
   green_lung: {
     id: 'green_lung', name: 'THE GREEN LUNG', music: 'darkcave', bg: 'shop_nook',
     actors: {
-      vaks:  { sheet: 'vaks', anim: 'idle', x: 200, y: 236, flip: false },
-      spaza: { sheet: 'tiko_shop', anim: 'loop', x: 340, y: 238, flip: true },
-      tiko:  { sheet: 'tiko', anim: 'loop', x: -80, y: 246, flip: false }, // peeks from a rock at the edge
+      vaks:   { sheet: 'vaks', anim: 'idle', x: 208, y: 236, flip: false },
+      spaza:  { sheet: 'tiko_shop', anim: 'loop', x: 318, y: 238, flip: true, head: 'tiko_shop' },
+      // the joint, hidden (via the show step below) until it's rolled onto the counter
+      spliff: { sheet: 'spliff', anim: 'loop', x: 300, y: 234, flip: false, scale: 1.3 },
+      tiko:   { sheet: 'tiko', anim: 'loop', x: -80, y: 246, flip: false, head: 'tiko' }, // peeks from a rock at the edge
     },
     steps: [
+      ['show', 'spliff', false],
       ['letterbox', true],
       ['fade', 'in', 0.8],
+      // push in so the counter — and the two of them — actually fill the frame
+      ['camera', 258, 208, 1.65, 1.2],
       ['note', 'VAKS PACKS HIS BUYS. SPAZA LEANS ON THE COUNTER.'],
       ['say', 'spaza', "UP FROM HERE IS YOUR GARDEN, MY BOSS. THE AIR UP THERE IS HEAVY. YOU DON'T WALK IT SOBER."],
-      // the joint slides across the counter into Vaks's hand
-      ['fx', 'sparkle', 0.4, 300, 240],
+      // Spaza rolls a fat one on the counter — it appears in his hand
+      ['show', 'spliff', true],
+      ['fx', 'sparkle', 0.4, 300, 232],
       ['sfx', 'shop_buy'],
-      ['fx', 'sparkle', 0.4, 244, 240],
-      ['sfx', 'shop_buy'],
-      ['fx', 'sparkle', 0.6, 200, 222],
       ['say', 'spaza', "FIRST ONE'S ON THE HOUSE."],
+      // THE HANDOVER — Vaks reaches, the joint arcs across the counter into his
+      // hand, a little spark as it lands
+      ['anim', 'vaks', 'celeb'],
+      ['move', 'spliff', 262, 224, 0.45],   // up over the counter
+      ['move', 'spliff', 222, 230, 0.4],    // down into Vaks's hand
+      ['fx', 'sparkle', 0.5, 220, 228],
+      ['sfx', 'shop_buy'],
+      ['show', 'spliff', false],
+      ['wait', 0.3],
+      ['anim', 'vaks', 'idle'],
       ['say', 'vaks', "YOU MUST KNOW DANKO. JAH PROVIDES. IT'S TIME TO PRAY."],
       // the tikolosh peeks in at the frame edge, then ducks when Vaks turns
-      ['teleport', 'tiko', 42, 246],
+      ['camera', 200, 210, 1.25, 1.0],
+      ['teleport', 'tiko', 60, 246],
       ['wait', 0.8],
       ['face', 'vaks', -1],
       ['show', 'tiko', false],
@@ -139,14 +162,16 @@ export const CUTSCENES = {
       ['face', 'vaks', 1],
       // the garden above: green haze, Vaks climbs off the top of frame
       ['bgset', 'cave_ganja'],
+      ['camreset', 1.0],
       ['fx', 'mistStir', 1.4],
-      ['fx', 'sparkle', 0.5, 200, 210],
+      ['fx', 'sparkle', 0.5, 208, 210],
       ['sprite', 'vaks', 'vaks', 'climb'],
       ['say', 'vaks', 'SALA KAKHULE MY BOSS.'],
-      ['move', 'vaks', 200, -24, 1.2],
+      ['move', 'vaks', 208, -24, 1.2],
       // the tikolosh creeps back out and watches him climb away — quiet, hopeful
       ['show', 'tiko', true],
       ['move', 'tiko', 120, 246, 0.9],
+      ['camera', 120, 236, 1.4, 0.8],
       ['wait', 0.6],
       ['say', 'tiko', '...MY BOSS.'],
       ['wait', 0.5],
@@ -336,64 +361,75 @@ export const CUTSCENES = {
     id: 'boss_resolve', name: "IT'S LIKE THE WIND", music: 'ascend', bg: 'cave_mouth_dawn',
     actors: {
       vaks: { sheet: 'vaks', anim: 'idle', x: 300, y: 226, flip: true },
-      big:  { sheet: 'tiko_big', anim: 'loop', x: 150, y: 238, flip: false, scale: 3 },
-      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 246, flip: false }, // slides in between them
-      coin: { sheet: 'ceppy', anim: 0, x: -40, y: 230, flip: false },     // the mano handed back
+      big:  { sheet: 'tiko_big', anim: 'loop', x: 150, y: 238, flip: false, scale: 3, head: 'tiko_big' },
+      tiko: { sheet: 'tiko', anim: 'loop', x: -80, y: 246, flip: false, head: 'tiko' }, // slides in between them
+      coin: { sheet: 'ceppy', anim: 0, x: -40, y: 230, flip: false, scale: 1.4 },     // the mano handed back
     },
     steps: [
       ['show', 'coin', false],
       ['letterbox', true],
       ['fade', 'in', 1.2],
+      // frame the two of them square-on for the vibe-off
+      ['camera', 224, 210, 1.4, 1.2],
       ['face', 'vaks', -1],
       ['face', 'big', 1],
       ['say', 'vaks', 'OH, YOU WANT TO GO? WENA? IN YOUR OWN CAVE?'],
-      // the dance battle — trading stamps
-      ['move', 'big', 200, 238, 0.6],
-      ['shake', 4],                    // the Big One stamps
-      ['anim', 'vaks', 'celeb'],
-      ['shake', 2],                    // Vaks stamps back
+      // THE DANCE-OFF — both start jiving; the Big One lunges a stamp, Vaks answers
+      ['dance', 'big', true, 5],
+      ['move', 'big', 182, 238, 0.5],  // stamp in
+      ['shake', 4],
+      ['dance', 'vaks', true, 7],
+      ['shake', 2],
       ['note', 'VAKS STAMPS BACK. THE SMALL ONES GO OOH.'],
-      // circling — Vaks arcs around the Big One
-      ['move', 'vaks', 150, 232, 0.7], ['face', 'vaks', 1],
-      ['move', 'vaks', 110, 226, 0.6], ['face', 'vaks', 1],
-      // faster and faster trades
-      ['shake', 3], ['wait', 0.4],
-      ['shake', 2], ['wait', 0.3],
-      ['shake', 3], ['wait', 0.25],
-      // THE SYNC — the same move, the same beat, then they freeze
-      ['anim', 'vaks', 'celeb'],
+      // Vaks trades moves — steps right in on the Big One, kicks back out, jiving
+      ['move', 'vaks', 258, 226, 0.55],
+      ['move', 'vaks', 296, 226, 0.5],
+      // the trades quicken — stamps land on the beat
+      ['shake', 3], ['wait', 0.32],
+      ['shake', 4], ['wait', 0.3],
+      ['move', 'vaks', 252, 226, 0.4],  // steps in beside him for the finish
+      ['shake', 3], ['wait', 0.22],
       ['say', 'vaks', "...EY. THAT'S MY MOVE."],
+      // THE SYNC — same move, same beat, side by side, then they freeze on it
+      ['dance', 'big', false],
+      ['dance', 'vaks', false],
       ['anim', 'vaks', 'celeb'],
       ['flash', '#fff8e0', 0.4],
-      ['wait', 1.2],
-      ['fx', 'sparkle', 0.6],
+      ['shake', 3],
+      ['fx', 'confetti', 2.6],
       ['note', 'THE BEAT LOCKS. THE WHOLE CAVE SWAYS.'],
-      // the locked groove: confetti, and a tiny one slides in between them
-      ['fx', 'confetti', 2.0],
-      ['teleport', 'tiko', 250, 244],
+      ['camera', 214, 202, 1.6, 0.8], // push into the locked groove, both in frame
+      ['wait', 0.7],
+      // the tiny one slides in between them and loses it — dancing too
+      ['teleport', 'tiko', 214, 244],
+      ['dance', 'tiko', true, 8],
       ['shake', 1],
       // the music drops out; only the wind
       ['music', null],
       ['fx', 'wind', 2.5],
-      ['wait', 1.2],
+      ['wait', 1.0],
       ['say', 'vaks', 'm_wind', "...IT'S LIKE THE WIND, BOSS."],
       ['wire', 'm_wind_malawi'], // preserve the boss-resolution follow-up row
+      ['dance', 'tiko', false],
+      ['anim', 'vaks', 'idle'],
       // the tsotsi gives it all back — a coin passed to Vaks
-      ['fx', 'sparkle', 0.4, 250, 230],
+      ['fx', 'sparkle', 0.4, 214, 228],
       ['say', 'tiko', 'MY BOSS.'],
-      ['teleport', 'coin', 250, 230],
+      ['teleport', 'coin', 214, 228],
       ['show', 'coin', true],
-      ['move', 'coin', 290, 226, 0.5],
+      ['move', 'coin', 248, 224, 0.5],
       ['sfx', 'shop_buy'],
       ['show', 'coin', false],
       ['say', 'vaks', '...KEEP HALF. YOU EARNED IT, TSOTSI.'],
-      // the Big One points at the dawn
-      ['move', 'big', 90, 238, 1.0],
+      // the Big One points one huge arm at the dawn
+      ['camera', 205, 206, 1.35, 1.0],
+      ['move', 'big', 132, 238, 1.0],
       ['face', 'big', -1],
       ['note', 'THE BIG ONE POINTS ONE HUGE ARM AT THE DAWN.'],
       ['fx', 'dawn', 2.0],
       ['say', 'vaks', '...OK, BOSS. WE GO BEFORE YOU CHANGE YOUR MIND.'],
       // Vaks walks into the light
+      ['camreset', 1.0],
       ['move', 'vaks', 380, 226, 1.2],
       ['sfx', 'alert'],                // the phone buzzing again — granny
       ['say', 'vaks', 'THE SUN. THE SUN IS UP, BOSS. GRANNY...'],

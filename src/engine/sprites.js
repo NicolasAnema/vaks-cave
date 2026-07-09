@@ -227,12 +227,16 @@ const VAKS_POSES = [
   /* 18 smkRoll0 */ (g) => drawVaks(g, { crouch: 1, eyes: 'closed', mouth: false, armB: 1, armF: 1 }),
   /* 19 smkRoll1 */ (g) => drawVaks(g, { crouch: 1, bob: 1, eyes: 'closed', mouth: false, armB: 2, armF: 2 }),
   /* 20 smkPuff  */ (g) => drawVaks(g, { eyes: 'closed', mouth: false, armB: 0, armF: 'up' }),
+  // township jive: alternating side-kicks with the arms thrown up — reads as
+  // dancing at a glance (the boss dance-off, the weak plea to granny)
+  /* 21 dance0 */ (g) => drawVaks(g, { lean: -1, armB: 'up', armF: 2, mouth: 'big', legs: [{ dx: -3, lift: 3 }, { dx: 1, lift: 0 }] }),
+  /* 22 dance1 */ (g) => drawVaks(g, { lean: 1, bob: 1, armB: 2, armF: 'up', mouth: 'big', legs: [{ dx: 1, lift: 0 }, { dx: 3, lift: 3 }] }),
 ];
 
 export const VAKS = {
   idle: [0, 1], run: [2, 3, 4, 5], jump: 6, fall: 7, climb: [8, 9],
   land: 10, celeb: [11, 12], babalas: [13, 14], hurt: 15, meow: 16,
-  smokePull: 17, smokeRoll: [18, 19], smokePuff: 20,
+  smokePull: 17, smokeRoll: [18, 19], smokePuff: 20, dance: [21, 22],
 };
 
 // ============================================================
@@ -678,6 +682,27 @@ ooolllllllllooo
 `;
 const WEED_PAL = { o: '#15333c', g: '#46a043', l: '#93d568' };
 
+// A rolled joint (the ceppie/zol) — brown twisted roach, cream paper, a lit
+// ember tip that flickers, with a wisp of smoke curling up. 2 frames. Used as
+// a real prop that passes hand-to-hand in the shop cutscenes.
+const SPLIFF_A = `
+............
+.rrppppppo..
+.rrppppppE..
+.rrppppppo..
+............
+............
+`;
+const SPLIFF_B = `
+.........w..
+.rrppppppE..
+.rrppppppo..
+.rrppppppE..
+........w...
+............
+`;
+const SPLIFF_PAL = { r: '#6b4a2c', p: '#e8e2d0', o: '#ff8a3a', E: '#ffd24a', w: 'rgba(205,214,205,0.5)' };
+
 // Penis snake: phallic head + green slithering body, 2-frame tongue flicker
 const PSNAKE_BODY = `
 ....DDDDD.....
@@ -967,6 +992,7 @@ export async function initSprites() {
   sheet('note_r20', [noteFrame(NOTE_PALS.r20, '20')]);
   sheet('note_r50', [noteFrame(NOTE_PALS.r50, '50')]);
   sheet('weed', [pix(WEED, WEED_PAL)]);
+  sheet('spliff', [pix(SPLIFF_A, SPLIFF_PAL), pix(SPLIFF_B, SPLIFF_PAL)]);
   sheet('penis_snake', [pix(PSNAKE_BODY, PSNAKE_PAL), pix(PSNAKE_TONGUE, PSNAKE_PAL)]);
   sheet('rattex', [pix(RATTEX, RATTEX_PAL)]);
   // ability caps sold in the shop

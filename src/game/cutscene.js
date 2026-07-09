@@ -9,7 +9,7 @@
 import { View, dimScreen, panel, roundedRect } from '../engine/render.js';
 import { Input } from '../engine/input.js';
 import { drawText, wrapText, textWidth, LINE_H } from '../engine/font.js';
-import { draw, drawImoHead, spr, PHOTO_FACES, VAKS, GRANNY } from '../engine/sprites.js';
+import { draw, drawImoHead, spr, PHOTO_FACES, VAKS, GRANNY, TIKO_HEAD_RECT } from '../engine/sprites.js';
 import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
@@ -33,7 +33,7 @@ function resolveFrames(sheet, anim) {
     return { frames: [((anim % n) + n) % n], fps: 1 };
   }
   if (sheet === 'vaks') {
-    const m = { idle: [VAKS.idle, 3], run: [VAKS.run, 10], babalas: [VAKS.babalas, 3], celeb: [VAKS.celeb, 5], climb: [VAKS.climb, 6] };
+    const m = { idle: [VAKS.idle, 3], run: [VAKS.run, 10], babalas: [VAKS.babalas, 3], celeb: [VAKS.celeb, 5], climb: [VAKS.climb, 6], dance: [VAKS.dance, 8] };
     if (m[anim]) return { frames: [].concat(m[anim][0]), fps: m[anim][1] };
     return { frames: [0, 1], fps: 3 };
   }
@@ -68,6 +68,11 @@ export class CutsceneScreen {
     this.shakeT = 0; this.shakeMag = 0;
     this.dialogue = null;
     this.fx = null;
+    // Virtual camera: (x,y) is the world point mapped to screen centre, zoom>=1.
+    // Default is dead-centre at 1x, i.e. an identity transform, so scenes that
+    // never touch the camera render exactly as before.
+    this.cam = { x: View.w / 2, y: View.h / 2, zoom: 1 };
+    this.camTween = null;
     this.phone = null; // WhatsApp-style group chat overlay (see 'phone'/'chat' steps)
     this.sushiPs = [];
     this.dawnT = 0;
@@ -175,6 +180,24 @@ export class CutsceneScreen {
         this.nextStep();
         break;
       }
+      // ---- camera (all non-blocking: the glide runs UNDER the next beats,
+      // so you push in while a line plays; add a 'wait' if you want to hold) ----
+      case 'camera': this.camTo(a, b, c, d); this.nextStep(); break;          // [x, y, zoom, dur]
+      case 'focus': {                                                          // [actorId, zoom, dur]
+        const act = this.actors[a];
+        this.camTo(act ? act.x : View.w / 2, act ? act.y - 16 : View.h / 2, b || 1.6, c || 1);
+        this.nextStep(); break;
+      }
+      case 'camreset': this.camTo(View.w / 2, View.h / 2, 1, a || 1); this.nextStep(); break;
+      case 'dance': {                                                          // [actorId, on?, tempo?]
+        const act = this.actors[a];
+        if (act) {
+          const on = b !== false;
+          act.dance = on ? { t: 0, tempo: c || 6 } : null;
+          if (act.sheet === 'vaks') act.anim = on ? 'dance' : 'idle';
+        }
+        this.nextStep(); break;
+      }
       case 'bgset': this.bg = a; this.nextStep(); break;
       case 'flash': this.flashA = 1; this.flashColor = a; this.waitFor = b || 0.3; break;
       case 'shake': this.shakeT = 0.45; this.shakeMag = a; this.nextStep(); break;
@@ -193,6 +216,29 @@ export class CutsceneScreen {
         break;
       default: this.nextStep();
     }
+  }
+
+  // start a camera glide toward (x,y) at zoom (clamped >=1) over dur seconds
+  camTo(x, y, zoom, dur) {
+    const z = Math.max(1, zoom || 1);
+    this.camTween = { x0: this.cam.x, y0: this.cam.y, z0: this.cam.zoom, x1: x, y1: y, z1: z, t: 0, dur: dur || 1 };
+  }
+
+  // keep the framed region inside the painted scene (no empty edges on zoom-in)
+  clampCam() {
+    const z = Math.max(1, this.cam.zoom);
+    const hw = (View.w / 2) / z, hh = (View.h / 2) / z;
+    this.cam.x = Math.max(hw, Math.min(View.w - hw, this.cam.x));
+    this.cam.y = Math.max(hh, Math.min(View.h - hh, this.cam.y));
+  }
+
+  // world point -> on-screen buffer coords under the current camera (used to
+  // place HD photo heads, which are queued past the pixel buffer)
+  camPt(wx, wy) {
+    return {
+      x: (wx - this.cam.x) * this.cam.zoom + View.w / 2,
+      y: (wy - this.cam.y) * this.cam.zoom + View.h / 2,
+    };
   }
 
   update(dt) {
@@ -221,9 +267,21 @@ export class CutsceneScreen {
     this.flashA = Math.max(0, this.flashA - dt * 3);
     this.shakeT = Math.max(0, this.shakeT - dt);
 
+    // camera glide
+    if (this.camTween) {
+      const tw = this.camTween; tw.t += dt;
+      const u = Math.min(1, tw.t / tw.dur), e = u * u * (3 - 2 * u);
+      this.cam.x = tw.x0 + (tw.x1 - tw.x0) * e;
+      this.cam.y = tw.y0 + (tw.y1 - tw.y0) * e;
+      this.cam.zoom = tw.z0 + (tw.z1 - tw.z0) * e;
+      if (u >= 1) this.camTween = null;
+    }
+    this.clampCam();
+
     // actors
     for (const a of Object.values(this.actors)) {
       a.animT += dt;
+      if (a.dance) a.dance.t += dt;
       if (a.move) {
         a.move.t += dt;
         const u = Math.min(1, a.move.t / a.move.dur);
@@ -312,9 +370,15 @@ export class CutsceneScreen {
 
   draw(ctx) {
     ctx.save();
+    // camera: centre the frame, apply screen-space shake, then zoom about the
+    // camera target. Everything in the world (scene, props, actors, particles)
+    // draws under this; overlays (letterbox, dialogue, washes) stay screen-space.
+    ctx.translate(View.w / 2, View.h / 2);
     if (this.shakeT > 0) {
       ctx.translate(Math.round((Math.random() * 2 - 1) * this.shakeMag), Math.round((Math.random() * 2 - 1) * this.shakeMag));
     }
+    ctx.scale(this.cam.zoom, this.cam.zoom);
+    ctx.translate(-this.cam.x, -this.cam.y);
 
     drawScene(ctx, this.bg, this.t);
 
@@ -335,14 +399,25 @@ export class CutsceneScreen {
       }
     }
 
-    // actors
+    // painted props (signs, banners) — scenery, behind the actors
+    if (this.scene.props) for (const p of this.scene.props) { if (!p.hidden) this.drawProp(ctx, p); }
+
+    // actors (drawn back-to-front in declaration order; a dancing actor hops)
     for (const a of Object.values(this.actors)) {
       if (!a.visible) continue;
       const { frames, fps } = resolveFrames(a.sheet, a.anim);
       const f = frames[Math.floor(a.animT * fps) % frames.length];
       const s = spr(a.sheet);
       if (!s) continue;
-      draw(ctx, a.sheet, f, a.x - (s.fw * a.scale) / 2, a.y - s.fh * a.scale, { flip: a.flip, scale: a.scale });
+      let dx = 0, dy = 0;
+      if (a.dance) {
+        const amp = 4 + 2 * (a.scale || 1);
+        dy = -Math.abs(Math.sin(a.dance.t * a.dance.tempo)) * amp; // the hop
+        dx = Math.sin(a.dance.t * a.dance.tempo * 0.5) * 2;        // the sway
+      }
+      draw(ctx, a.sheet, f, a.x + dx - (s.fw * a.scale) / 2, a.y + dy - s.fh * a.scale, { flip: a.flip, scale: a.scale, alpha: a.alpha });
+      // a real photographic head crowning the mist body (shopkeeper, boss, tsotsi)
+      if (a.head) this.drawActorHead(a, dx, dy);
       // dream face-swap overlay (doubt2: tikolosh wears Vaks's face)
       if (a.faceOverlay && PHOTO_FACES[a.faceOverlay]) {
         const ow = Math.round(16 * a.scale), oh = Math.round(16 * a.scale);
@@ -351,7 +426,9 @@ export class CutsceneScreen {
     }
 
     Particles.draw(ctx, false);
+    ctx.restore();
 
+    // full-screen colour washes: screen-space so they cover the frame at any zoom
     if (this.dawnT > 0) {
       ctx.fillStyle = `rgba(255,210,130,${0.3 * this.dawnT})`;
       ctx.fillRect(0, 0, View.w, View.h);
@@ -360,7 +437,6 @@ export class CutsceneScreen {
       ctx.fillStyle = 'rgba(255,220,150,0.16)';
       ctx.fillRect(0, 0, View.w, View.h);
     }
-    ctx.restore();
 
     // letterbox
     const lb = Math.round(26 * this.letterbox);
@@ -476,6 +552,45 @@ export class CutsceneScreen {
     }
     ctx.globalAlpha = 1;
     return cy + bh + 4;
+  }
+
+  // HD photo head pinned to a mist-body actor, transformed through the camera
+  // (queued past the pixel buffer so it stays photographic). Fades with the scene.
+  drawActorHead(a, dx, dy) {
+    const s = spr(a.sheet); if (!s) return;
+    const sc = a.scale || 1;
+    const tlx = a.x + dx - (s.fw * sc) / 2;
+    const tly = a.y + dy - s.fh * sc;
+    const hr = TIKO_HEAD_RECT;
+    const p = this.camPt(tlx + hr.x * sc, tly + hr.y * sc);
+    const alpha = (a.alpha === undefined ? 1 : a.alpha) * (1 - this.fade);
+    if (alpha <= 0.02) return;
+    const z = this.cam.zoom;
+    drawImoHead(null, a.head, p.x, p.y, hr.w * sc * z, hr.h * sc * z, a.flip, alpha);
+  }
+
+  drawProp(ctx, p) {
+    if (p.type === 'sign') this.drawSign(ctx, p);
+  }
+
+  // A hand-painted wooden sign carrying REAL words (the pixel font), hung on the
+  // wall in world space so it pans/zooms with the camera. Push in to read it.
+  drawSign(ctx, p) {
+    const bw = p.w || 96;
+    const lines = wrapText(p.text, bw - 8);
+    const padY = 4;
+    const bh = padY * 2 + lines.length * LINE_H;
+    const x = Math.round(p.x - bw / 2), y = Math.round(p.y);
+    if (p.hang) { R(ctx, p.x, y - p.hang, 1, p.hang, '#2a2114'); R(ctx, p.x - 3, y - p.hang, 7, 1, '#3a2f1e'); }
+    R(ctx, x, y, bw, bh, p.bg || '#6e5638');          // plank
+    R(ctx, x, y, bw, 1, '#8a6f48');                   // top light edge
+    R(ctx, x, y + bh - 1, bw, 1, '#4a3c28');          // bottom shade
+    R(ctx, x, y, 1, bh, '#5a4a30'); R(ctx, x + bw - 1, y, 1, bh, '#4a3c28');
+    R(ctx, x + 2, y + 2, 1, 1, '#3a2f1e'); R(ctx, x + bw - 3, y + 2, 1, 1, '#3a2f1e'); // nails
+    const ink = p.ink || '#241206';
+    for (let i = 0; i < lines.length; i++) {
+      drawText(ctx, lines[i], p.x, y + padY + i * LINE_H, { color: ink, align: 'center' });
+    }
   }
 
   drawDialogue(ctx) {
