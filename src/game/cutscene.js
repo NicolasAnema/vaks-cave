@@ -18,6 +18,16 @@ import { CONFIG } from '../config.js';
 
 function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 
+// Portrait-free dialogue panel. HD photo heads are clipped behind this exact
+// rectangle at display resolution, so speech never pixelates or floats over UI.
+const DIALOGUE_BOX = { x: 58, y: 29, w: View.w - 116, h: 43 };
+const DIALOGUE_MASK = {
+  x: DIALOGUE_BOX.x - 2,
+  y: DIALOGUE_BOX.y - 2,
+  w: DIALOGUE_BOX.w + 7,
+  h: DIALOGUE_BOX.h + 8,
+};
+
 // who's who in the WhatsApp-style family group chat (the 'phone'/'chat' steps)
 const CHAT_SENDERS = {
   vaks:    { name: 'VAKS',    color: '#8ae08a', bubble: '#103a26' },
@@ -697,7 +707,17 @@ export class CutsceneScreen {
       // dream face-swap overlay (doubt2: tikolosh wears Vaks's face)
       if (a.faceOverlay && PHOTO_FACES[a.faceOverlay]) {
         const ow = Math.round(16 * a.scale), oh = Math.round(16 * a.scale);
-        drawImoHead(ctx, PHOTO_FACES[a.faceOverlay], Math.round(a.x - ow / 2), Math.round(a.y - s.fh * a.scale), ow, oh);
+        drawImoHead(
+          ctx,
+          PHOTO_FACES[a.faceOverlay],
+          Math.round(a.x - ow / 2),
+          Math.round(a.y - s.fh * a.scale),
+          ow,
+          oh,
+          false,
+          undefined,
+          this.dialogue ? { exclude: [DIALOGUE_MASK] } : {},
+        );
       }
       if (a.laugh) {
         const laughText = Math.sin(a.animT * 10) > 0 ? 'HA!' : 'HA HA!';
@@ -1655,20 +1675,18 @@ export class CutsceneScreen {
     const p = this.camPt(tlx + hr.x * sc, tly + hr.y * sc);
     const alpha = (a.alpha === undefined ? 1 : a.alpha) * (1 - this.fade);
     if (alpha <= 0.02) return;
-    // HD heads are queued after the pixel buffer, which also means after the
-    // dialogue panel. During dialogue, draw a buffer-resolution fallback now
-    // so every spectator remains behind the message instead of floating over it.
-    if (this.dialogue) {
-      const faceSheet = a.head === 'tiko_shop' ? 'face_shop' : 'face_tiko';
-      draw(ctx, faceSheet, 0, tlx + hr.x * sc, tly + hr.y * sc, {
-        flip: a.flip,
-        scale: hr.w * sc / 24,
-        alpha,
-      });
-      return;
-    }
     const z = this.cam.zoom;
-    drawImoHead(null, a.head, p.x, p.y, hr.w * sc * z, hr.h * sc * z, a.flip, alpha);
+    drawImoHead(
+      null,
+      a.head,
+      p.x,
+      p.y,
+      hr.w * sc * z,
+      hr.h * sc * z,
+      a.flip,
+      alpha,
+      this.dialogue ? { exclude: [DIALOGUE_MASK] } : {},
+    );
   }
 
   drawProp(ctx, p) {
@@ -1773,19 +1791,24 @@ export class CutsceneScreen {
 
   drawDialogue(ctx) {
     const d = this.dialogue;
-    const bx = 64, by = 34, bw = View.w - 128, bh = 44;
-    panel(ctx, bx, by, bw, bh);
-    panel(ctx, bx + 5, by + 8, 28, 28, { bg: '#10131f' });
-    if (PHOTO_FACES[d.face]) drawImoHead(ctx, PHOTO_FACES[d.face], bx + 7, by + 10, 24, 24);
-    else draw(ctx, d.face, 0, bx + 7, by + 10);
-    drawText(ctx, d.name, bx + 40, by + 5, { color: '#8ae08a' });
-    const lines = wrapText(d.text, bw - 50);
+    const { x: bx, y: by, w: bw, h: bh } = DIALOGUE_BOX;
+    const tiko = d.name.includes('TIKO') || d.name === 'SPAZA' || d.name === 'CROWD';
+    const accent = tiko ? '#8fe580' : d.name === 'VAKS' ? '#73c8ff' : '#ffd56a';
+
+    // Clean text-first panel: no portrait frame, no round photo medallion.
+    R(ctx, bx + 3, by + 4, bw, bh, 'rgba(0,0,0,0.42)');
+    panel(ctx, bx, by, bw, bh, { bg: 'rgba(8,11,22,0.96)', border: '#52648e' });
+    R(ctx, bx, by + 2, 3, bh - 4, accent);
+    R(ctx, bx + 4, by + 2, bw - 6, 1, '#273456');
+    drawText(ctx, d.name, bx + 12, by + 6, { color: accent });
+
+    const lines = wrapText(d.text, bw - 24);
     const shown = d.text.slice(0, Math.ceil(d.shown));
     let used = 0;
     for (let i = 0; i < lines.length && i < 3; i++) {
       const remain = shown.length - used;
       if (remain <= 0) break;
-      drawText(ctx, lines[i].slice(0, remain), bx + 40, by + 15 + i * LINE_H, { color: '#f4f0e0' });
+      drawText(ctx, lines[i].slice(0, remain), bx + 12, by + 17 + i * LINE_H, { color: '#f4f0e0' });
       used += lines[i].length + 1;
     }
   }

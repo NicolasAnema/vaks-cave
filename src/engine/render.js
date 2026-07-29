@@ -64,7 +64,12 @@ export function getCtx() { return bctx; }
 const hdQueue = [];
 
 export function queueHD(img, x, y, w, h, opts = {}) {
-  hdQueue.push({ img, x, y, w, h, flip: !!opts.flip, alpha: opts.alpha === undefined ? 1 : opts.alpha });
+  hdQueue.push({
+    img, x, y, w, h,
+    flip: !!opts.flip,
+    alpha: opts.alpha === undefined ? 1 : opts.alpha,
+    exclude: Array.isArray(opts.exclude) ? opts.exclude : null,
+  });
 }
 
 export function present() {
@@ -87,6 +92,18 @@ export function present() {
     dctx.imageSmoothingEnabled = true;
     dctx.imageSmoothingQuality = 'high';
     for (const q of hdQueue) {
+      // HD heads are composited after the pixel buffer. Cutscene UI can supply
+      // exclusion rectangles so a crisp photo stays behind a dialogue panel
+      // without falling back to a pixelated duplicate.
+      if (q.exclude?.length) {
+        dctx.save();
+        dctx.beginPath();
+        dctx.rect(0, 0, display.width, display.height);
+        for (const r of q.exclude) {
+          dctx.rect(r.x * s, r.y * s, r.w * s, r.h * s);
+        }
+        dctx.clip('evenodd');
+      }
       dctx.globalAlpha = q.alpha;
       if (q.flip) {
         dctx.save();
@@ -97,6 +114,7 @@ export function present() {
       } else {
         dctx.drawImage(q.img, q.x * s, q.y * s, q.w * s, q.h * s);
       }
+      if (q.exclude?.length) dctx.restore();
     }
     dctx.globalAlpha = 1;
     dctx.imageSmoothingEnabled = false;

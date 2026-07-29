@@ -610,11 +610,13 @@ function buildPhotoHeads(imgs) {
 // normal photograph at screen resolution. x/y/w/h is the target box in
 // buffer coords; the photo keeps its own aspect ratio (contained,
 // bottom-anchored so it sits on the body).
-export function drawImoHead(ctx, variant, x, y, w, h, flip, alpha) {
+export function drawImoHead(ctx, variant, x, y, w, h, flip, alpha, opts = {}) {
   const img = ImoHeads[variant] || ImoHeads.tiko;
   const k = Math.min(w / img.width, h / img.height);
   const dw = img.width * k, dh = img.height * k;
-  queueHD(img, x + (w - dw) / 2, y + (h - dh), dw, dh, { flip, alpha });
+  queueHD(img, x + (w - dw) / 2, y + (h - dh), dw, dh, {
+    ...opts, flip, alpha,
+  });
 }
 
 // dialogue portraits that are photo heads (cutscenes draw these HD)
