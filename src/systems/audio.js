@@ -65,10 +65,19 @@ export const AudioManager = {
     const kick = () => {
       this.started = true;
       for (const g of GESTURES) window.removeEventListener(g, kick);
+      // Cache warming is allowed before interaction, but constructing the Web
+      // Audio graph is not. Route every prepared element now, inside the real
+      // gesture, so direct debug URLs stay completely warning-free.
+      for (const [path, el] of this.cache) {
+        if (!this.gains.has(path)) this.route(el, path);
+      }
       const resume = this.ctx && this.ctx.state === 'suspended'
         ? this.ctx.resume()
         : Promise.resolve();
-      resume.then(() => { if (this.music) this.startMusic(this.music); });
+      resume.then(() => {
+        if (this.musicEl && this.musicPath) this.musicEl.play().catch(() => {});
+        else if (this.music) this.startMusic(this.music);
+      });
     };
     for (const g of GESTURES) window.addEventListener(g, kick, { once: true });
   },
@@ -101,6 +110,7 @@ export const AudioManager = {
   // Route an element through master -> GainNode -> destination once, so its
   // level can exceed 1.0. Falls back to plain el.volume if Web Audio is absent.
   route(el, path) {
+    if (!this.started) return;
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -142,6 +152,10 @@ export const AudioManager = {
     const seek = () => { try { el.currentTime = offset; } catch (e) { /* not seekable yet */ } };
     if (offset > 0 && el.readyState < 1) el.addEventListener('loadedmetadata', seek, { once: true });
     seek();
+    // Direct debug URLs can construct a screen before the first user gesture.
+    // Keep the element prepared, but do not ask a locked AudioContext to resume:
+    // the gesture handler in init() starts the pending music cleanly.
+    if (!this.started) return el;
     const resume = this.ctx && this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
     resume.then(() => el.play().catch(() => {}));
     return el;
@@ -180,7 +194,7 @@ export const AudioManager = {
     this.voiceEl = this.playFile(p, 'voice', mul, offset);
     this.voiceEl.addEventListener('ended', () => {
       this.duck = false;
-      if (this.musicEl && this.musicPath) this.setLevel(this.musicPath, this.musicEl, 'music');
+      this.applyVolumes();
     }, { once: true });
   },
 
@@ -210,6 +224,7 @@ export const AudioManager = {
     }
     this.musicEl = el; this.musicPath = p;
     this.setLevel(p, el, 'music');
+    if (!this.started) return;
     const resume = this.ctx && this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
     resume.then(() => el.play().catch(() => {}));
   },
@@ -231,7 +246,9 @@ export const AudioManager = {
   resumeMusic() {
     if (!this.musicEl || !this.musicPath || !this.musicEl.paused) return;
     const resume = this.ctx && this.ctx.state === 'suspended' ? this.ctx.resume() : Promise.resolve();
-    resume.then(() => this.musicEl.play().catch(() => {}));
+    resume.then(() => {
+      this.musicEl.play().catch(() => {});
+    });
   },
 
   stopVoice() {

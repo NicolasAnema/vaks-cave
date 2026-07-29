@@ -27,7 +27,6 @@ const barkRespawn = Barks.wire('m_coming_boss', 'level.js: respawn');
 const barkFish = Barks.wire('m_fish', 'level.js: hazard warning near gaps');
 const barkImGood = Barks.wire('m_im_good', 'level.js: idle check-in');
 const barkIdlePool = Barks.wire('m_idle_pool', 'level.js: idle check-in pool');
-const barkPiper = Barks.wire('m_peter_piper', 'level.js: rare random bark');
 const barkZombie = Barks.wire('m_zombie', 'level.js: rare random bark');
 const barkGlitch = Barks.wire('m_video_cutting', 'level.js: fake screen-glitch gag');
 const barkPhone = Barks.wire('m_america_phone', 'level.js: ringing payphone (L5)');
@@ -775,7 +774,7 @@ export class LevelScreen {
     this.rareTimer -= dt;
     if (this.rareTimer <= 0) {
       this.rareTimer = CONFIG.timers.rareBarkMin + Math.random() * (CONFIG.timers.rareBarkMax - CONFIG.timers.rareBarkMin);
-      (Math.random() < 0.5 ? barkPiper : barkZombie)({ anchor: this.player });
+      barkZombie({ anchor: this.player });
     }
 
     // the video is cutting

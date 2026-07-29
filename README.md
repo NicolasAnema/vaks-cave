@@ -22,8 +22,8 @@ Open the printed URL. That's it.
 
 | Key | Action |
 |---|---|
-| Arrow keys | Move (up/down climbs ladders in the cave) |
-| Space | Jump |
+| Arrow keys | Move; in CAVE FM, press the shown direction in the gold slot |
+| Space | Jump; in CAVE FM, hit the shown VIBE note |
 | W | Meow (rats hate it) |
 | G | Burn a life for an irie rush (once per level) |
 | Enter | Confirm / skip cutscene |
@@ -40,7 +40,7 @@ Open the printed URL. That's it.
 ## Dev verification (not needed to play)
 
 - `node tools/check.mjs` — imports the full module graph headlessly, prints
-  the manifest wiring table (52/52 rows) and re-proves every level beatable
+  the manifest wiring table (55/55 rows) and re-proves every level beatable
   from CONFIG physics (reachability graph + mist/granny timing margins).
 - `tools/drive*.mjs` — CDP drivers that play the served game with real key
   events and assert a clean console.
@@ -54,7 +54,7 @@ src/data/             levels, cutscene scripts, meme manifest (pure data)
 src/engine/           renderer, camera, input, bitmap font, sprites, bg, particles
 src/systems/          AudioManager stub + barks, save
 src/game/             player, threats (mist/granny), entities, level runtime,
-                      boss vibe-off, cutscene player, shop
+                      CAVE FM rhythm boss, garden boss, cutscene player, shop
 src/ui/menus.js       title, menus, settings, loading, pause, game over, clear
 src/verify.js         completability prover (runs on boot in debug)
 tools/                dev-only headless checks

@@ -234,7 +234,7 @@ export class LevelSelectScreen {
       { kind: 'level', n: 4, label: 'LEVEL 4', name: 'TOWNSHIP OUTSKIRTS', zone: 'THE TOWNSHIP' },
       { kind: 'level', n: 5, label: 'LEVEL 5', name: 'KASI MAIN STREET',   zone: 'THE TOWNSHIP' },
       { kind: 'level', n: 6, label: 'LEVEL 6', name: 'HOME STRETCH',       zone: 'THE TOWNSHIP' },
-      { kind: 'boss', variant: 'tiko',   label: 'BOSS 1', name: 'BIG TIKOLOSH',  zone: 'THE VIBE-OFF' },
+      { kind: 'boss', variant: 'tiko',   label: 'BOSS 1', name: 'BIG TIKOLOSH',  zone: 'CAVE FM: LINE UP THE BEAT' },
       { kind: 'boss', variant: 'granny', label: 'BOSS 2', name: 'TEND THE PLAAS', zone: 'THE FINALE' },
     ];
   }

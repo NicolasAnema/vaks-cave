@@ -341,8 +341,10 @@ function sceneShebeenNight(g, t) {
     }
     if (i % 5 === 2) {
       R(g, x + 2, top - 17, 3, 12, '#1b121b');
-      R(g, x + 1, top - 23, 4, 7, '#3f7a4a');                // raised Zamalek
-      R(g, x + 2, top - 26, 2, 3, '#c9a86a');
+      R(g, x + 1, top - 23, 4, 7, '#b86818');                // amber Zamalek
+      R(g, x + 1, top - 21, 4, 3, '#11161a');                // Black Label
+      R(g, x + 1, top - 22, 4, 1, '#c83b31');
+      R(g, x + 2, top - 26, 2, 3, '#ded7c8');                // pale cap
     }
   }
 }
@@ -363,10 +365,14 @@ function sceneCaveFloor(g, t) {
   speckles(g, 42, 50, { x: 0, y: 222, w: View.w, h: 46 }, '#1d1710');
   // Thursday's wreckage — the big party left its mark
   // empty bottles, tipped over
-  R(g, 116, 210, 4, 9, '#3f7a4a'); R(g, 117, 207, 2, 3, '#c9a86a');     // standing bottle
-  R(g, 322, 214, 10, 4, '#3f7a4a'); R(g, 320, 214, 3, 3, '#c9a86a');    // tipped bottle
-  R(g, 158, 215, 9, 4, '#7a4a3a'); R(g, 156, 215, 3, 3, '#c9a86a');     // tipped brown bottle
-  R(g, 404, 213, 4, 6, '#3f7a4a');                                       // upright
+  R(g, 115, 208, 6, 11, '#b86818'); R(g, 117, 205, 2, 3, '#ded7c8');
+  R(g, 115, 211, 6, 4, '#11161a'); R(g, 115, 210, 6, 1, '#c83b31');     // standing Zamalek
+  R(g, 320, 213, 11, 6, '#b86818'); R(g, 317, 215, 3, 2, '#ded7c8');
+  R(g, 323, 213, 4, 6, '#11161a'); R(g, 322, 213, 1, 6, '#c83b31');     // tipped Zamalek
+  R(g, 156, 214, 10, 5, '#a85e19'); R(g, 153, 215, 3, 2, '#ded7c8');
+  R(g, 159, 214, 4, 5, '#11161a'); R(g, 158, 214, 1, 5, '#c83b31');     // tipped Zamalek
+  R(g, 402, 211, 6, 8, '#b86818'); R(g, 404, 209, 2, 2, '#ded7c8');
+  R(g, 402, 213, 6, 3, '#11161a'); R(g, 402, 212, 6, 1, '#c83b31');     // upright Zamalek
   // scattered red party cups
   R(g, 200, 212, 5, 7, '#c43a3a'); R(g, 199, 212, 7, 2, '#e85a5a');
   R(g, 268, 214, 5, 5, '#c43a3a'); R(g, 267, 218, 7, 2, '#7a2424');
@@ -409,9 +415,42 @@ function sceneCaveDeep(g, t) {
     R(g, x, y, 3, h, '#1c5a6e');
     R(g, x, y, 2, h * 0.5, `rgba(127,208,255,${0.5 + pulse * 0.4})`);
   }
-  // a narrow ledge
-  R(g, 130, 220, 220, 8, '#1a2438');
-  R(g, 130, 220, 220, 2, '#2e4a6a');
+  // A rough maintenance passage outside the cave spaza. Nobody qualified
+  // installed these electrics: the cable visibly daisy-chains every lantern
+  // into one ancient breaker at the right-hand shaft.
+  R(g, 26, 220, 428, 10, '#1a2438');
+  R(g, 26, 220, 428, 2, '#2e4a6a');
+  R(g, 40, 230, 400, 4, '#0b101c');
+  R(g, 382, 70, 60, 150, '#03050a');             // upward service shaft
+  R(g, 378, 68, 5, 152, '#233148');
+  R(g, 442, 68, 5, 152, '#101827');
+  R(g, 387, 76, 50, 3, '#344761');
+
+  const cable = [[48, 107], [70, 112], [150, 100], [230, 106], [310, 100], [390, 112], [414, 118]];
+  g.strokeStyle = '#07090d';
+  g.lineWidth = 4;
+  g.beginPath();
+  g.moveTo(cable[0][0], cable[0][1]);
+  for (let i = 1; i < cable.length; i++) g.lineTo(cable[i][0], cable[i][1]);
+  g.stroke();
+  g.strokeStyle = '#5a3825';
+  g.lineWidth = 1;
+  g.beginPath();
+  g.moveTo(cable[0][0], cable[0][1] - 1);
+  for (let i = 1; i < cable.length; i++) g.lineTo(cable[i][0], cable[i][1] - 1);
+  g.stroke();
+  for (const [x, y] of cable.slice(1, -1)) {
+    R(g, x - 4, y - 4, 8, 4, '#b9aa83');          // cracked ceramic insulator
+    R(g, x - 2, y - 5, 4, 1, '#efe0b5');
+  }
+  // Damp stains and discarded wire make the passage feel used, not staged.
+  for (let i = 0; i < 9; i++) {
+    const x = 42 + i * 47;
+    R(g, x, 207 + (i % 3) * 3, 18, 2, i % 2 ? '#152035' : '#111a2b');
+  }
+  R(g, 344, 217, 28, 3, '#6e472c');
+  R(g, 348, 214, 3, 4, '#c66335');
+  R(g, 362, 214, 3, 4, '#c66335');
   // mist coiling at the bottom (animated)
   for (let i = 0; i < 7; i++) {
     const x = (i * 80 + t * 14) % (View.w + 60) - 30;
@@ -468,17 +507,31 @@ function sceneCaveGanja(g, t) {
 }
 
 function sceneCaveMouth(g, t, dawn) {
-  // arena at the cave mouth: huge arch, sky beyond
+  // Arena at the cave mouth: the final cave floor opens onto pre-dawn sky.
+  // The hatch, scuffed ring and illegal event wiring make it a destination,
+  // rather than an empty stage that only exists when dialogue begins.
   if (dawn) {
     vGradient(g, 0, 0, View.w, View.h, [[0, '#5a4a7a'], [0.5, '#c97a6a'], [1, '#ffce8a']]);
     const p = Math.min(1, t / 3);
     g.fillStyle = `rgba(255,200,120,${0.25 * p})`;
     g.fillRect(0, 0, View.w, View.h);
   } else {
-    vGradient(g, 0, 0, View.w, View.h, [[0, '#0a0a14'], [0.6, '#181426'], [1, '#241c2a']]);
-    // stars
+    vGradient(g, 0, 0, View.w, View.h, [[0, '#090a16'], [0.55, '#20182c'], [0.82, '#523447'], [1, '#b56858']]);
     speckles(g, 5, 26, { x: 60, y: 8, w: 360, h: 90 }, '#cfd6ff');
+    // A narrow promise of daylight sits just beyond the right-hand exit.
+    const pulse = 0.7 + Math.sin(t * 0.6) * 0.08;
+    const glow = g.createRadialGradient(418, 166, 8, 418, 166, 118);
+    glow.addColorStop(0, `rgba(255,191,112,${0.3 * pulse})`);
+    glow.addColorStop(1, 'rgba(255,150,90,0)');
+    g.fillStyle = glow;
+    g.fillRect(300, 48, 180, 178);
   }
+  // Distant ridge beyond the mouth.
+  g.fillStyle = dawn ? '#554052' : '#17131f';
+  g.beginPath();
+  g.moveTo(52, 210); g.lineTo(142, 173); g.lineTo(225, 196);
+  g.lineTo(310, 152); g.lineTo(390, 188); g.lineTo(480, 142);
+  g.lineTo(480, 230); g.lineTo(52, 230); g.fill();
   // rock arch frame
   g.fillStyle = '#171209';
   g.beginPath(); g.moveTo(0, 0); g.lineTo(110, 0); g.lineTo(54, 80); g.lineTo(20, 200); g.lineTo(0, 230); g.fill();
@@ -488,6 +541,36 @@ function sceneCaveMouth(g, t, dawn) {
   R(g, 0, 226, View.w, 44, '#2c2218');
   R(g, 0, 226, View.w, 3, '#43321f');
   speckles(g, 12, 30, { x: 0, y: 230, w: View.w, h: 38 }, '#1d1710');
+
+  // The Level 3 ladder emerges through a battered service hatch at far left.
+  R(g, 37, 205, 70, 22, '#100d0b');
+  R(g, 40, 208, 64, 19, '#020407');
+  R(g, 37, 202, 70, 5, '#5b4935');
+  R(g, 34, 207, 5, 20, '#3d3023');
+  R(g, 105, 207, 5, 20, '#3d3023');
+  for (let x = 44; x < 102; x += 12) R(g, x, 203, 7, 2, '#7b674e');
+
+  // The dirt vibe-off ring is already here before anybody explains it.
+  g.save();
+  g.strokeStyle = dawn ? 'rgba(255,225,168,0.62)' : 'rgba(218,196,145,0.48)';
+  g.lineWidth = 2;
+  g.setLineDash([9, 5]);
+  g.beginPath();
+  g.ellipse(236, 229, 116, 25, 0, 0, Math.PI * 2);
+  g.stroke();
+  g.restore();
+  R(g, 152, 237, 18, 2, '#1f1812');
+  R(g, 298, 241, 24, 2, '#1f1812');
+  R(g, 225, 232, 11, 2, '#493622');
+
+  // One cable has been dragged across the ceiling to power the boss event.
+  g.strokeStyle = '#09090b';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(282, 14); g.lineTo(326, 45); g.lineTo(349, 96); g.lineTo(340, 157);
+  g.stroke();
+  R(g, 323, 42, 7, 4, '#8f7655');
+  R(g, 346, 93, 7, 4, '#8f7655');
 }
 
 function sceneRidge(g, t) {
@@ -637,7 +720,10 @@ function sceneShop(g, t) {
   }
   // stocked shelves (fuller: jars, bottles, tins in a row)
   R(g, 84, 96, 78, 4, '#54482f'); R(g, 84, 100, 78, 2, '#3a2f1e');
-  R(g, 88, 84, 7, 12, '#3f7a4a'); R(g, 98, 82, 6, 14, '#7a4a3a'); R(g, 108, 86, 8, 10, '#5ee0a0');
+  // A recognisable amber Black Label/Zamalek among the generic stock.
+  R(g, 88, 84, 7, 12, '#b86818'); R(g, 90, 81, 3, 3, '#ded7c8');
+  R(g, 88, 88, 7, 4, '#11161a'); R(g, 88, 87, 7, 1, '#c83b31');
+  R(g, 98, 82, 6, 14, '#7a4a3a'); R(g, 108, 86, 8, 10, '#5ee0a0');
   R(g, 120, 83, 7, 13, '#6a8fd0'); R(g, 132, 85, 8, 11, '#c9a86a'); R(g, 146, 84, 6, 12, '#b06ad0');
   R(g, 326, 96, 78, 4, '#54482f'); R(g, 326, 100, 78, 2, '#3a2f1e');
   R(g, 330, 88, 8, 8, '#d04a4a'); R(g, 344, 82, 6, 14, '#c9a86a'); R(g, 356, 86, 6, 10, '#8ae08a');

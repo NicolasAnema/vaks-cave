@@ -41,7 +41,6 @@ export const VOICE_ALIASES = {
   m_listen_up:     'sfx/Listen Up.opus',
   m_new_song:      'sfx/New song.opus',
   m_america_phone: 'sfx/America!.opus',
-  m_peter_piper:   'sfx/Tounge Twister.opus',
   m_video_cutting: 'sfx/It\'s Cutting.opus',
   m_zombie:        'sfx/Sambies servant.opus',
   m_school:        'sfx/Why you not going to school.ogg',

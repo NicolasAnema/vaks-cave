@@ -231,12 +231,28 @@ const VAKS_POSES = [
   // dancing at a glance (the boss dance-off, the weak plea to granny)
   /* 21 dance0 */ (g) => drawVaks(g, { lean: -1, armB: 'up', armF: 2, mouth: 'big', legs: [{ dx: -3, lift: 3 }, { dx: 1, lift: 0 }] }),
   /* 22 dance1 */ (g) => drawVaks(g, { lean: 1, bob: 1, armB: 2, armF: 'up', mouth: 'big', legs: [{ dx: 1, lift: 0 }, { dx: 3, lift: 3 }] }),
+  // The Zamalek is part of Vaks's own raised-hand pose. Keeping the bottle
+  // inside the character cell avoids the long screen-space arm used by the
+  // earlier close-up and makes the grip read as one compact pixel silhouette.
+  /* 23 drink */ (g) => {
+    drawVaks(g, { eyes: 'closed', mouth: true, armB: 0, armF: 'up' });
+    R(g, 20, 8, 5, 6, '#b86818');  // amber body
+    R(g, 19, 9, 2, 4, '#b86818');  // shoulder
+    R(g, 17, 10, 3, 2, '#b86818'); // neck to lips
+    R(g, 15, 10, 2, 2, '#ded7c8');// cap at mouth
+    R(g, 20, 9, 5, 1, '#c83b31');
+    R(g, 20, 10, 5, 3, '#11161a');
+    R(g, 21, 11, 3, 1, '#e9e6dc');
+    R(g, 20, 13, 5, 1, '#c83b31');
+    R(g, 23, 8, 1, 1, '#eea23c');
+    R(g, 18, 8, 2, 2, PAL.vaks.skin); // existing raised hand over the neck
+  },
 ];
 
 export const VAKS = {
   idle: [0, 1], run: [2, 3, 4, 5], jump: 6, fall: 7, climb: [8, 9],
   land: 10, celeb: [11, 12], babalas: [13, 14], hurt: 15, meow: 16,
-  smokePull: 17, smokeRoll: [18, 19], smokePuff: 20, dance: [21, 22],
+  smokePull: 17, smokeRoll: [18, 19], smokePuff: 20, dance: [21, 22], drink: 23,
 };
 
 // ============================================================
@@ -652,22 +668,30 @@ const RAT_SQ = `
 `;
 
 const BOTTLE = `
-...kk..
-...kk..
-..ggg..
-..glg..
-.ggllg.
-.gglgg.
-.gglgg.
-.gglgg.
-.ggllg.
-.gglgg.
-.ggggg.
-.ggggg.
-..ggg..
-.......
+....cc...
+...cakc..
+...aAa...
+...aaa...
+..aaaaa..
+..rrrrr..
+..nnnnn..
+..nwwnn..
+..nnnnn..
+..rrrrr..
+..aaaaa..
+..aAAaa..
+..aaaaa..
+..aaaaa..
+..aaaaa..
+...aaa...
+...kkk...
+.........
 `;
-const BOTTLE_PAL = { k: '#c9a86a', g: '#3f7a4a', l: '#7fc98a' };
+const BOTTLE_PAL = {
+  c: '#ded7c8', k: '#2a190f',
+  a: '#b86818', A: '#eea23c',
+  r: '#c83b31', n: '#11161a', w: '#e9e6dc',
+};
 
 const SUSHI = `
 .oOoOoOoOo..
@@ -990,7 +1014,17 @@ export async function initSprites() {
   sheet('rat', [pix(RAT_A, RAT_PAL), pix(RAT_B, RAT_PAL)]);
   sheet('rat_squish', [pix(RAT_SQ, RAT_PAL)]);
   const bottle = pix(BOTTLE, BOTTLE_PAL);
-  sheet('bottle', [bottle, rot90(bottle, 1), rot90(bottle, 2), rot90(bottle, 3)]);
+  // All rotation frames share a fixed canvas. Besides preventing the old
+  // sideways frames from clipping, this keeps the long amber neck, red trim
+  // and black label recognisable while bottles tumble through gameplay.
+  const bottleSpin = (quarter) => frame(20, 20, (g) => {
+    g.save();
+    g.translate(10, quarter % 2 ? 15 : 10);
+    g.rotate(quarter * Math.PI / 2);
+    g.drawImage(bottle, -Math.floor(bottle.width / 2), -Math.floor(bottle.height / 2));
+    g.restore();
+  });
+  sheet('bottle', [0, 1, 2, 3].map(bottleSpin));
   sheet('shop_bag', [frame(15, 16, (g) => {
     R(g, 2, 3, 11, 13, '#9a6a3d');                 // brown paper packet
     R(g, 3, 4, 9, 2, '#c08a52');                   // folded top
@@ -1023,6 +1057,204 @@ export async function initSprites() {
     R(g, inset + 1, 17, 16 - inset * 2, 1, '#604020');
   });
   sheet('money_sack', [moneySackFrame(0), moneySackFrame(1), moneySackFrame(2)]);
+  // Load-shedding set dressing. These stay deliberately chunky so the unsafe
+  // cave electrics read instantly at the game's 480x270 internal resolution.
+  sheet('cave_shutter', [frame(52, 48, (g) => {
+    R(g, 0, 0, 52, 48, '#171b22');
+    R(g, 2, 2, 48, 44, '#46505a');
+    for (let y = 5; y < 45; y += 7) {
+      R(g, 3, y, 46, 4, y % 2 ? '#596571' : '#515d68');
+      R(g, 3, y + 4, 46, 1, '#252c34');
+    }
+    R(g, 0, 0, 4, 48, '#252a31'); R(g, 48, 0, 4, 48, '#252a31');
+    R(g, 7, 8, 38, 13, '#6f4b2d');
+    R(g, 9, 10, 34, 9, '#bd8a4a');
+    drawText(g, 'SPAZA', 26, 11, { color: '#24170d', align: 'center' });
+    R(g, 23, 28, 6, 7, '#181a1d'); R(g, 24, 29, 4, 5, '#d6a83d');
+  })]);
+
+  const cavePowerFrame = (broken) => frame(25, 32, (g) => {
+    R(g, 1, 3, 23, 29, '#15191d');
+    R(g, 3, 5, 19, 25, broken ? '#47312d' : '#48545d');
+    R(g, 5, 7, 15, 8, broken ? '#1b1010' : '#1c2429');
+    if (broken) {
+      R(g, 7, 8, 3, 2, '#ff6d38'); R(g, 15, 11, 4, 2, '#ffcf4a');
+      R(g, 11, 5, 2, 10, '#0b0909'); R(g, 13, 9, 2, 2, '#fff1a0');
+    } else {
+      R(g, 7, 9, 3, 3, '#59d36e'); R(g, 15, 9, 3, 3, '#ffcf4a');
+      R(g, 6, 18, 13, 2, '#252d32');
+      R(g, 7, 22, 4, 6, '#22282d'); R(g, 14, 22, 4, 6, '#22282d');
+      R(g, 8, 23, 2, 4, '#d7b848'); R(g, 15, 23, 2, 4, '#d7b848');
+    }
+    R(g, 0, 0, 4, 6, '#772f25'); R(g, 21, 0, 4, 6, '#772f25');
+  });
+  sheet('cave_power', [cavePowerFrame(false), cavePowerFrame(true)]);
+
+  sheet('cave_ladder', [frame(18, 96, (g) => {
+    R(g, 1, 0, 3, 96, '#37434a'); R(g, 14, 0, 3, 96, '#37434a');
+    R(g, 2, 0, 1, 96, '#66767c'); R(g, 15, 0, 1, 96, '#66767c');
+    for (let y = 5; y < 94; y += 12) {
+      R(g, 3, y, 12, 3, '#4d5b61');
+      R(g, 4, y, 10, 1, '#839298');
+    }
+  })]);
+
+  // Cave-mouth vibe-off set. The improvised event infrastructure should feel
+  // as if the Tikoloshes have been waiting all night for Vaks to arrive.
+  sheet('boss_barrier', [frame(100, 50, (g) => {
+    R(g, 4, 12, 6, 38, '#343943'); R(g, 90, 12, 6, 38, '#343943');
+    R(g, 5, 12, 4, 38, '#68717b'); R(g, 91, 12, 4, 38, '#68717b');
+    R(g, 7, 31, 86, 7, '#d8d1ba');
+    for (let x = 7; x < 93; x += 16) R(g, x, 31, 9, 7, '#c63f37');
+    R(g, 19, 0, 62, 27, '#211b16');
+    R(g, 21, 2, 58, 23, '#d1a65a');
+    R(g, 24, 5, 52, 9, '#24201b');
+    drawText(g, 'BOSS LEVEL', 50, 6, { color: '#ffeeb0', align: 'center' });
+    drawText(g, 'NO REFUNDS', 50, 17, { color: '#5a201c', align: 'center' });
+    R(g, 1, 47, 13, 3, '#1b1817'); R(g, 86, 47, 13, 3, '#1b1817');
+  })]);
+
+  const bossQueueSign = (soldOut) => frame(76, 39, (g) => {
+    R(g, 35, 19, 6, 20, '#62452f');
+    R(g, 36, 19, 3, 20, '#9a744c');
+    R(g, 1, 1, 74, 23, '#211b16');
+    R(g, 3, 3, 70, 19, soldOut ? '#672f2d' : '#d7c77d');
+    drawText(g, soldOut ? 'SOLD OUT' : 'BOSS QUEUE', 38, 6, {
+      color: soldOut ? '#ffe49a' : '#58211f', align: 'center',
+    });
+    drawText(g, soldOut ? 'STANDING ONLY' : 'THIS WAY  >', 38, 15, {
+      color: soldOut ? '#fff0c4' : '#25211b', align: 'center',
+    });
+    R(g, 29, 36, 18, 3, '#171515');
+  });
+  sheet('boss_queue_sign', [bossQueueSign(false), bossQueueSign(true)]);
+
+  const bossGenerator = (state) => frame(34, 24, (g) => {
+    R(g, 2, 5, 30, 16, '#262b31');
+    R(g, 5, 7, 24, 12, state === 2 ? '#52614c' : '#4b4640');
+    R(g, 7, 9, 8, 7, '#1c2024'); R(g, 18, 9, 8, 7, '#292d31');
+    R(g, 9, 10, 4, 2, state === 2 ? '#69dc72' : '#a83f35');
+    R(g, 20, 10, 4, 2, state === 1 ? '#ffd45d' : '#c2a246');
+    R(g, 0, 2, 4, 17, '#6b5744'); R(g, 30, 2, 4, 17, '#6b5744');
+    R(g, 4, 0, 26, 3, '#8a765f');
+    R(g, 7, 20, 6, 4, '#11141a'); R(g, 22, 20, 6, 4, '#11141a');
+    if (state === 1) {
+      R(g, 28, 4, 3, 2, '#d9d9cc');
+      R(g, 31, 2, 2, 2, '#b8b8ae');
+      R(g, 25, 1, 2, 2, '#8f8f88');
+    }
+  });
+  sheet('boss_generator', [bossGenerator(0), bossGenerator(1), bossGenerator(2)]);
+
+  sheet('boss_floodlight', [
+    frame(24, 70, (g) => {
+      R(g, 10, 19, 4, 46, '#515964');
+      R(g, 4, 64, 16, 4, '#333941');
+      R(g, 1, 5, 22, 16, '#333941');
+      R(g, 4, 8, 16, 10, '#171b22');
+      R(g, 11, 0, 2, 7, '#515964');
+    }),
+    frame(24, 70, (g) => {
+      R(g, 10, 19, 4, 46, '#69737f');
+      R(g, 4, 64, 16, 4, '#3e454e');
+      R(g, 1, 5, 22, 16, '#343b45');
+      R(g, 4, 8, 16, 10, '#fff0a4');
+      R(g, 6, 10, 12, 6, '#fffbd8');
+      R(g, 11, 0, 2, 7, '#69737f');
+    }),
+  ]);
+
+  sheet('boss_cooler', [frame(30, 18, (g) => {
+    R(g, 1, 4, 28, 13, '#e6e1d3');
+    R(g, 2, 7, 26, 10, '#3475b8');
+    R(g, 0, 2, 30, 5, '#f3eee1');
+    R(g, 12, 0, 6, 3, '#b9b5aa');
+    R(g, 6, 17, 5, 1, '#1d2530'); R(g, 20, 17, 5, 1, '#1d2530');
+  })]);
+
+  sheet('boss_chair', [frame(24, 29, (g) => {
+    R(g, 3, 3, 18, 13, '#a63d35');
+    R(g, 5, 5, 14, 9, '#d05448');
+    R(g, 4, 17, 16, 4, '#82302c');
+    R(g, 3, 20, 3, 9, '#626973'); R(g, 18, 20, 3, 9, '#626973');
+    R(g, 2, 0, 3, 22, '#626973'); R(g, 19, 0, 3, 22, '#626973');
+  })]);
+
+  const bossPlacard = (text, bg, ink) => frame(54, 33, (g) => {
+    R(g, 25, 17, 4, 16, '#795436');
+    R(g, 1, 1, 52, 21, '#2a211a');
+    R(g, 3, 3, 48, 17, bg);
+    drawText(g, text, 27, 8, { color: ink, align: 'center' });
+  });
+  sheet('boss_placard', [
+    bossPlacard('MOER HOM!', '#e7d79a', '#6a1f1c'),
+    bossPlacard('TEAM TIKO', '#452931', '#ffe06a'),
+    bossPlacard('YOH!', '#ffe06a', '#5d241f'),
+    bossPlacard('AWEH VAKS', '#274c35', '#aef2a8'),
+  ]);
+
+  // The full CAVE FM booth is also a scene prop. Its dimensions and anchor
+  // match BossScreen's playable composition, allowing the setup cutscene to
+  // settle into the exact gameplay frame instead of cutting to a different set.
+  sheet('boss_deck_rig', [frame(444, 112, (g) => {
+    R(g, 0, 0, 444, 11, '#261a13');
+    R(g, 2, 0, 440, 4, '#94653b');
+    R(g, 12, 80, 39, 32, '#4a2f1f');
+    R(g, 393, 80, 39, 32, '#4a2f1f');
+    for (let i = 0; i < 5; i++) {
+      R(g, 17, 85 + i * 5, 29, 2, '#211712');
+      R(g, 398, 85 + i * 5, 29, 2, '#211712');
+    }
+
+    // Battered left and right decks.
+    R(g, 10, 8, 170, 72, '#1d222a');
+    R(g, 13, 11, 164, 66, '#343a43');
+    R(g, 264, 8, 170, 72, '#1d222a');
+    R(g, 267, 11, 164, 66, '#343a43');
+    const record = (cx, cy, label) => {
+      g.fillStyle = '#11131a';
+      g.beginPath(); g.arc(cx, cy, 25, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#404653'; g.lineWidth = 2;
+      g.beginPath(); g.arc(cx, cy, 19, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(cx, cy, 13, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = label;
+      g.beginPath(); g.arc(cx, cy, 7, 0, Math.PI * 2); g.fill();
+      R(g, cx - 2, cy - 21, 4, 4, '#fff3aa');
+      g.strokeStyle = '#a9adb6'; g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(cx + 28, cy - 23);
+      g.lineTo(cx + 16, cy - 8);
+      g.lineTo(cx + 12, cy + 4);
+      g.stroke();
+    };
+    record(77, 42, '#ffcf55');
+    record(332, 42, '#72f0a0');
+
+    // Mixer and the big central VIBE pad.
+    R(g, 187, 8, 70, 72, '#171b21');
+    R(g, 190, 11, 64, 66, '#242a32');
+    drawText(g, 'CAVE FM', 222, 15, { color: '#ffe49a', align: 'center' });
+    for (let i = 0; i < 4; i++) R(g, 196 + i * 15, 34, 10, 10, i ? '#414754' : '#79652e');
+    R(g, 200, 58, 44, 9, '#15191f');
+    drawText(g, 'SYNC', 222, 59, { color: '#d5d9e2', align: 'center' });
+  })]);
+
+  sheet('boss_cash_tin', [frame(27, 16, (g) => {
+    R(g, 1, 4, 25, 11, '#20252c');
+    R(g, 2, 2, 23, 5, '#606975');
+    R(g, 5, 0, 17, 4, '#858f9b');
+    R(g, 10, 6, 7, 5, '#15191e');
+    R(g, 12, 7, 3, 2, '#f0c64c');
+    R(g, 3, 14, 21, 2, '#111419');
+  })]);
+
+  sheet('boss_aux', [frame(24, 8, (g) => {
+    R(g, 0, 3, 13, 3, '#7a4caf');
+    R(g, 12, 1, 7, 7, '#20242c');
+    R(g, 18, 3, 6, 3, '#d5d9e2');
+    R(g, 21, 4, 3, 1, '#fff2b2');
+  })]);
+
   sheet('loose_shoe', [frame(10, 5, (g) => {
     R(g, 1, 1, 5, 3, PAL.vaks.shoe);
     R(g, 5, 2, 4, 2, PAL.vaks.shoeD);

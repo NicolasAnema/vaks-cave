@@ -82,6 +82,7 @@ const FLOW = [
   { t: 'cutscene', id: 'load_shedding' },
   { t: 'level', n: 3 },
   { t: 'cutscene', id: 'boss_intro' },
+  { t: 'cutscene', id: 'cave_fm_setup' },
   { t: 'boss' },
   { t: 'cutscene', id: 'boss_resolve' },
   { t: 'cutscene', id: 'chase_begins' },
@@ -104,6 +105,8 @@ function newRun() {
     currentLevel: 0,   // which level's lives are loaded (0 = none yet)
     bonusLives: 0,     // permanent +1s bought in the shop / earned at R200 milestones
     bossAt: -1, bossRound: 0,  // vibe-boss checkpoint: which boss + the round reached
+    bossTutorialDone: false,    // retrying CAVE FM does not repeat Spaza's booth induction
+    bossLoadsheddingSeen: false, // Round 3's transition plays once, never on its checkpoint retry
 
     faintCharm: false, rattex: false,
     hats: { propeller: false, beanie: false, chiefs: false },        // equipped (active abilities)
@@ -258,7 +261,11 @@ function goFlow(i) {
     const bossIdx = i;
     // Rounds are checkpoints. A FRESH arrival at this boss starts at round 0; a
     // retry after being caught resumes from the round reached (run.bossRound).
-    if (run.bossAt !== bossIdx) { run.bossAt = bossIdx; run.bossRound = 0; }
+    if (run.bossAt !== bossIdx) {
+      run.bossAt = bossIdx;
+      run.bossRound = 0;
+      if (node.variant !== 'granny') run.bossLoadsheddingSeen = false;
+    }
     const cb = {
       onWin: () => { run.bossAt = -1; run.bossRound = 0; nextFlow(); },
       onCaught: (round) => {

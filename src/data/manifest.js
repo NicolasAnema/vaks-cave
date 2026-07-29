@@ -104,8 +104,6 @@ export const MANIFEST = [
     lines: ['NEW SONG, LISTEN TO THIS.'], file: 'vo/new_song.ogg' },
   { id: 'm_america_phone', event: 'easter_egg_rare',  trigger: 'Rare: ringing payphone in level 5',
     lines: ['AMERICA, I KNOW YOU HEARD. PICK UP THE PHONE.'], file: 'vo/america_phone.ogg' },
-  { id: 'm_peter_piper',   event: 'easter_egg_rare',  trigger: 'Rare random bark',
-    lines: ['PETER PIPER PICKED A PECK OF PICKLED PEPPERS, BOSS.'], file: 'vo/peter_piper.ogg' },
   { id: 'm_video_cutting', event: 'glitch_gag',       trigger: 'Rare: brief fake screen-glitch gag',
     lines: ['THE VIDEO IS CUTTING.'], file: 'vo/video_cutting.ogg' },
   { id: 'm_zombie',        event: 'easter_egg_rare',  trigger: 'Rare random bark',

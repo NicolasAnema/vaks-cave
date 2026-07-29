@@ -57,13 +57,13 @@ export class Bottle {
 
   shatter() {
     this.dead = true;
-    Particles.shards(this.x, this.y - 6, ['#3f7a4a', '#7fc98a', '#c9a86a']);
+    Particles.shards(this.x, this.y - 8, ['#b86818', '#eea23c', '#c83b31', '#11161a', '#e9e6dc']);
   }
 
   draw(ctx, cam) {
     if (!cam.sees(this.x, this.y, 20)) return;
     const f = this.grounded ? Math.floor(this.t * CONFIG.bottles.spinHz) % 4 : Math.floor(this.t * 10) % 4;
-    draw(ctx, 'bottle', f, this.x - 4, this.y - 13);
+    draw(ctx, 'bottle', f, this.x - 10, this.y - 20);
   }
 }
 

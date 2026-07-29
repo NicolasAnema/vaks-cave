@@ -181,12 +181,70 @@ export const CONFIG = {
   },
 
   boss: {
-    // Big Tikolosh vibe-off — cranked HARD: 5 rounds with a steep tempo ramp,
-    // tight timing windows, and it creeps in fast while a miss shoves it right up
-    // on you — every beat counts, a sloppy run loses.
-    rounds: [ { beats: 7, bpm: 100 }, { beats: 8, bpm: 118 }, { beats: 9, bpm: 136 }, { beats: 10, bpm: 156 }, { beats: 11, bpm: 176 } ],
-    hitWindow: 0.085, perfectWindow: 0.04,
-    startDist: 210, catchDist: 46, advanceMiss: 72, retreatHit: 10, driftSpeed: 19,
+    // CAVE FM: one uninterrupted Arrow/Space prompt arrives at a time. The
+    // physical booth comedy lives in its own authored cutscene before this.
+    rounds: [
+      {
+        name: 'LINE UP THE BEAT',
+        hits: 10,
+        travelTime: 0.64,
+        hitWindow: 0.115,
+        perfectWindow: 0.036,
+        keys: ['ArrowLeft', 'ArrowRight', 'Space'],
+      },
+      {
+        name: 'REQUESTS ARE OPEN',
+        hits: 13,
+        travelTime: 0.48,
+        hitWindow: 0.09,
+        perfectWindow: 0.028,
+        keys: ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Space'],
+      },
+      {
+        name: 'THIS ONE IS ACTUALLY ESKOM',
+        hits: 14,
+        travelTime: 0.44,
+        hitWindow: 0.085,
+        perfectWindow: 0.026,
+        keys: ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Space'],
+        blackout: true,
+      },
+    ],
+    promptGap: 0.085,
+    // Two unannounced Round 1 VIBE prompts nearly reach the line, physically
+    // rewind with the record, then return. They remain normal, hittable notes.
+    scratchPromptSerials: [4, 8],
+    scratchTurnAt: 0.84,
+    scratchBacktrack: 0.23,
+    scratchRewindDuration: 0.2,
+    scratchResumeDuration: 0.43,
+    scratchRecordJerk: 0.36,
+    // Round 3 arrives through a short, wordless load-shedding interstitial.
+    loadsheddingDuration: 4.15,
+    loadsheddingFlickerAt: 0.78,
+    loadsheddingPowerCutAt: 1.28,
+    loadsheddingPhoneLightsAt: 1.62,
+    loadsheddingGeneratorAt: 2.05,
+    loadsheddingCatEyesAt: 2.48,
+    loadsheddingTargetAt: 2.82,
+    loadsheddingTitleAt: 3.12,
+    syncLoss: 2,
+    vibeStart: 55,
+    vibeMax: 100,
+    hitVibe: 1,
+    perfectVibe: 2.5,
+    missPenalty: 22,
+    roundIntro: 1.25,
+    roundClear: 1.15,
+    finalHold: 3.4,
+    caughtHold: 1.45,
+    tutorialTravelTime: 1.2,
+    tutorialHitWindow: 0.22,
+    tutorialResultHold: 1.25,
+    tutorialScore: 150,
+    hitScore: 180,
+    perfectScore: 300,
+    finalScore: 1600,
   },
 
   // granny finale — a different game entirely: TEND THE PLAAS. Weeds sprout in

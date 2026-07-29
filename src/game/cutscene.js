@@ -14,6 +14,7 @@ import { drawScene } from '../engine/bg.js';
 import { Particles } from '../engine/particles.js';
 import { AudioManager, Barks } from '../systems/audio.js';
 import { CUTSCENES, SPEAKERS } from '../data/cutscenes.js';
+import { CONFIG } from '../config.js';
 
 function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 
@@ -36,7 +37,8 @@ function resolveFrames(sheet, anim) {
     const m = {
       idle: [VAKS.idle, 3], run: [VAKS.run, 10], babalas: [VAKS.babalas, 3],
       celeb: [VAKS.celeb, 5], climb: [VAKS.climb, 6], dance: [VAKS.dance, 8],
-      hurt: [VAKS.hurt, 1], smokePuff: [VAKS.smokePuff, 1],
+      hurt: [VAKS.hurt, 1], meow: [VAKS.meow, 1],
+      smokePuff: [VAKS.smokePuff, 1], drink: [VAKS.drink, 1],
     };
     if (m[anim]) return { frames: [].concat(m[anim][0]), fps: m[anim][1] };
     return { frames: [0, 1], fps: 3 };
@@ -170,6 +172,19 @@ export class CutsceneScreen {
       case 'sprite': this.actors[a].sheet = b; this.actors[a].anim = c || 'loop'; this.nextStep(); break;
       case 'face': this.actors[a].flip = b < 0; this.nextStep(); break;
       case 'show': this.actors[a].visible = b; this.nextStep(); break;
+      case 'attach': {
+        const child = this.actors[a];
+        child.attach = b ? { to: b, dx: c ?? 0, dy: d ?? 0, followFlip: e !== false } : null;
+        if (child.attach) this.syncAttachment(child);
+        this.nextStep();
+        break;
+      }
+      case 'scale': {
+        const actor = this.actors[a];
+        actor.scaleMove = { from: actor.scale || 1, to: b || 1, dur: c || 1, t: 0 };
+        this.nextStep(); // non-blocking so growth can run under a transformation FX
+        break;
+      }
       case 'wire': this.nextStep(); break; // wires a manifest row without playing it
       case 'voice_note': {
         // like 'say' but locked — speech bubble shows, voice plays to completion,
@@ -326,6 +341,16 @@ export class CutsceneScreen {
     }
   }
 
+  syncAttachment(actor) {
+    const link = actor.attach;
+    const parent = link && this.actors[link.to];
+    if (!parent) return;
+    const side = parent.flip ? -1 : 1;
+    actor.x = parent.x + link.dx * side;
+    actor.y = parent.y + link.dy;
+    if (link.followFlip) actor.flip = parent.flip;
+  }
+
   // start a camera glide toward (x,y) at zoom (clamped >=1) over dur seconds
   camTo(x, y, zoom, dur) {
     const z = Math.max(1, zoom || 1);
@@ -466,6 +491,18 @@ export class CutsceneScreen {
           if (this.waitFor === Infinity && !this.dialogue) this.nextStep();
         }
       }
+      if (a.scaleMove) {
+        a.scaleMove.t += dt;
+        const u = Math.min(1, a.scaleMove.t / a.scaleMove.dur);
+        const e = u * u * (3 - 2 * u);
+        a.scale = a.scaleMove.from + (a.scaleMove.to - a.scaleMove.from) * e;
+        if (u >= 1) a.scaleMove = null;
+      }
+    }
+    // Handheld props inherit the actor's exact resolved position. This keeps
+    // them locked to Vaks's hands instead of visibly drifting on parallel moves.
+    for (const a of Object.values(this.actors)) {
+      if (a.attach) this.syncAttachment(a);
     }
 
     // dialogue typewriter
@@ -543,6 +580,19 @@ export class CutsceneScreen {
         if (v) Particles.smoke(v.x + (v.flip ? -8 : 8), v.y - 22);
       } else if (n === 'confetti' && Math.random() < 0.3) {
         Particles.confetti(100 + Math.random() * 280, 80, 6);
+      } else if (n === 'bossTransform' && Math.random() < 0.75) {
+        const boss = this.actors.big;
+        if (boss) {
+          Particles.spawn({
+            x: boss.x - 42 + Math.random() * 84,
+            y: boss.y - 4 - Math.random() * 74,
+            vx: (Math.random() - 0.5) * 28,
+            vy: 12 + Math.random() * 28,
+            life: 0.8 + Math.random() * 0.7,
+            size: 2 + Math.random() * 3,
+            color: Math.random() < 0.5 ? '#6d5840' : '#3d3024',
+          });
+        }
       } else if (n === 'sushi' && Math.random() < 0.5) {
         this.sushiPs.push({
           x: Math.random() * View.w, y: -10,
@@ -643,7 +693,7 @@ export class CutsceneScreen {
       }
       draw(ctx, a.sheet, f, a.x + dx - (s.fw * a.scale) / 2, a.y + dy - s.fh * a.scale, { flip: a.flip, scale: a.scale, alpha: a.alpha });
       // a real photographic head crowning the mist body (shopkeeper, boss, tsotsi)
-      if (a.head) this.drawActorHead(a, dx, dy);
+      if (a.head) this.drawActorHead(ctx, a, dx, dy);
       // dream face-swap overlay (doubt2: tikolosh wears Vaks's face)
       if (a.faceOverlay && PHOTO_FACES[a.faceOverlay]) {
         const ow = Math.round(16 * a.scale), oh = Math.round(16 * a.scale);
@@ -767,6 +817,437 @@ export class CutsceneScreen {
       R(ctx, -5, -5, 10, 10, '#ff7f3f');
       R(ctx, -2, -2, 4, 4, '#ffffff');
       ctx.restore();
+    } else if (this.fx && this.fx.name === 'wireSurge') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const progress = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const ids = ['power', 'l5', 'l4', 'l3', 'l2', 'l1'];
+      const pts = ids.map((id) => {
+        const a = this.actors[id];
+        return a ? this.camPt(a.x, a.y - (id === 'power' ? 27 : 14)) : { x: 0, y: 0 };
+      });
+      const span = (pts.length - 1) * progress;
+      const whole = Math.floor(span);
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'square';
+      for (let i = 0; i < whole && i < pts.length - 1; i++) {
+        ctx.strokeStyle = i % 2 ? '#fff1a0' : '#65e8ff';
+        ctx.beginPath();
+        ctx.moveTo(pts[i].x, pts[i].y);
+        ctx.lineTo(pts[i + 1].x, pts[i + 1].y);
+        ctx.stroke();
+      }
+      if (whole < pts.length - 1) {
+        const local = span - whole;
+        const a = pts[whole], b = pts[whole + 1];
+        const sx = a.x + (b.x - a.x) * local;
+        const sy = a.y + (b.y - a.y) * local;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(sx, sy);
+        ctx.stroke();
+        const spark = 5 + Math.round(Math.sin(this.t * 47) * 2);
+        R(ctx, sx - spark, sy - 1, spark * 2, 3, '#fff1a0');
+        R(ctx, sx - 1, sy - spark, 3, spark * 2, '#65e8ff');
+      }
+      ctx.globalAlpha = 0.18 + Math.sin(this.t * 60) * 0.08;
+      ctx.fillStyle = '#b8f5ff';
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'catScan') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const v = this.actors.vaks;
+      const eyes = v ? this.camPt(v.x + 2, v.y - 25) : { x: 220, y: 190 };
+      const outward = Math.min(1, p / 0.72);
+      const returning = p > 0.72 ? (p - 0.72) / 0.28 : 0;
+      const farX = View.w - 44;
+      const scanX = returning > 0
+        ? farX + (eyes.x - farX) * returning
+        : eyes.x + (farX - eyes.x) * outward;
+      const scanY = eyes.y - 20 + Math.sin(outward * Math.PI) * 34;
+      const radius = returning > 0
+        ? 54 + (CONFIG.catEyes.radius - 54) * returning
+        : 50 + Math.sin(outward * Math.PI) * 12;
+      const darkness = ctx.createRadialGradient(scanX, scanY, 4, scanX, scanY, radius);
+      darkness.addColorStop(0, 'rgba(1,2,5,0.03)');
+      darkness.addColorStop(0.55, 'rgba(1,2,5,0.20)');
+      darkness.addColorStop(1, `rgba(1,2,5,${CONFIG.catEyes.darkness})`);
+      ctx.fillStyle = darkness;
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.fillStyle = 'rgba(255,216,77,0.10)';
+      ctx.beginPath();
+      ctx.moveTo(eyes.x - 3, eyes.y);
+      ctx.lineTo(scanX - radius * 0.42, scanY - radius * 0.25);
+      ctx.lineTo(scanX + radius * 0.42, scanY + radius * 0.25);
+      ctx.lineTo(eyes.x + 5, eyes.y + 1);
+      ctx.closePath();
+      ctx.fill();
+      R(ctx, eyes.x - 4, eyes.y - 1, 3, 2, '#ffd84d');
+      R(ctx, eyes.x + 3, eyes.y - 1, 3, 2, '#ffd84d');
+      if (Math.floor(this.t * 9) % 2 === 0) {
+        R(ctx, scanX - 8, scanY, 16, 1, 'rgba(255,232,130,0.55)');
+      }
+    } else if (this.fx && this.fx.name === 'bossShadow') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const eased = p * p * (3 - 2 * p);
+      const small = this.actors.tiko;
+      const base = small ? this.camPt(small.x, small.y - 2) : { x: 150, y: 226 };
+      const h = 34 + eased * 154;
+      const w = 18 + eased * 74;
+      ctx.save();
+      ctx.globalAlpha = 0.2 + eased * 0.58;
+      ctx.fillStyle = '#020205';
+      ctx.beginPath();
+      ctx.moveTo(base.x - 10, base.y);
+      ctx.lineTo(base.x - w * 0.52, base.y - h * 0.45);
+      ctx.lineTo(base.x - w * 0.34, base.y - h * 0.78);
+      ctx.lineTo(base.x - w * 0.55, base.y - h * 0.92);
+      ctx.lineTo(base.x - w * 0.16, base.y - h * 0.82);
+      ctx.lineTo(base.x, base.y - h);
+      ctx.lineTo(base.x + w * 0.16, base.y - h * 0.82);
+      ctx.lineTo(base.x + w * 0.55, base.y - h * 0.92);
+      ctx.lineTo(base.x + w * 0.34, base.y - h * 0.78);
+      ctx.lineTo(base.x + w * 0.52, base.y - h * 0.45);
+      ctx.lineTo(base.x + 10, base.y);
+      ctx.closePath();
+      ctx.fill();
+      if (eased > 0.55) {
+        const eyeY = base.y - h * 0.76;
+        R(ctx, base.x - w * 0.18, eyeY, 7, 3, '#a8ff79');
+        R(ctx, base.x + w * 0.1, eyeY, 7, 3, '#a8ff79');
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossTransform') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const boss = this.actors.big;
+      const at = boss ? this.camPt(boss.x, boss.y - 40 * (boss.scale || 1)) : { x: 150, y: 170 };
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,232,151,${0.78 * (1 - p)})`;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        const r = 18 + p * 95 + i * 14;
+        ctx.beginPath();
+        ctx.ellipse(at.x, at.y + 32, r, r * 0.38, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const flash = Math.max(0, 0.24 - Math.abs(p - 0.58)) * 1.8;
+      ctx.fillStyle = `rgba(255,244,194,${flash})`;
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossAuxPull') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const socket = this.camPt(this.fx.x ?? 244, this.fx.y ?? 193);
+      const big = this.actors.big;
+      const fist = big
+        ? this.camPt(big.x + 22, big.y - 38)
+        : { x: socket.x - 130, y: socket.y - 44 };
+      const yank = p * p * (3 - 2 * p);
+      const endX = socket.x + (fist.x - socket.x) * yank;
+      const endY = socket.y + (fist.y - socket.y) * yank;
+      ctx.save();
+      ctx.strokeStyle = '#925bd4';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'square';
+      ctx.beginPath();
+      ctx.moveTo(socket.x - 34, socket.y + 4);
+      ctx.bezierCurveTo(
+        socket.x - 12,
+        socket.y + 22,
+        endX + 28,
+        endY + 18,
+        endX,
+        endY,
+      );
+      ctx.stroke();
+      R(ctx, endX - 7, endY - 4, 13, 9, '#20242c');
+      R(ctx, endX + 5, endY - 1, 8, 4, '#d5d9e2');
+      if (p > 0.62) {
+        const pulse = Math.floor(this.t * 20) % 2;
+        R(ctx, socket.x - 4, socket.y - 11 - pulse * 3, 3, 7, '#fff1a0');
+        R(ctx, socket.x + 7 + pulse * 3, socket.y - 5, 7, 3, '#ffcf55');
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossPhoneBlast') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const phone = this.camPt(this.fx.x ?? 239, this.fx.y ?? 184);
+      const left = this.camPt(95, 200);
+      const right = this.camPt(350, 200);
+      ctx.save();
+      ctx.globalAlpha = 0.12 + Math.abs(Math.sin(elapsed * 16)) * 0.08;
+      ctx.fillStyle = '#72d5ff';
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#c9f0ff';
+      ctx.lineWidth = 3;
+      for (const speaker of [left, right]) {
+        for (let i = 0; i < 3; i++) {
+          const r = 12 + ((elapsed * 58 + i * 18) % 64);
+          ctx.globalAlpha = Math.max(0, 0.72 - r / 90);
+          ctx.beginPath();
+          ctx.arc(speaker.x, speaker.y, r, -2.7, -0.45);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+      const buzz = Math.floor(elapsed * 18) % 2 ? 3 : -3;
+      R(ctx, phone.x - 24 + buzz, phone.y - 35, 10, 3, '#72d5ff');
+      R(ctx, phone.x + 14 - buzz, phone.y - 35, 10, 3, '#72d5ff');
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossZamalekDrink') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const v = this.actors.vaks;
+      const face = v
+        ? this.camPt(v.x, v.y - 23)
+        : this.camPt(this.fx.x ?? 388, (this.fx.y ?? 158) - 23);
+      const smooth = (n) => {
+        const c = Math.max(0, Math.min(1, n));
+        return c * c * (3 - 2 * c);
+      };
+
+      ctx.save();
+      // A warm pool of light isolates the drink while the hostile crowd falls
+      // away. Vaks and the bottle are now one authored sprite pose; this FX
+      // deliberately adds no replacement limb, hand or bottle geometry.
+      const glow = ctx.createRadialGradient(face.x - 8, face.y + 22, 16, face.x - 8, face.y + 22, 135);
+      glow.addColorStop(0, 'rgba(255,210,112,0.14)');
+      glow.addColorStop(0.46, 'rgba(7,8,13,0.12)');
+      glow.addColorStop(1, 'rgba(3,4,8,0.72)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.restore();
+
+      // Two throat pulses complete the gulp without resorting to caption text.
+      if (p > 0.36 && p < 0.68) {
+        const pulseA = Math.exp(-Math.pow((p - 0.46) / 0.038, 2));
+        const pulseB = Math.exp(-Math.pow((p - 0.62) / 0.038, 2));
+        const throat = Math.max(pulseA, pulseB);
+        if (throat > 0.12) {
+          R(ctx, face.x + 3, face.y + 18 + Math.round(throat * 4), 5, 4, '#b77b4d');
+          R(ctx, face.x + 4, face.y + 19 + Math.round(throat * 4), 3, 1, '#e0a06b');
+        }
+      }
+
+      // A tiny satisfied exhale gives the lowering beat an ending. The puffs
+      // drift away from the mouth as square pixels, never as another caption.
+      if (p > 0.86) {
+        const exhale = smooth((p - 0.86) / 0.14);
+        ctx.save();
+        ctx.globalAlpha = 1 - exhale * 0.7;
+        const puffX = face.x - 11 - Math.round(exhale * 18);
+        const puffY = face.y + 8 - Math.round(exhale * 5);
+        R(ctx, puffX, puffY, 5, 3, '#f0d6aa');
+        if (exhale > 0.3) {
+          R(ctx, puffX - 8, puffY - 4, 4, 3, '#d7bc95');
+        }
+        ctx.restore();
+      }
+    } else if (this.fx && this.fx.name === 'bossBottleDrop') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const deck = this.camPt(this.fx.x ?? 350, this.fx.y ?? 200);
+      const splash = Math.sin(Math.min(1, p * 1.7) * Math.PI);
+      ctx.save();
+      // Amber beer spreads across the vinyl while the stylus jolts sideways.
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = '#d88926';
+      ctx.fillRect(deck.x - 34 * splash, deck.y - 3, 68 * splash, 7);
+      ctx.fillRect(deck.x - 20 * splash, deck.y - 9, 40 * splash, 5);
+      ctx.fillStyle = '#f4bd55';
+      ctx.fillRect(deck.x - 22 * splash, deck.y - 2, 31 * splash, 2);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff3a0';
+      ctx.lineWidth = 3;
+      const jerk = Math.floor(elapsed * 24) % 2 ? -7 : 6;
+      for (let i = 0; i < 2; i++) {
+        ctx.beginPath();
+        ctx.arc(deck.x + jerk, deck.y, 31 + i * 9, -2.55, -0.58);
+        ctx.stroke();
+      }
+      // A few square droplets sell impact without turning it into another gag.
+      const drops = [[-30, -25], [-12, -35], [17, -31], [34, -19]];
+      for (let i = 0; i < drops.length; i++) {
+        const [dx, dy] = drops[i];
+        const rise = Math.max(0, 1 - p);
+        R(ctx, deck.x + dx, deck.y + dy * rise, 4, 4, i % 2 ? '#f4bd55' : '#d88926');
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossRecordSkip') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const record = this.camPt(this.fx.x ?? 95, this.fx.y ?? 200);
+      const jerk = Math.floor(elapsed * 22) % 2 ? -8 : 6;
+      ctx.save();
+      ctx.strokeStyle = '#fff3a0';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(record.x + jerk, record.y, 28 + i * 8, -2.5, -0.62);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#ff8a72';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(record.x - 12, record.y - 34);
+      ctx.lineTo(record.x - 2, record.y - 18);
+      ctx.lineTo(record.x - 9, record.y - 10);
+      ctx.lineTo(record.x + 5, record.y + 1);
+      ctx.stroke();
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossSleeveWipe') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const deck = this.camPt(this.fx.x ?? 95, this.fx.y ?? 200);
+      const sweep = Math.sin(p * Math.PI);
+      const x = deck.x - 52 + p * 96;
+      const y = deck.y - 3 - sweep * 8;
+      ctx.save();
+      ctx.strokeStyle = '#549fdb';
+      ctx.lineWidth = 12;
+      ctx.lineCap = 'square';
+      ctx.beginPath();
+      ctx.moveTo(x + 62, y - 24);
+      ctx.lineTo(x + 13, y);
+      ctx.stroke();
+      R(ctx, x - 9, y - 5, 27, 11, '#549fdb');
+      R(ctx, x - 14, y - 3, 7, 6, '#9a6a42');
+      ctx.globalAlpha = 0.45 * (1 - p);
+      R(ctx, deck.x - 28, deck.y - 8, 55, 7, '#d88926');
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossRageCloseup') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const big = this.actors.big;
+      const face = big
+        ? this.camPt(big.x, big.y - 58)
+        : this.camPt(this.fx.x ?? 59, this.fx.y ?? 101);
+      const pulse = 0.42 + Math.abs(Math.sin(elapsed * 10)) * 0.15;
+      ctx.save();
+      const vignette = ctx.createRadialGradient(
+        face.x,
+        face.y,
+        20,
+        face.x,
+        face.y,
+        190,
+      );
+      vignette.addColorStop(0, 'rgba(20,4,3,0)');
+      vignette.addColorStop(1, `rgba(35,2,0,${pulse})`);
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.strokeStyle = '#ff9b62';
+      ctx.lineWidth = 3;
+      const rays = [
+        [-72, -34, -38, -18], [41, -20, 78, -39],
+        [-82, 12, -45, 8], [45, 10, 86, 17],
+      ];
+      for (const [x0, y0, x1, y1] of rays) {
+        ctx.beginPath();
+        ctx.moveTo(face.x + x0, face.y + y0);
+        ctx.lineTo(face.x + x1, face.y + y1);
+        ctx.stroke();
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossFootTap') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const foot = this.camPt(this.fx.x ?? 150, this.fx.y ?? 238);
+      const tap = Math.max(0, Math.sin(p * Math.PI * 4));
+      const lift = Math.round(tap * 7);
+      ctx.save();
+      // A hard cartoon cutaway: isolate the guilty foot completely instead of
+      // letting the booth and Big Tikolosh's photo head leak into the crop.
+      ctx.fillStyle = '#08090c';
+      ctx.fillRect(0, 0, View.w, View.h);
+      const spotlight = ctx.createRadialGradient(foot.x, foot.y - 24, 8, foot.x, foot.y - 24, 118);
+      spotlight.addColorStop(0, 'rgba(255,225,155,0.22)');
+      spotlight.addColorStop(1, 'rgba(255,225,155,0)');
+      ctx.fillStyle = spotlight;
+      ctx.fillRect(foot.x - 120, foot.y - 130, 240, 150);
+      R(ctx, 0, foot.y - 5, View.w, 5, '#2a2118');
+      R(ctx, 0, foot.y, View.w, View.h - foot.y, '#15110e');
+      // One huge trouser leg and veldskoen fill the close-up. Two clean taps
+      // carry the joke without a caption or reaction icon.
+      R(ctx, foot.x - 17, foot.y - 68 - lift, 25, 48, '#31503a');
+      R(ctx, foot.x - 20, foot.y - 28 - lift, 30, 10, '#24382b');
+      R(ctx, foot.x - 25, foot.y - 20 - lift, 48, 15, '#171d18');
+      R(ctx, foot.x + 10, foot.y - 14 - lift, 20, 9, '#101411');
+      R(ctx, foot.x - 25, foot.y - 5, 58, 3, '#7a6247');
+      if (lift <= 1) {
+        const dust = [[-35, -6], [31, -9], [-44, -14], [42, -18]];
+        for (let i = 0; i < dust.length; i++) {
+          const [dx, dy] = dust[i];
+          R(ctx, foot.x + dx, foot.y + dy, 4 + (i % 2) * 2, 3, i % 2 ? '#9b7d58' : '#6e5841');
+        }
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossDronkieRelics') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(0.999, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const beat = Math.floor(p * 3);
+      const phase = (p * 3) % 1;
+      const cx = View.w / 2;
+      const cy = 145;
+      ctx.save();
+      // This is a true insert shot, not a translucent overlay. Keeping it
+      // opaque prevents the arena silhouettes from muddying the three relics.
+      ctx.fillStyle = '#030307';
+      ctx.fillRect(0, 0, View.w, View.h);
+      const pool = ctx.createRadialGradient(cx, cy, 10, cx, cy, 105);
+      pool.addColorStop(0, 'rgba(255,213,132,0.25)');
+      pool.addColorStop(1, 'rgba(255,213,132,0)');
+      ctx.fillStyle = pool;
+      ctx.fillRect(cx - 110, cy - 90, 220, 175);
+      R(ctx, cx - 108, cy + 44, 216, 4, '#5e4935');
+      if (beat === 0) {
+        // Abandoned Zamalek, still upright in the dust.
+        draw(ctx, 'bottle', 0, cx - 30, cy - 39, { scale: 3 });
+        R(ctx, cx - 42, cy + 36, 86, 5, '#3c2e24');
+      } else if (beat === 1) {
+        // One ownerless vellie, toe pointing toward the unreachable exit.
+        R(ctx, cx - 30, cy - 18, 28, 43, '#6e5236');
+        R(ctx, cx - 34, cy + 18, 34, 13, '#4a3627');
+        R(ctx, cx - 4, cy + 22, 45, 12, '#2b211a');
+        R(ctx, cx + 30, cy + 28, 18, 6, '#161310');
+        R(ctx, cx - 23, cy - 8, 13, 3, '#b18a5e');
+        R(ctx, cx - 23, cy + 1, 13, 3, '#b18a5e');
+      } else {
+        // Car keys: the darkest possible evidence that somebody is not coming
+        // back for their Toyota.
+        ctx.strokeStyle = '#d2b86e';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(cx - 15, cy - 1, 17, 0, Math.PI * 2);
+        ctx.stroke();
+        R(ctx, cx, cy - 4, 49, 7, '#b89a55');
+        R(ctx, cx + 35, cy + 2, 7, 14, '#b89a55');
+        R(ctx, cx + 46, cy + 2, 7, 10, '#b89a55');
+        R(ctx, cx - 31, cy - 4, 8, 8, '#f1d98d');
+      }
+      ctx.restore();
+    } else if (this.fx && this.fx.name === 'bossShrink') {
+      const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
+      const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
+      const target = this.camPt(this.fx.x ?? 174, (this.fx.y ?? 238) - 34);
+      ctx.save();
+      // Dust and stage-light squares collapse inward with the body scale.
+      const colors = ['#ffe29a', '#b79260', '#6e543a', '#3d2d22'];
+      for (let i = 0; i < 24; i++) {
+        const ang = i * 2.399 + p * 1.4;
+        const radius = (1 - p) * (75 + (i % 5) * 8) + 8;
+        const x = target.x + Math.cos(ang) * radius;
+        const y = target.y + Math.sin(ang) * radius * 0.62 + p * 14;
+        const size = 3 + (i % 3);
+        R(ctx, x, y, size, size, colors[i % colors.length]);
+      }
+      ctx.globalAlpha = Math.sin(p * Math.PI) * 0.32;
+      ctx.fillStyle = '#fff0bb';
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.restore();
     } else if (this.fx && this.fx.name === 'frightBurst') {
       const v = this.actors.vaks;
       const p = v ? this.camPt(v.x, v.y - 18) : { x: 160, y: 150 };
@@ -784,7 +1265,93 @@ export class CutsceneScreen {
       ctx.restore();
     }
 
-    if (this.mood === 'danger') {
+    if (this.mood === 'boss_blackout') {
+      R(ctx, 0, 0, View.w, View.h, '#010104');
+    } else if (this.mood === 'boss_generator') {
+      const gen = this.actors.generator;
+      const p = gen ? this.camPt(gen.x, gen.y - 10) : { x: 330, y: 216 };
+      const r = 42 + Math.sin(this.t * 29) * 9;
+      const dark = ctx.createRadialGradient(p.x, p.y, 3, p.x, p.y, r);
+      dark.addColorStop(0, 'rgba(1,1,4,0.08)');
+      dark.addColorStop(0.45, 'rgba(1,1,4,0.38)');
+      dark.addColorStop(1, 'rgba(1,1,4,0.99)');
+      ctx.fillStyle = dark;
+      ctx.fillRect(0, 0, View.w, View.h);
+      R(ctx, p.x - 2, p.y - 19, 4, 4, Math.sin(this.t * 33) > 0 ? '#ffd45d' : '#a33a31');
+    } else if (this.mood === 'boss_spotlight') {
+      const big = this.actors.big;
+      const small = this.actors.tiko;
+      const target = big && big.visible ? big : small;
+      const p = target ? this.camPt(target.x, target.y - 32 * (target.scale || 1)) : { x: 150, y: 184 };
+      const lamp = this.actors.floodlight;
+      const src = lamp ? this.camPt(lamp.x, lamp.y - 61) : { x: 340, y: 155 };
+      const sc = target?.scale || 1;
+      const r = 78 + (sc - 1) * 32 + (this.fx?.name === 'bossShadow' ? 72 : 0)
+        + Math.sin(this.t * 27) * 5;
+      const dark = ctx.createRadialGradient(p.x, p.y, 18, p.x, p.y, r);
+      dark.addColorStop(0, 'rgba(1,1,4,0.02)');
+      dark.addColorStop(0.55, 'rgba(1,1,4,0.28)');
+      dark.addColorStop(1, 'rgba(1,1,4,0.96)');
+      ctx.fillStyle = dark;
+      ctx.fillRect(0, 0, View.w, View.h);
+      ctx.fillStyle = 'rgba(255,232,155,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(src.x - 7, src.y);
+      ctx.lineTo(p.x - r * 0.55, p.y + r * 0.72);
+      ctx.lineTo(p.x + r * 0.55, p.y + r * 0.72);
+      ctx.lineTo(src.x + 7, src.y);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mood === 'boss_arena') {
+      const lamp = this.actors.floodlight;
+      const src = lamp ? this.camPt(lamp.x, lamp.y - 61) : { x: 340, y: 155 };
+      const boss = this.actors.big;
+      const p = boss ? this.camPt(boss.x, boss.y - 38) : { x: 150, y: 188 };
+      ctx.fillStyle = 'rgba(255,226,148,0.085)';
+      ctx.beginPath();
+      ctx.moveTo(src.x - 6, src.y);
+      ctx.lineTo(p.x - 98, View.h);
+      ctx.lineTo(p.x + 118, View.h);
+      ctx.lineTo(src.x + 6, src.y);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mood === 'blackout') {
+      R(ctx, 0, 0, View.w, View.h, '#010205');
+    } else if (this.mood === 'stage_vaks') {
+      R(ctx, 0, 0, View.w, View.h, '#010205');
+      const blink = Math.floor(this.t * 4) % 2 === 0;
+      R(ctx, 72, 62, View.w - 144, 132, '#11151a');
+      R(ctx, 75, 65, View.w - 150, 126, '#e7e1cc');
+      R(ctx, 82, 72, View.w - 164, 112, '#f6f1df');
+      R(ctx, 82, 72, View.w - 164, 17, '#d04a3c');
+      drawText(ctx, 'CAVE POWER', View.w / 2, 77, { color: '#fff7df', align: 'center' });
+      drawText(ctx, 'LOAD SHEDDING', View.w / 2, 104, { color: '#16191d', scale: 2, align: 'center' });
+      drawText(ctx, 'STAGE VAKS', View.w / 2, 134, { color: blink ? '#d23535' : '#772929', scale: 2, align: 'center' });
+      drawText(ctx, 'RESTORATION TIME: EISH', View.w / 2, 166, { color: '#33383d', align: 'center' });
+    } else if (this.mood === 'tiko_lantern') {
+      const tiko = this.actors.tiko;
+      const p = tiko ? this.camPt(tiko.x, tiko.y - 18) : { x: 300, y: 205 };
+      const flicker = 42 + Math.sin(this.t * 31) * 8;
+      const darkness = ctx.createRadialGradient(p.x, p.y, 3, p.x, p.y, flicker);
+      darkness.addColorStop(0, 'rgba(1,2,5,0.04)');
+      darkness.addColorStop(0.42, 'rgba(1,2,5,0.20)');
+      darkness.addColorStop(1, 'rgba(1,2,5,0.98)');
+      ctx.fillStyle = darkness;
+      ctx.fillRect(0, 0, View.w, View.h);
+      R(ctx, p.x - 22, p.y - 3, 8, 3, '#ffcf55'); // accusing pointing hand
+      R(ctx, p.x - 29, p.y - 2, 8, 1, '#fff1a0');
+    } else if (this.mood === 'cat_vision') {
+      const v = this.actors.vaks;
+      const p = v ? this.camPt(v.x + 1, v.y - 21) : { x: 230, y: 190 };
+      const r = CONFIG.catEyes.radius;
+      const darkness = ctx.createRadialGradient(p.x, p.y, r * 0.22, p.x, p.y, r);
+      darkness.addColorStop(0, 'rgba(1,2,5,0.02)');
+      darkness.addColorStop(1, `rgba(1,2,5,${CONFIG.catEyes.darkness})`);
+      ctx.fillStyle = darkness;
+      ctx.fillRect(0, 0, View.w, View.h);
+      R(ctx, p.x - 5, p.y - 5, 3, 2, '#ffd84d');
+      R(ctx, p.x + 3, p.y - 5, 3, 2, '#ffd84d');
+    } else if (this.mood === 'danger') {
       const pulse = 0.22 + Math.sin(this.t * 8) * 0.04;
       const vignette = ctx.createRadialGradient(View.w / 2, View.h / 2, 36, View.w / 2, View.h / 2, 290);
       vignette.addColorStop(0, 'rgba(45,0,20,0.04)');
@@ -921,7 +1488,9 @@ export class CutsceneScreen {
       ctx.globalAlpha = 1;
     }
 
-    if (!(this.dialogue && this.dialogue.locked)) drawText(ctx, 'ENTER: NEXT', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
+    if (!this.done && this.fade < 0.85 && !(this.dialogue && this.dialogue.locked)) {
+      drawText(ctx, 'ENTER: NEXT', View.w - 6, View.h - 8, { color: '#5a6280', align: 'right' });
+    }
   }
 
   // Incoming call: a bold, readable phone takeover rather than three abstract
@@ -1059,10 +1628,25 @@ export class CutsceneScreen {
 
   // HD photo head pinned to a mist-body actor, transformed through the camera
   // (queued past the pixel buffer so it stays photographic). Fades with the scene.
-  drawActorHead(a, dx, dy) {
+  drawActorHead(ctx, a, dx, dy) {
     // The meme CCTV scare supplies its own enormous corrupted face. Do not let
     // the normal HD head queue a tiny duplicate on top of that screen-space gag.
     if (this.mood === 'tiko_meme' && a === this.actors.tiko) return;
+    // Darkness effects must mask every part of the Tikolosh consistently. HD
+    // heads are composited after the pixel buffer, so suppress them while the
+    // blackout/vision masks are doing the reveal.
+    const darkMoods = ['blackout', 'stage_vaks', 'cat_vision'];
+    if (a === this.actors.tiko && (darkMoods.includes(this.mood) || this.fx?.name === 'catScan')) return;
+    if (this.mood === 'boss_blackout') return;
+    // These two FX are hard cartoon cutaways rendered after the actor pass.
+    // Photo heads are composited later, so suppress them explicitly or they
+    // punch through the otherwise opaque insert.
+    if (this.fx && ['bossFootTap', 'bossDronkieRelics'].includes(this.fx.name)) return;
+    if (this.mood === 'boss_generator' && a !== this.actors.spaza) return;
+    if (this.mood === 'boss_spotlight') {
+      const target = this.actors.big?.visible ? this.actors.big : this.actors.tiko;
+      if (a !== target) return;
+    }
     const s = spr(a.sheet); if (!s) return;
     const sc = a.scale || 1;
     const tlx = a.x + dx - (s.fw * sc) / 2;
@@ -1071,6 +1655,18 @@ export class CutsceneScreen {
     const p = this.camPt(tlx + hr.x * sc, tly + hr.y * sc);
     const alpha = (a.alpha === undefined ? 1 : a.alpha) * (1 - this.fade);
     if (alpha <= 0.02) return;
+    // HD heads are queued after the pixel buffer, which also means after the
+    // dialogue panel. During dialogue, draw a buffer-resolution fallback now
+    // so every spectator remains behind the message instead of floating over it.
+    if (this.dialogue) {
+      const faceSheet = a.head === 'tiko_shop' ? 'face_shop' : 'face_tiko';
+      draw(ctx, faceSheet, 0, tlx + hr.x * sc, tly + hr.y * sc, {
+        flip: a.flip,
+        scale: hr.w * sc / 24,
+        alpha,
+      });
+      return;
+    }
     const z = this.cam.zoom;
     drawImoHead(null, a.head, p.x, p.y, hr.w * sc * z, hr.h * sc * z, a.flip, alpha);
   }
