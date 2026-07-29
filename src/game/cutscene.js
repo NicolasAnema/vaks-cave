@@ -18,18 +18,19 @@ import { CONFIG } from '../config.js';
 
 function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 
-// Portrait-free dialogue panel. Its height follows the actual wrapped text so
-// a short bark does not sit inside a giant empty slab.
+// Compact top dialogue panel with a square speaker icon. Its height follows
+// the actual wrapped text so a short bark does not sit inside a giant slab.
 const DIALOGUE_FRAME = { x: 58, y: 29, w: View.w - 116 };
+const DIALOGUE_TEXT_INSET = 44;
 
 function dialogueBox(dialogue) {
   const lineCount = Math.max(
     1,
-    Math.min(3, wrapText(dialogue?.text || '', DIALOGUE_FRAME.w - 24).length),
+    Math.min(3, wrapText(dialogue?.text || '', DIALOGUE_FRAME.w - DIALOGUE_TEXT_INSET - 12).length),
   );
   return {
     ...DIALOGUE_FRAME,
-    h: 30 + (lineCount - 1) * LINE_H,
+    h: Math.max(40, 30 + (lineCount - 1) * LINE_H),
   };
 }
 
@@ -1804,20 +1805,32 @@ export class CutsceneScreen {
     const tiko = d.name.includes('TIKO') || d.name === 'SPAZA' || d.name === 'CROWD';
     const accent = tiko ? '#8fe580' : d.name === 'VAKS' ? '#73c8ff' : '#ffd56a';
 
-    // Clean text-first panel: no portrait frame, no round photo medallion.
+    // A restrained square icon identifies the speaker without bringing back
+    // the old circular medallion. Photo speakers are queued in HD below.
     R(ctx, bx + 3, by + 4, bw, bh, 'rgba(0,0,0,0.42)');
     panel(ctx, bx, by, bw, bh, { bg: 'rgba(8,11,22,0.96)', border: '#52648e' });
     R(ctx, bx, by + 2, 3, bh - 4, accent);
     R(ctx, bx + 4, by + 2, bw - 6, 1, '#273456');
-    drawText(ctx, d.name, bx + 12, by + 6, { color: accent });
 
-    const lines = wrapText(d.text, bw - 24);
+    const iconX = bx + 7;
+    const iconY = Math.round(by + (bh - 28) / 2);
+    panel(ctx, iconX, iconY, 28, 28, { bg: '#101522', border: '#41547d' });
+    if (PHOTO_FACES[d.face]) {
+      drawImoHead(ctx, PHOTO_FACES[d.face], iconX + 2, iconY + 2, 24, 24, false, 1);
+    } else {
+      draw(ctx, d.face, 0, iconX + 2, iconY + 2);
+    }
+
+    const textX = bx + DIALOGUE_TEXT_INSET;
+    drawText(ctx, d.name, textX, by + 6, { color: accent });
+
+    const lines = wrapText(d.text, bw - DIALOGUE_TEXT_INSET - 12);
     const shown = d.text.slice(0, Math.ceil(d.shown));
     let used = 0;
     for (let i = 0; i < lines.length && i < 3; i++) {
       const remain = shown.length - used;
       if (remain <= 0) break;
-      drawText(ctx, lines[i].slice(0, remain), bx + 12, by + 17 + i * LINE_H, { color: '#f4f0e0' });
+      drawText(ctx, lines[i].slice(0, remain), textX, by + 18 + i * LINE_H, { color: '#f4f0e0' });
       used += lines[i].length + 1;
     }
   }

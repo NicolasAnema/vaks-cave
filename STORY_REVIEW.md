@@ -91,7 +91,7 @@ Status: Implemented; awaiting visual approval.
 #### Revised scene
 
 1. The converted crowd is still celebrating, but Big Tikolosh tries to remain serious while his foot taps against his will.
-2. Vaks calls out the foot. Big Tikolosh denies it; the foot taps again.
+2. Vaks calls out the foot. Big Tikolosh shuts him down, then the music drops.
 3. The music drops. Wind carries the last rhythm through the cave toward the dawn.
 4. Big Tikolosh delivers a monologue about the township dronkies who entered his cave and never made it out. Quick relic cutaways show an abandoned Zamalek, one vellie and car keys.
 5. He tells Vaks that today he showed the power of vibing with him.
@@ -127,11 +127,11 @@ Status: Implemented; awaiting visual approval.
 
 - Converted crowd in a stable front-stage tableau; the CAVE FM booth is already
   out of shot when the resolution begins.
-- Two small in-frame veldskoen taps beneath Big Tikolosh, with no cutaway or
+- One small in-frame veldskoen tap beneath Big Tikolosh, with no cutaway or
   explanatory caption.
 - A wider two-character monologue frame keeps both Big Tikolosh and Vaks visible.
-- Portrait-free dialogue panels size themselves to the text; photographic heads
-  remain sharp and are masked cleanly behind the UI.
+- Square speaker icons return to the top dialogue panels; photographic Tikolosh
+  and Spaza portraits remain sharp while world actors stay masked behind the UI.
 - Wind moving dust and loose cave debris toward dawn.
 - Three dark relic inserts: Zamalek, vellie and car keys.
 - Vaks returning the challenge with his existing raised-hand sprite.

@@ -918,7 +918,7 @@ export const CUTSCENES = {
       ['face', 'big', 1],
       ['say', 'vaks', 'HAIBO. EVEN YOUR FOOT KNOWS, BOSS.'],
       ['say', 'big', 'SHUT UP, VAKS.'],
-      ['fx', 'bossFootTap', 0.65, 166, 238],
+      ['wait', 0.35],
       // The party falls away. The cave carries the last rhythm toward dawn.
       ['music', null],
       ['fx', 'wind', 2.5],
