@@ -899,11 +899,10 @@ export const CUTSCENES = {
       t4: { sheet: 'tiko', anim: 'loop', x: 352, y: 214, flip: true, head: 'tiko' },
       t5: { sheet: 'tiko', anim: 'loop', x: 404, y: 214, flip: false, head: 'tiko' },
       spaza: { sheet: 'tiko_shop', anim: 'loop', x: 438, y: 210, flip: true, head: 'tiko_shop' },
-      vaks: { sheet: 'vaks', anim: 'idle', x: 300, y: 226, flip: true },
-      big:  { sheet: 'tiko_big', anim: 'loop', x: 150, y: 238, flip: false, scale: 3, head: 'tiko_big' },
-      tiko: { sheet: 'tiko', anim: 'loop', x: 150, y: 238, flip: false, head: 'tiko' },
-      rig:  { sheet: 'boss_deck_rig', anim: 0, x: 240, y: 270, flip: false },
-      lootbag: { sheet: 'money_sack', anim: 2, x: 150, y: 230, flip: false, scale: 1.15 },
+      vaks: { sheet: 'vaks', anim: 'idle', x: 274, y: 226, flip: true },
+      big:  { sheet: 'tiko_big', anim: 'loop', x: 166, y: 238, flip: false, scale: 3, head: 'tiko_big' },
+      tiko: { sheet: 'tiko', anim: 'loop', x: 166, y: 238, flip: false, head: 'tiko' },
+      lootbag: { sheet: 'money_sack', anim: 2, x: 168, y: 230, flip: false, scale: 0.2 },
     },
     steps: [
       ['show', 'tiko', false],
@@ -911,27 +910,15 @@ export const CUTSCENES = {
       ['letterbox', true],
       ['mood', 'boss_arena'],
       ['fade', 'in', 0.55],
-      // Continue from the final playable frame. The crowd has converted, while
+      // A stable front-stage tableau replaces the gameplay booth framing.
       // Big Tikolosh is still pretending his foot did not tap.
-      ['dance', 't1', true, 10], ['dance', 't2', true, 9],
-      ['dance', 't3', true, 11], ['dance', 't4', true, 10],
-      ['dance', 't5', true, 12], ['dance', 'spaza', true, 8],
-      ['camera', 150, 235, 2.35, 0.5],
-      ['fx', 'bossFootTap', 1.05, 150, 238],
-      // The foot insert cuts to the front of the booth. Keep the decks out of
-      // the dialogue blocking so bodies and photographic heads stay attached.
-      ['show', 'rig', false],
-      ['glide', 'big', 166, 238, 0.45],
-      ['glide', 'vaks', 274, 226, 0.45],
-      ['camreset', 0.45],
       ['wait', 0.45],
+      ['fx', 'bossFootTap', 1.05, 166, 238],
       ['face', 'vaks', -1],
       ['face', 'big', 1],
       ['say', 'vaks', 'HAIBO. EVEN YOUR FOOT KNOWS, BOSS.'],
       ['say', 'big', 'SHUT UP, VAKS.'],
-      ['camera', 166, 235, 2.35, 0.35],
       ['fx', 'bossFootTap', 0.65, 166, 238],
-      ['camreset', 0.45],
       // The party falls away. The cave carries the last rhythm toward dawn.
       ['music', null],
       ['fx', 'wind', 2.5],
@@ -939,12 +926,10 @@ export const CUTSCENES = {
       ['wire', 'm_wind_malawi'],
       // Big Tikolosh gets the floor. Relic cutaways show what "never make it
       // out" means without an explanatory narrator.
-      ['dance', 't1', false], ['dance', 't2', false],
-      ['dance', 't3', false], ['dance', 't4', false],
-      ['dance', 't5', false], ['dance', 'spaza', false],
       // Wider two-character framing: Big Tikolosh still owns the shot, but Vaks
       // remains visibly present instead of being squeezed against the edge.
       ['camera', 180, 185, 1.38, 0.65],
+      ['wait', 0.65],
       ['say', 'big', 'VAKS. MANY TOWNSHIP DRONKIES HAVE FALLEN INTO MY CAVE.'],
       ['fx', 'bossDronkieRelics', 1.8],
       ['say', 'big', 'THEY COME IN SHOUTING. THEY COME IN DRINKING.'],
@@ -956,7 +941,6 @@ export const CUTSCENES = {
       ['anim', 'vaks', 'meow'],
       ['move', 'vaks', 238, 226, 0.7],
       ['say', 'vaks', 'VIBE WITH ME.'],
-      ['move', 'big', 174, 238, 0.5],
       ['flash', '#fff3b0', 0.3],
       ['say', 'big', 'YOU HAVE EARNED RESPECT AMONGST US TIKOLOSHES.'],
       ['say', 'big', 'VIVO VICEROY!'],
@@ -967,15 +951,18 @@ export const CUTSCENES = {
       ['fx', 'confetti', 1.8],
       // Contract into the same familiar thief who stalked Vaks through the cave.
       ['scale', 'big', 1, 0.9],
-      ['fx', 'bossShrink', 0.95, 174, 238],
+      ['fx', 'bossShrink', 0.95, 166, 238],
       ['show', 'big', false],
-      ['teleport', 'tiko', 174, 238],
+      ['teleport', 'tiko', 166, 238],
       ['show', 'tiko', true],
       ['anim', 'vaks', 'idle'],
       ['camreset', 0.55],
+      ['wait', 0.55],
       // Return the actual stolen sack, not a stray coin.
-      ['teleport', 'lootbag', 176, 230],
+      ['teleport', 'lootbag', 168, 230],
       ['show', 'lootbag', true],
+      ['scale', 'lootbag', 1.15, 0.4],
+      ['fx', 'sparkle', 0.45, 168, 218],
       ['sfx', 'shop_buy'],
       ['move', 'lootbag', 222, 218, 0.7],
       ['attach', 'lootbag', 'vaks', 16, -8],
@@ -983,7 +970,6 @@ export const CUTSCENES = {
       ['say', 'tiko', 'NOW GET OUT OF MY CAVE BEFORE I CHANGE MY MIND.'],
       // Dawn and Granny's buzzing phone turn the send-off into Act 2.
       ['fx', 'dawn', 2.0],
-      ['camreset', 1.0],
       ['move', 'vaks', 380, 226, 1.2],
       ['sfx', 'alert'],
       ['say', 'vaks', 'YOH. THE SUN IS UP.'],

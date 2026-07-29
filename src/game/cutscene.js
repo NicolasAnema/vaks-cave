@@ -1190,33 +1190,24 @@ export class CutsceneScreen {
     } else if (this.fx && this.fx.name === 'bossFootTap') {
       const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
       const p = Math.min(1, elapsed / Math.max(0.001, this.fx.dur || 1));
-      const foot = this.camPt(this.fx.x ?? 150, this.fx.y ?? 238);
+      // Keep the joke inside the arena shot: one veldskoen peeks out beneath
+      // Big Tikolosh and betrays him. No hard cut, mystery pedestal, or camera
+      // whip appears from nowhere.
+      const foot = this.camPt(this.fx.x ?? 166, this.fx.y ?? 238);
       const tap = Math.max(0, Math.sin(p * Math.PI * 4));
-      const lift = Math.round(tap * 7);
+      const lift = Math.round(tap * 4);
       ctx.save();
-      // A hard cartoon cutaway: isolate the guilty foot completely instead of
-      // letting the booth and Big Tikolosh's photo head leak into the crop.
-      ctx.fillStyle = '#08090c';
-      ctx.fillRect(0, 0, View.w, View.h);
-      const spotlight = ctx.createRadialGradient(foot.x, foot.y - 24, 8, foot.x, foot.y - 24, 118);
-      spotlight.addColorStop(0, 'rgba(255,225,155,0.22)');
-      spotlight.addColorStop(1, 'rgba(255,225,155,0)');
-      ctx.fillStyle = spotlight;
-      ctx.fillRect(foot.x - 120, foot.y - 130, 240, 150);
-      R(ctx, 0, foot.y - 5, View.w, 5, '#2a2118');
-      R(ctx, 0, foot.y, View.w, View.h - foot.y, '#15110e');
-      // One huge trouser leg and veldskoen fill the close-up. Two clean taps
-      // carry the joke without a caption or reaction icon.
-      R(ctx, foot.x - 17, foot.y - 68 - lift, 25, 48, '#31503a');
-      R(ctx, foot.x - 20, foot.y - 28 - lift, 30, 10, '#24382b');
-      R(ctx, foot.x - 25, foot.y - 20 - lift, 48, 15, '#171d18');
-      R(ctx, foot.x + 10, foot.y - 14 - lift, 20, 9, '#101411');
-      R(ctx, foot.x - 25, foot.y - 5, 58, 3, '#7a6247');
+      R(ctx, foot.x - 4, foot.y - 12 - lift, 7, 8, '#31503a');
+      R(ctx, foot.x - 6, foot.y - 5 - lift, 13, 5, '#8a6845');
+      R(ctx, foot.x + 5, foot.y - 4 - lift, 9, 4, '#6b4b32');
+      R(ctx, foot.x - 6, foot.y - lift, 20, 2, '#251d18');
+      R(ctx, foot.x - 2, foot.y - 4 - lift, 2, 1, '#d0aa72');
+      R(ctx, foot.x + 2, foot.y - 4 - lift, 2, 1, '#d0aa72');
       if (lift <= 1) {
-        const dust = [[-35, -6], [31, -9], [-44, -14], [42, -18]];
+        const dust = [[-12, 1], [17, 0], [-17, -2], [22, -3]];
         for (let i = 0; i < dust.length; i++) {
           const [dx, dy] = dust[i];
-          R(ctx, foot.x + dx, foot.y + dy, 4 + (i % 2) * 2, 3, i % 2 ? '#9b7d58' : '#6e5841');
+          R(ctx, foot.x + dx, foot.y + dy, 2 + (i % 2), 2, i % 2 ? '#9b7d58' : '#6e5841');
         }
       }
       ctx.restore();
@@ -1225,6 +1216,7 @@ export class CutsceneScreen {
       const p = Math.min(0.999, elapsed / Math.max(0.001, this.fx.dur || 1));
       const beat = Math.floor(p * 3);
       const phase = (p * 3) % 1;
+      const itemAlpha = Math.min(1, phase * 5, (1 - phase) * 5);
       const cx = View.w / 2;
       const cy = 145;
       ctx.save();
@@ -1238,6 +1230,7 @@ export class CutsceneScreen {
       ctx.fillStyle = pool;
       ctx.fillRect(cx - 110, cy - 90, 220, 175);
       R(ctx, cx - 108, cy + 44, 216, 4, '#5e4935');
+      ctx.globalAlpha = itemAlpha;
       if (beat === 0) {
         // Abandoned Zamalek, still upright in the dust.
         draw(ctx, 'bottle', 0, cx - 30, cy - 39, { scale: 3 });
@@ -1263,6 +1256,7 @@ export class CutsceneScreen {
         R(ctx, cx + 46, cy + 2, 7, 10, '#b89a55');
         R(ctx, cx - 31, cy - 4, 8, 8, '#f1d98d');
       }
+      ctx.globalAlpha = 1;
       ctx.restore();
     } else if (this.fx && this.fx.name === 'bossShrink') {
       const elapsed = (this.fx.dur || 1) - Math.max(0, this.fx.t);
@@ -1676,7 +1670,7 @@ export class CutsceneScreen {
     // These two FX are hard cartoon cutaways rendered after the actor pass.
     // Photo heads are composited later, so suppress them explicitly or they
     // punch through the otherwise opaque insert.
-    if (this.fx && ['bossFootTap', 'bossDronkieRelics'].includes(this.fx.name)) return;
+    if (this.fx?.name === 'bossDronkieRelics') return;
     if (this.mood === 'boss_generator' && a !== this.actors.spaza) return;
     if (this.mood === 'boss_spotlight') {
       const target = this.actors.big?.visible ? this.actors.big : this.actors.tiko;
