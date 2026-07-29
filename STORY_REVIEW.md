@@ -127,6 +127,11 @@ Status: Implemented; awaiting visual approval.
 
 - Persistent CAVE FM booth and converted crowd.
 - Two foot-tap close-ups with no explanatory caption.
+- The booth drops out after the first foot insert so the opening exchange plays
+  with complete bodies instead of floating heads.
+- A wider two-character monologue frame keeps both Big Tikolosh and Vaks visible.
+- Portrait-free dialogue panels size themselves to the text; photographic heads
+  remain sharp and are masked cleanly behind the UI.
 - Wind moving dust and loose cave debris toward dawn.
 - Three dark relic inserts: Zamalek, vellie and car keys.
 - Vaks returning the challenge with his existing raised-hand sprite.

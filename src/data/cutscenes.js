@@ -918,13 +918,19 @@ export const CUTSCENES = {
       ['dance', 't5', true, 12], ['dance', 'spaza', true, 8],
       ['camera', 150, 235, 2.35, 0.5],
       ['fx', 'bossFootTap', 1.05, 150, 238],
-      ['camreset', 0.5],
+      // The foot insert cuts to the front of the booth. Keep the decks out of
+      // the dialogue blocking so bodies and photographic heads stay attached.
+      ['show', 'rig', false],
+      ['glide', 'big', 166, 238, 0.45],
+      ['glide', 'vaks', 274, 226, 0.45],
+      ['camreset', 0.45],
+      ['wait', 0.45],
       ['face', 'vaks', -1],
       ['face', 'big', 1],
       ['say', 'vaks', 'HAIBO. EVEN YOUR FOOT KNOWS, BOSS.'],
       ['say', 'big', 'SHUT UP, VAKS.'],
-      ['camera', 150, 235, 2.35, 0.35],
-      ['fx', 'bossFootTap', 0.65, 150, 238],
+      ['camera', 166, 235, 2.35, 0.35],
+      ['fx', 'bossFootTap', 0.65, 166, 238],
       ['camreset', 0.45],
       // The party falls away. The cave carries the last rhythm toward dawn.
       ['music', null],
@@ -936,10 +942,9 @@ export const CUTSCENES = {
       ['dance', 't1', false], ['dance', 't2', false],
       ['dance', 't3', false], ['dance', 't4', false],
       ['dance', 't5', false], ['dance', 'spaza', false],
-      // Cut away from the booth after the music dies. The decks dominated the
-      // playable framing; the resolution belongs to the two characters.
-      ['show', 'rig', false],
-      ['camera', 158, 185, 1.55, 0.65],
+      // Wider two-character framing: Big Tikolosh still owns the shot, but Vaks
+      // remains visibly present instead of being squeezed against the edge.
+      ['camera', 180, 185, 1.38, 0.65],
       ['say', 'big', 'VAKS. MANY TOWNSHIP DRONKIES HAVE FALLEN INTO MY CAVE.'],
       ['fx', 'bossDronkieRelics', 1.8],
       ['say', 'big', 'THEY COME IN SHOUTING. THEY COME IN DRINKING.'],

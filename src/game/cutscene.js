@@ -18,15 +18,30 @@ import { CONFIG } from '../config.js';
 
 function R(ctx, x, y, w, h, col) { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); }
 
-// Portrait-free dialogue panel. HD photo heads are clipped behind this exact
-// rectangle at display resolution, so speech never pixelates or floats over UI.
-const DIALOGUE_BOX = { x: 58, y: 29, w: View.w - 116, h: 43 };
-const DIALOGUE_MASK = {
-  x: DIALOGUE_BOX.x - 2,
-  y: DIALOGUE_BOX.y - 2,
-  w: DIALOGUE_BOX.w + 7,
-  h: DIALOGUE_BOX.h + 8,
-};
+// Portrait-free dialogue panel. Its height follows the actual wrapped text so
+// a short bark does not sit inside a giant empty slab.
+const DIALOGUE_FRAME = { x: 58, y: 29, w: View.w - 116 };
+
+function dialogueBox(dialogue) {
+  const lineCount = Math.max(
+    1,
+    Math.min(3, wrapText(dialogue?.text || '', DIALOGUE_FRAME.w - 24).length),
+  );
+  return {
+    ...DIALOGUE_FRAME,
+    h: 30 + (lineCount - 1) * LINE_H,
+  };
+}
+
+function dialogueMask(dialogue) {
+  const box = dialogueBox(dialogue);
+  return {
+    x: box.x - 2,
+    y: box.y - 2,
+    w: box.w + 7,
+    h: box.h + 8,
+  };
+}
 
 // who's who in the WhatsApp-style family group chat (the 'phone'/'chat' steps)
 const CHAT_SENDERS = {
@@ -716,7 +731,7 @@ export class CutsceneScreen {
           oh,
           false,
           undefined,
-          this.dialogue ? { exclude: [DIALOGUE_MASK] } : {},
+          this.dialogue ? { exclude: [dialogueMask(this.dialogue)] } : {},
         );
       }
       if (a.laugh) {
@@ -1685,7 +1700,7 @@ export class CutsceneScreen {
       hr.h * sc * z,
       a.flip,
       alpha,
-      this.dialogue ? { exclude: [DIALOGUE_MASK] } : {},
+      this.dialogue ? { exclude: [dialogueMask(this.dialogue)] } : {},
     );
   }
 
@@ -1791,7 +1806,7 @@ export class CutsceneScreen {
 
   drawDialogue(ctx) {
     const d = this.dialogue;
-    const { x: bx, y: by, w: bw, h: bh } = DIALOGUE_BOX;
+    const { x: bx, y: by, w: bw, h: bh } = dialogueBox(d);
     const tiko = d.name.includes('TIKO') || d.name === 'SPAZA' || d.name === 'CROWD';
     const accent = tiko ? '#8fe580' : d.name === 'VAKS' ? '#73c8ff' : '#ffd56a';
 
