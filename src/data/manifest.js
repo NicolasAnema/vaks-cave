@@ -9,7 +9,7 @@
 
 export const MANIFEST = [
   { id: 'm_big_days',      event: 'voice',            trigger: 'Cold open',
-    lines: ["IT'S A BIG DAYS BOSS... I'M FEELING LAZY BECAUSE BABALAS YESTERDAY. BIG PARTY! DANCING, SMOKING, DRINKING."],
+    lines: ["BUT BOSS TODAY I'M FEELING LAZY YOHH. I'M FEELING LAZY BECAUSE BABALAS YESTERDAY. BIG PARTY! DANCING, DANCING SMOKING, DRINKING. WOWWW... THIS IS A BIG DAYS BOSS. THAT'S WHY I'M FEELING IRIE... NICE AND WHAM. NICE BOSS, THANK YOU BOSS. OKAY BOSS. YOU MUST WORKING HARD BOSS AND THEN AT THE SAME TIME YOU GONNA BE GOOD BOSS, I TOLD YOU BOSS. SHAP BOSS."],
     file: 'vo/big_days.ogg' },
   { id: 'm_going_deep',    event: 'voice',            trigger: 'Cold open flashback',
     lines: ["I'M GOING DEEP TODAY BOSS, I'M GOING DEEP."], file: 'vo/going_deep.ogg' },

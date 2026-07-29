@@ -991,6 +991,49 @@ export async function initSprites() {
   sheet('rat_squish', [pix(RAT_SQ, RAT_PAL)]);
   const bottle = pix(BOTTLE, BOTTLE_PAL);
   sheet('bottle', [bottle, rot90(bottle, 1), rot90(bottle, 2), rot90(bottle, 3)]);
+  sheet('shop_bag', [frame(15, 16, (g) => {
+    R(g, 2, 3, 11, 13, '#9a6a3d');                 // brown paper packet
+    R(g, 3, 4, 9, 2, '#c08a52');                   // folded top
+    R(g, 4, 1, 2, 4, '#735032'); R(g, 9, 1, 2, 4, '#735032'); // handles
+    R(g, 5, 8, 5, 5, '#355c32');                   // hand-painted leaf
+    R(g, 7, 6, 1, 8, '#69a35b');
+    R(g, 3, 15, 9, 1, '#704827');
+  })]);
+  sheet('shop_bag_torn', [frame(15, 16, (g) => {
+    R(g, 2, 3, 11, 12, '#9a6a3d');
+    R(g, 3, 4, 9, 2, '#c08a52');
+    R(g, 4, 1, 2, 4, '#735032'); R(g, 9, 1, 2, 4, '#735032');
+    R(g, 5, 8, 5, 5, '#355c32');
+    R(g, 7, 6, 1, 7, '#69a35b');
+    // Missing bottom corner and a bright coin caught in the tear.
+    R(g, 10, 12, 3, 3, '#24180f');
+    R(g, 11, 13, 3, 2, '#24180f');
+    R(g, 10, 13, 2, 2, '#f0c64c');
+  })]);
+  const moneySackFrame = (size) => frame(18, 18, (g) => {
+    const inset = 4 - size;
+    const top = 8 - size * 2;
+    R(g, 7, 1, 4, 3, '#6d4729');
+    R(g, 5, 4, 8, 3, '#bd8a4e');
+    R(g, 4, 6, 10, 2, '#704827');
+    R(g, inset, top, 18 - inset * 2, 18 - top, '#9a6a3d');
+    R(g, inset + 2, top + 2, 18 - inset * 2 - 4, 2, '#c08a52');
+    R(g, 7, top + 5, 4, 5, '#f0c64c');
+    R(g, 8, top + 4, 2, 7, '#ffe98a');
+    R(g, inset + 1, 17, 16 - inset * 2, 1, '#604020');
+  });
+  sheet('money_sack', [moneySackFrame(0), moneySackFrame(1), moneySackFrame(2)]);
+  sheet('loose_shoe', [frame(10, 5, (g) => {
+    R(g, 1, 1, 5, 3, PAL.vaks.shoe);
+    R(g, 5, 2, 4, 2, PAL.vaks.shoeD);
+    R(g, 0, 4, 10, 1, '#0e0e14');
+  })]);
+  sheet('hand_phone', [frame(7, 11, (g) => {
+    R(g, 1, 0, 5, 11, '#070911');
+    R(g, 2, 1, 3, 7, '#66c9ff');
+    R(g, 3, 9, 1, 1, '#c8f1ff');
+    R(g, 5, 1, 2, 2, '#e7f8ff'); // torch glint
+  })]);
   sheet('sushi', [pix(SUSHI, SUSHI_PAL)]);
   sheet('ceppy', [pix(CEPPY, CEPPY_PAL)]);
   // money: R2 kudu coin + the four notes (R100 = the hand-drawn MANO art).

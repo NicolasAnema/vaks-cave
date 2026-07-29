@@ -237,6 +237,7 @@ export function drawLayers(ctx, layers, camX, camY, orientation) {
 
 export function drawScene(ctx, name, t) {
   const fns = {
+    shebeen_night: sceneShebeenNight,
     cave_floor: sceneCaveFloor, cave_shaft: sceneCaveShaft,
     cave_deep: sceneCaveDeep, cave_ganja: sceneCaveGanja,
     cave_mouth: sceneCaveMouth, cave_mouth_dawn: (c, tt) => sceneCaveMouth(c, tt, true),
@@ -264,6 +265,85 @@ function speckles(g, seed, n, area, col) {
   const r = rng(seed);
   for (let i = 0; i < n; i++) {
     R(g, area.x + r() * area.w, area.y + r() * area.h, 1 + (r() < 0.3 ? 1 : 0), 1, col);
+  }
+}
+
+// THURSDAY NIGHT — a loud little shebeen perched beside a very bad hole.
+// Everything is deliberately chunky: corrugated zinc, bare bulbs, speaker
+// stacks and foreground hands sell a packed jol without needing dozens of
+// fully animated actors.
+function sceneShebeenNight(g, t) {
+  vGradient(g, 0, 0, View.w, View.h, [[0, '#09091a'], [0.55, '#16102b'], [1, '#2b1730']]);
+  speckles(g, 113, 34, { x: 0, y: 8, w: View.w, h: 116 }, '#aeb8db');
+  R(g, 404, 28, 18, 18, '#f5dda0');                         // moon
+  R(g, 409, 25, 14, 17, '#09091a');                         // rough crescent bite
+
+  // distant kasi lights
+  const far = rng(812);
+  for (let i = 0; i < 28; i++) {
+    const x = far() * View.w, y = 128 + far() * 58;
+    R(g, x, y, 12 + far() * 20, 8 + far() * 15, '#171424');
+    if (far() < 0.55) R(g, x + 3, y + 3, 2, 2, '#e0a84d');
+  }
+
+  // corrugated shebeen shack
+  R(g, 18, 80, 246, 143, '#54464e');
+  g.fillStyle = '#29232e';
+  g.beginPath(); g.moveTo(8, 82); g.lineTo(278, 68); g.lineTo(268, 88); g.lineTo(14, 96); g.fill();
+  for (let x = 24; x < 258; x += 12) R(g, x, 84, 2, 137, x % 24 ? '#65535b' : '#40363e');
+  R(g, 42, 112, 88, 54, '#211923');                         // serving hatch
+  R(g, 48, 118, 76, 42, '#ef9f45');
+  R(g, 54, 124, 64, 30, '#6d2938');                         // hot interior
+  R(g, 184, 108, 50, 115, '#15131a');                       // door
+  R(g, 190, 116, 38, 107, '#b85d3e');
+  drawText(g, 'SHEBEEN', 86, 91, { color: '#ffe49a', align: 'center' });
+  drawText(g, 'NO CREDIT', 86, 102, { color: '#ff8a8a', align: 'center' });
+
+  // speaker stack and cooler — excellent things for Vaks to dance on
+  R(g, 276, 158, 34, 64, '#111119');
+  R(g, 281, 165, 24, 23, '#242435');
+  R(g, 288, 172, 10, 10, '#08080e');
+  R(g, 281, 193, 24, 23, '#242435');
+  R(g, 286, 198, 14, 14, '#08080e');
+  R(g, 236, 205, 40, 17, '#d9d4be');
+  R(g, 236, 205, 40, 4, '#e04040');
+
+  // bare party bulbs flicker across the yard
+  const bulbCols = ['#ff5a5a', '#ffe35a', '#5ae08a', '#6ab8ff', '#d56aff'];
+  for (let i = 0; i < 13; i++) {
+    const x = 26 + i * 32, y = 54 + Math.round(Math.sin(i * 0.9) * 7);
+    R(g, x, y, 1, 30, '#201a25');
+    const pulse = 0.55 + 0.45 * Math.sin(t * 7 + i * 1.7);
+    R(g, x - 2, y + 28, 5, 5, bulbCols[i % bulbCols.length]);
+    R(g, x - 5, y + 25, 11, 11, `rgba(255,210,120,${0.04 + pulse * 0.08})`);
+  }
+
+  // dirt yard and the sinkhole Vaks absolutely does not see
+  R(g, 0, 222, View.w, 48, '#3c2930');
+  R(g, 0, 222, View.w, 3, '#765047');
+  speckles(g, 818, 52, { x: 0, y: 226, w: View.w, h: 42 }, '#271c23');
+  R(g, 370, 218, 91, 7, '#100b10');
+  R(g, 378, 213, 74, 8, '#070609');
+  R(g, 389, 209, 50, 8, '#020204');
+  R(g, 397, 207, 33, 5, '#000');
+
+  // a heaving foreground crowd: heads, raised hands and bottles
+  const crowd = rng(919);
+  for (let i = 0; i < 17; i++) {
+    const x = -4 + i * 30 + crowd() * 8;
+    const bob = Math.round(Math.abs(Math.sin(t * (3.5 + (i % 3)) + i)) * 5);
+    const top = 242 - bob - (i % 2) * 4;
+    R(g, x, top, 18, 30, i % 3 === 0 ? '#17111a' : '#211721');
+    R(g, x + 5, top - 7, 9, 9, '#160f16');
+    if (i % 4 === 0) {
+      R(g, x + 13, top - 21, 3, 18, '#1b121b');              // raised arm
+      R(g, x + 12, top - 25, 5, 6, '#38242c');               // fist
+    }
+    if (i % 5 === 2) {
+      R(g, x + 2, top - 17, 3, 12, '#1b121b');
+      R(g, x + 1, top - 23, 4, 7, '#3f7a4a');                // raised Zamalek
+      R(g, x + 2, top - 26, 2, 3, '#c9a86a');
+    }
   }
 }
 
@@ -500,12 +580,41 @@ function sceneThursday(g, t) {
 }
 
 function sceneShop(g, t) {
-  vGradient(g, 0, 0, View.w, View.h, [[0, '#171209'], [0.6, '#241c14'], [1, '#2c2218']]);
-  speckles(g, 21, 70, { x: 0, y: 0, w: View.w, h: View.h }, '#332618');
-  // nook arch
-  g.fillStyle = '#0e0b06';
+  vGradient(g, 0, 0, View.w, View.h, [[0, '#071113'], [0.5, '#18211d'], [1, '#2c2118']]);
+  speckles(g, 21, 86, { x: 0, y: 0, w: View.w, h: View.h }, '#24342e');
+
+  // The route into the shop remains a threatening hole at far left.
+  R(g, 0, 76, 62, 194, '#030708');
+  R(g, 50, 104, 6, 166, '#16221e');
+  for (let y = 126; y < 250; y += 24) R(g, 20, y, 34, 3, '#24342e');
+
+  // Chunky cave arch with damp teal highlights.
+  g.fillStyle = '#080c0b';
   g.beginPath(); g.moveTo(40, View.h); g.lineTo(70, 60); g.lineTo(170, 24); g.lineTo(310, 24); g.lineTo(410, 60); g.lineTo(440, View.h); g.fill();
-  vGradient(g, 70, 50, 340, 170, [[0, '#241c14'], [1, '#3a2c1e']]);
+  vGradient(g, 70, 50, 340, 170, [[0, '#17231f'], [0.6, '#2e2a20'], [1, '#493421']]);
+  g.strokeStyle = '#315044';
+  g.lineWidth = 3;
+  g.beginPath(); g.moveTo(54, 250); g.lineTo(80, 72); g.lineTo(172, 36); g.lineTo(306, 36); g.lineTo(398, 72); g.lineTo(426, 250); g.stroke();
+
+  // A proper hole-in-the-wall serving hatch, built straight into the rock.
+  R(g, 246, 104, 226, 143, '#17130f');
+  R(g, 252, 110, 214, 131, '#10211d');
+  for (let x = 254; x < 466; x += 12) R(g, x, 110, 2, 131, '#173029');
+  R(g, 240, 98, 236, 12, '#5e3825');
+  for (let x = 244; x < 474; x += 18) R(g, x, 100, 11, 4, x % 36 ? '#f0bd45' : '#b94135');
+  drawText(g, 'SPAZA', 360, 114, { color: '#ffe48a', scale: 2, align: 'center' });
+  drawText(g, 'NO CREDIT', 360, 130, { color: '#ff8a7a', align: 'center' });
+
+  // Coloured bare bulbs make it feel like someone has really claimed the cave.
+  const shopBulbs = ['#ff6b5d', '#ffe35a', '#69d58a', '#6dbdff'];
+  for (let i = 0; i < 10; i++) {
+    const x = 84 + i * 36;
+    const y = 72 + Math.round(Math.sin(i * 0.8) * 5);
+    R(g, x, y, 1, 9, '#191713');
+    const glow = 0.55 + 0.45 * Math.sin(t * 8 + i * 1.3);
+    R(g, x - 2, y + 8, 5, 5, shopBulbs[i % shopBulbs.length]);
+    R(g, x - 4, y + 6, 9, 9, `rgba(255,210,110,${0.03 + glow * 0.06})`);
+  }
   // warm lantern pools
   const flick = 0.9 + 0.1 * Math.sin(t * 9) * Math.sin(t * 3.7);
   for (const lx of [120, 360]) {
@@ -537,17 +646,17 @@ function sceneShop(g, t) {
   R(g, 40, 152, 70, 4, '#54482f'); R(g, 40, 156, 70, 2, '#3a2f1e');
   R(g, 46, 142, 12, 10, '#7a5f40'); R(g, 62, 144, 10, 8, '#8a6a44'); R(g, 78, 140, 10, 12, '#6a8f4a');
   R(g, 92, 143, 8, 9, '#b0562e');
-  // CEPPIE display on the wall: a rack of ceppies with a painted price
+  // Joint display on the wall: a rack of stock behind the counter
   const cbx = 286, cby = 148;
   R(g, cbx - 2, cby - 2, 52, 36, '#2a2114');          // frame
   R(g, cbx, cby, 48, 32, '#5a4a30');                  // board
-  for (let i = 0; i < 5; i++) {                       // upright ceppies for sale
+  for (let i = 0; i < 5; i++) {                       // upright joints for sale
     const ccx = cbx + 6 + i * 8;
     R(g, ccx, cby + 5, 2, 13, '#e8e2d0');             // paper
     R(g, ccx, cby + 3, 2, 2, '#ff8a3a');             // tip
   }
   R(g, cbx + 9, cby + 21, 30, 9, '#c43a3a');          // price tag
-  drawText(g, 'R100', cbx + 13, cby + 23, { color: '#fff2d0' });
+  drawText(g, 'JOINTS', cbx + 13, cby + 23, { color: '#fff2d0' });
   // crates of stock on the floor (bottom-left)
   R(g, 8, 220, 34, 20, '#5a4530'); R(g, 8, 220, 34, 2, '#7a5f40');
   R(g, 15, 222, 2, 16, '#3c2f1e'); R(g, 24, 222, 2, 16, '#3c2f1e'); R(g, 33, 222, 2, 16, '#3c2f1e');

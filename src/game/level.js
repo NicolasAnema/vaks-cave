@@ -1225,46 +1225,62 @@ export class LevelScreen {
   drawLiveTutorial(ctx) {
     const T = this.liveTut;
     const irie = this.player.irie;
-    // one focused card per stage — only what Vaks needs to do right now
-    let rows, title, footer, footerCol;
-    if (T.stage === 0) {                 // move + tap-hop + big-jump, taught by doing
-      rows = [
-        ['WALK', 'LEFT / RIGHT', T.moved],
-        ['SMALL HOP', 'TAP SPACE', T.hopped],
-        ['BIG JUMP', 'HOLD SPACE', T.bigJumped],
-      ];
-      title = 'LEARN THE ROPES'; footer = 'STEP 1 OF 4'; footerCol = '#7fd0ff';
+    // Seven single-action lessons. Only the next unfinished action is shown,
+    // with the exact key, the physical setup, and the mechanic it demonstrates.
+    let lesson, title, instruction, explanation, footer;
+    if (T.stage === 0 && !T.moved) {
+      lesson = 1; title = 'WALK';
+      instruction = 'PRESS LEFT OR RIGHT ARROW.';
+      explanation = 'MOVE VAKS ALONG THE FLOOR.';
+      footer = 'TRY IT NOW';
+    } else if (T.stage === 0 && !T.hopped) {
+      lesson = 2; title = 'SMALL JUMP';
+      instruction = 'QUICKLY TAP SPACE, THEN RELEASE IT.';
+      explanation = 'A SHORT TAP MAKES A LOW HOP.';
+      footer = 'LAND THE HOP TO CONTINUE';
+    } else if (T.stage === 0) {
+      lesson = 3; title = 'HIGH JUMP';
+      instruction = 'PRESS AND HOLD SPACE.';
+      explanation = 'KEEP HOLDING TO JUMP HIGHER.';
+      footer = 'LAND THE JUMP TO CONTINUE';
     } else if (T.stage === 1) {
-      rows = [['CLIMB', 'UP / DOWN', T.climbed]];
-      title = 'NOW CLIMB'; footer = 'STEP 2 OF 4'; footerCol = '#7fd0ff';
+      lesson = 4; title = 'CLIMB';
+      instruction = 'WALK TO THE LADDER.';
+      explanation = 'HOLD UP OR DOWN ARROW TO CLIMB.';
+      footer = 'START CLIMBING TO CONTINUE';
     } else if (T.stage === 2) {
-      rows = [['MEOW', 'PRESS W', T.meowed]];
-      title = 'SCARE IT OFF'; footer = 'STEP 3 OF 4'; footerCol = '#7fd0ff';
+      lesson = 5; title = 'MEOW';
+      instruction = 'PRESS W WHEN A TIKOLOSH IS NEAR.';
+      explanation = 'MEOW PUSHES TIKOLOSHES AWAY.';
+      footer = 'SCARE OFF THE PRACTICE TIKOLOSH';
     } else if (T.stage === 3) {
-      rows = [['SKIN UP', 'PRESS G (FREE HERE)', T.ganjad]];
-      title = 'THE IRIE RUSH'; footer = 'STEP 4 OF 4'; footerCol = '#7fd0ff';
-    } else {                             // stage 4 — persists until the gold door
-      rows = irie
-        ? [['IRIE JUMP', 'CLIMB THEN JUMP UP', true]]
-        : [['RE-RUSH', 'PRESS G AGAIN (FREE)', false]];
-      title = 'IRIE!';
-      footer = irie ? 'JUMP TO THE GOLD DOOR!' : 'G AGAIN IF THE RUSH FADES';
-      footerCol = irie ? '#ffe49a' : '#7fd0ff';
+      lesson = 6; title = 'IRIE RUSH';
+      instruction = 'STAND ON THE GROUND, THEN PRESS G.';
+      explanation = 'FREE HERE. IN LEVELS, G COSTS 1 LIFE.';
+      footer = 'THE RUSH MAKES YOU JUMP HIGHER';
+    } else if (irie) {                   // stage 4 — persists until the gold door
+      lesson = 7; title = 'REACH THE GOLD DOOR';
+      instruction = 'CLIMB TO THE TOP OF THE LADDER.';
+      explanation = 'THEN HOLD SPACE TO JUMP TO THE DOOR.';
+      footer = 'TOUCH THE GOLD DOOR TO FINISH';
+    } else {
+      lesson = 7; title = 'START IRIE AGAIN';
+      instruction = 'PRESS G AGAIN. IT IS STILL FREE HERE.';
+      explanation = 'THEN CLIMB AND HOLD SPACE TO THE DOOR.';
+      footer = 'TOUCH THE GOLD DOOR TO FINISH';
     }
-    const w = 204, h = 16 + rows.length * LINE_H + 12;
-    const x = Math.round(View.w / 2 - w / 2), y = 40;
+
+    const w = 326, h = 70;
+    const x = Math.round(View.w / 2 - w / 2), y = 34;
     ctx.fillStyle = 'rgba(10,12,20,0.78)';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = 'rgba(138,224,138,0.6)';
     ctx.fillRect(x, y, w, 1);
-    drawText(ctx, title, View.w / 2, y + 5, { color: '#ffe49a', align: 'center' });
-    let ly = y + 16;
-    for (const [label, hint, ok] of rows) {
-      drawText(ctx, (ok ? '* ' : '- ') + label, x + 9, ly, { color: ok ? '#8ae08a' : '#f4f0e0' });
-      drawText(ctx, hint, x + w - 9, ly, { color: ok ? '#5a7a5a' : '#8a93b8', align: 'right' });
-      ly += LINE_H;
-    }
-    drawText(ctx, footer, View.w / 2, y + h - 8, { color: footerCol, align: 'center' });
+    drawText(ctx, 'CONTROL LESSON ' + lesson + ' / 7', View.w / 2, y + 5, { color: '#7fd0ff', align: 'center' });
+    drawText(ctx, title, View.w / 2, y + 17, { color: '#ffe49a', scale: 2, align: 'center' });
+    drawText(ctx, instruction, View.w / 2, y + 38, { color: '#f4f0e0', align: 'center' });
+    drawText(ctx, explanation, View.w / 2, y + 49, { color: '#aeb8db', align: 'center' });
+    drawText(ctx, footer, View.w / 2, y + h - 8, { color: '#8ae08a', align: 'center' });
   }
 
   drawIntroCard(ctx) {
