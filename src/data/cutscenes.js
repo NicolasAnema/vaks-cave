@@ -968,12 +968,11 @@ export const CUTSCENES = {
       ['attach', 'lootbag', 'vaks', 16, -8],
       ['say', 'tiko', 'TAKE YOUR MANO.'],
       ['say', 'tiko', 'NOW GET OUT OF MY CAVE BEFORE I CHANGE MY MIND.'],
-      // Dawn and Granny's buzzing phone turn the send-off into Act 2.
+      // Dawn turns the send-off into Act 2. The following scene handles the
+      // next story reveal where it has room to land properly.
       ['fx', 'dawn', 2.0],
       ['move', 'vaks', 380, 226, 1.2],
-      ['sfx', 'alert'],
       ['say', 'vaks', 'YOH. THE SUN IS UP.'],
-      ['say', 'vaks', 'GRANNY...'],
       ['say', 'tiko', 'RUN, MY BOSS.'],
       ['fade', 'out', 0.6],
     ],

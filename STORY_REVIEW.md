@@ -100,7 +100,7 @@ Status: Implemented; awaiting visual approval.
 8. Big Tikolosh calls `VIVO VICEROY!`; the crowd answers `VICEROY!!`
 9. Big Tikolosh shrinks back into the familiar thief who stalked Vaks through the cave.
 10. The Tikolosh returns the actual stolen money sack and orders Vaks out before he changes his mind.
-11. Dawn fills the cave mouth. Granny's phone alert sounds and Vaks realises how late he is.
+11. Dawn fills the cave mouth and Vaks realises how late it is.
 12. The Tikolosh sends him off with the first sincere `RUN, MY BOSS.`
 
 #### Dialogue
@@ -120,7 +120,6 @@ Status: Implemented; awaiting visual approval.
 - `TAKE YOUR MANO.`
 - `NOW GET OUT OF MY CAVE BEFORE I CHANGE MY MIND.`
 - `YOH. THE SUN IS UP.`
-- `GRANNY...`
 - `RUN, MY BOSS.`
 
 #### Graphics
@@ -137,7 +136,7 @@ Status: Implemented; awaiting visual approval.
 - Vaks returning the challenge with his existing raised-hand sprite.
 - A contracting dust transformation from Big Tikolosh back into the familiar small Tikolosh.
 - The stolen money sack visibly handed back to Vaks, then carried out with him.
-- Dawn light and the vibrating phone motivating the Act 2 transition.
+- Dawn light motivating the Act 2 transition.
 
 #### Removed
 
